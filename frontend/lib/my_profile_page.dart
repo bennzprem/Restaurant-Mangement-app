@@ -1,0 +1,226 @@
+// lib/my_profile_page.dart
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'auth_provider.dart';
+import 'storage_service.dart';
+import 'theme.dart';
+import 'edit_profile_page.dart';
+import 'change_password_page.dart';
+import 'order_history_page.dart';
+
+// CHANGED: Converted to a StatefulWidget to handle image picking
+class MyProfilePage extends StatefulWidget {
+  const MyProfilePage({super.key});
+
+  @override
+  State<MyProfilePage> createState() => _MyProfilePageState();
+}
+
+class _MyProfilePageState extends State<MyProfilePage> {
+  final ImagePicker _picker = ImagePicker();
+
+  // This is the function to handle picking and uploading the image
+  Future<void> _pickAndUploadImage() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return; // User canceled the picker
+
+    try {
+      final bytes = await image.readAsBytes();
+      await StorageService().uploadProfilePicture(context, bytes, image.name);
+
+      // Refresh user data to get the new avatar_url
+      await authProvider.refreshUser();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile picture updated!')));
+    } catch (e) {
+      print('Caught error: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // We use context.watch here so the UI rebuilds when the user data changes
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final userName = user?.userMetadata?['name'] ?? 'User';
+    final userEmail = user?.email ?? 'No email provided';
+    final avatarUrl = user?.userMetadata?['avatar_url'];
+
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        backgroundColor: AppTheme.surfaceColor,
+        elevation: 1,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24.0),
+        children: [
+          // --- Profile Header ---
+          Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                // THIS IS THE NEW PROFILE PICTURE WIDGET
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: AppTheme.primaryLight,
+                      // Display the uploaded image if it exists
+                      backgroundImage: avatarUrl != null
+                          ? NetworkImage(avatarUrl)
+                          : null,
+                      child: avatarUrl == null
+                          ? Text(
+                              userName.isNotEmpty
+                                  ? userName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                color: AppTheme.darkTextColor,
+                              ),
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppTheme.darkTextColor,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onPressed: _pickAndUploadImage,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(userName, style: Theme.of(context).textTheme.displayLarge),
+                const SizedBox(height: 4),
+                Text(userEmail, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // --- Settings Section (Logic is unchanged) ---
+          _buildSectionHeader(context, 'Account Settings'),
+          _buildProfileOption(
+            context,
+            icon: Icons.edit_outlined,
+            title: 'Edit Profile',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+          _buildProfileOption(
+            context,
+            icon: Icons.lock_outline,
+            title: 'Change Password',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordPage(),
+                ),
+              );
+            },
+          ),
+          _buildProfileOption(
+            context,
+            icon: Icons.history_outlined,
+            title: 'Order History',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const OrderHistoryPage(),
+                ),
+              );
+            },
+          ),
+          _buildProfileOption(
+            context,
+            icon: Icons.calendar_month_outlined, // Icon for reservations
+            title: 'My Reservations',
+            onTap: () {
+              // This uses the named route you created in main.dart
+              Navigator.pushNamed(context, '/booking-history');
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // --- Logout Button (Logic is unchanged) ---
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[400],
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.logout),
+            label: const Text('Logout'),
+            onPressed: () async {
+              await authProvider.signOut();
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/', (route) => false);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget for section titles (Logic is unchanged)
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.lightTextColor,
+        ),
+      ),
+    );
+  }
+
+  // Helper widget for each clickable option (Logic is unchanged)
+  Widget _buildProfileOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, color: AppTheme.darkTextColor),
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
