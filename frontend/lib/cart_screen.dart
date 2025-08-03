@@ -11,12 +11,14 @@ import 'address_page.dart';
 import 'location_picker_page.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+  final String? tableSessionId;
+  const CartScreen({super.key, this.tableSessionId});
 
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
     final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\₹');
+    final bool isTableMode = tableSessionId != null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your Cart')),
@@ -80,7 +82,7 @@ class CartScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
-                child: const Text('Place Order'),
+                child: Text(isTableMode ? 'Send to Kitchen' : 'Place Order'),
                 // Find the "Place Order" ElevatedButton and update its onPressed
                 // In CartScreen, inside the ElevatedButton...
                 /*onPressed: () async {
@@ -123,19 +125,40 @@ class CartScreen extends StatelessWidget {
                   }
                 },*/
                 onPressed: () {
-                  final authProvider = Provider.of<AuthProvider>(
-                    context,
-                    listen: false,
-                  );
-                  if (authProvider.isLoggedIn) {
-                    // Navigate to the new location picker page
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const LocationPickerPage(),
-                      ),
+                  // --- THIS IS THE COMBINED LOGIC ---
+
+                  if (isTableMode) {
+                    // --- Table Mode Logic ---
+                    // This is where you will call your new ApiService method that hits the
+                    // /api/orders/add-items endpoint. We'll add a placeholder for now.
+
+                    print(
+                        'Sending items to the kitchen for session: $tableSessionId');
+
+                    // After a successful API call, you would clear the cart and go back.
+                    Provider.of<CartProvider>(context, listen: false).clear();
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Items sent to the kitchen!')),
                     );
                   } else {
-                    showLoginPrompt(context);
+                    // --- Online Delivery Logic (This is your first block of code) ---
+                    final authProvider = Provider.of<AuthProvider>(
+                      context,
+                      listen: false,
+                    );
+                    if (authProvider.isLoggedIn) {
+                      // Navigate to the location picker page to start delivery checkout
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LocationPickerPage(),
+                        ),
+                      );
+                    } else {
+                      // If not logged in, prompt the user to log in first
+                      showLoginPrompt(context);
+                    }
                   }
                 },
               ),

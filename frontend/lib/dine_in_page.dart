@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'book_table_page.dart'; // Import the renamed booking page
-import 'scan_qr_page.dart'; // Import the new QR page
+import 'order_from_table_page.dart'; // Import the new QR page
 import 'theme.dart';
 
 class DineInPage extends StatelessWidget {
@@ -22,7 +22,8 @@ class DineInPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ScanQrPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const OrderFromTablePage()),
                 );
               },
             ),

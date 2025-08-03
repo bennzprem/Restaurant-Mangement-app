@@ -474,20 +474,16 @@ def change_password():
         if not new_password or len(new_password) < 6:
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
-        user_data = supabase.auth.get_user(jwt)
-        user_id = user_data['user']['id']  # FIXED LINE
+        user_response = supabase.auth.get_user(jwt)
+        user_id = user_response.user.id
 
         supabase.auth.admin.update_user_by_id(
             user_id, {'password': new_password}
         )
-        response = jsonify({'message': 'Password updated successfully'})
-        response.headers.add('Access-Control-Allow-Origin', '*')  # ADD THIS
-        return response, 200
+        return jsonify({'message': 'Password updated successfully'}), 200
     except Exception as e:
         print(f"An error occurred in change_password: {e}")
-        response = jsonify({"error": str(e)})                      # BETTER DEBUGGING
-        response.headers.add('Access-Control-Allow-Origin', '*')  # ADD THIS
-        return response, 500
+        return jsonify({"error": str(e)}), 500
 
 
 # In app.py, find your upload function (e.g., upload_avatar or upload_profile_picture)
@@ -706,6 +702,104 @@ def cancel_reservation(reservation_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# In your app.py file
+
+@app.route('/api/table-sessions/start', methods=['POST'])
+def start_table_session():
+    """
+    Validates a table code and returns the active session for that table.
+    """
+    try:
+        data = request.get_json()
+        session_code = data.get('session_code')
+
+        print(f"Received request to start session for code: {session_code}", flush=True)
+
+        if not session_code:
+            return jsonify({"error": "session_code is required"}), 400
+
+        # Query the database for the session code, converting input to uppercase
+        session_response = supabase.table('table_sessions').select('*, tables(*)') \
+            .eq('session_code', session_code.upper()) \
+            .eq('status', 'active') \
+            .maybe_single().execute()
+
+        # THIS IS THE CRITICAL FIX:
+        # This check handles when no data is found and sends a friendly error instead of crashing.
+        if not session_response.data:
+            print(f"Code '{session_code.upper()}' not found or inactive.", flush=True)
+            return jsonify({"error": "Invalid table code. Please check the code and try again."}), 404
+
+        # If we get here, the code was found
+        session = session_response.data
+        print(f"Successfully found session for table number: {session['tables']['table_number']}", flush=True)
+        
+        return jsonify({
+            "sessionId": session['id'],
+            "tableId": session['table_id'],
+            "tableNumber": session['tables']['table_number']
+        }), 200
+
+    except Exception as e:
+        print(f"An error CRASHED the function: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/orders/add-items', methods=['POST'])
+def add_items_to_order():
+    """
+    Adds items to a table's current active order.
+    If no active order exists for the session, it creates one.
+    """
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        items = data.get('items') # Expecting a list of {'menu_item_id': id, 'quantity': qty}
+
+        if not all([session_id, items]):
+            return jsonify({"error": "session_id and items are required"}), 400
+
+        # Find an existing 'active' order for this table session
+        order_response = supabase.table('orders').select('id').eq('table_session_id', session_id).eq('status', 'active').maybe_single().execute()
+        
+        order_id = None
+        if order_response.data:
+            # An active order already exists
+            order_id = order_response.data['id']
+        else:
+            # No active order found, so create a new one
+            auth_header = request.headers.get('Authorization')
+            token = auth_header.split(" ")[1]
+            user = supabase.auth.get_user(token).user
+            
+            new_order_response = supabase.table('orders').insert({
+                'table_session_id': session_id,
+                'user_id': user.id,
+                'status': 'active'
+                # Other fields like total_price can be updated later
+            }).execute()
+            order_id = new_order_response.data[0]['id']
+
+        # Prepare items to be inserted into order_items
+        items_to_insert = []
+        for item in items:
+            # In a real app, you'd fetch the current price from menu_items table
+            # For now, we'll assume price is passed from client or fetched here
+            items_to_insert.append({
+                'order_id': order_id,
+                'menu_item_id': item['menu_item_id'],
+                'quantity': item['quantity'],
+                'price_at_order': item['price'] 
+            })
+
+        supabase.table('order_items').insert(items_to_insert).execute()
+
+        return jsonify({"message": "Items added to order successfully", "order_id": order_id}), 200
+
+    except Exception as e:
+        print(f"Error in add_items_to_order: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 

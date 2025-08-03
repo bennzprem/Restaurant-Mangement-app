@@ -112,7 +112,7 @@ class _BookTablePageState extends State<BookTablePage> {
           children: [
             const Text('Book a table'),
             Text(
-              'Sriracha, Nagawara',
+              'Bengaluru, Karnataka',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

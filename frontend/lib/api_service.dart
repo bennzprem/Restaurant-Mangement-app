@@ -24,7 +24,6 @@ class ApiService {
     required bool veganOnly,
     required bool glutenFreeOnly,
     required bool nutsFree,
-
     String? searchQuery,
   }) async {
     final queryParameters = {
@@ -292,6 +291,24 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to cancel reservation');
+    }
+  }
+  // In lib/api_service.dart
+
+// This function will call the backend to validate the table code
+  Future<Map<String, dynamic>> startTableSession(String tableCode) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/table-sessions/start'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session_code': tableCode}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      // Try to parse a specific error message from the backend
+      final errorData = json.decode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to start table session.');
     }
   }
 }

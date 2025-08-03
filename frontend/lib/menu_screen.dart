@@ -12,7 +12,11 @@ import 'favorites_screen.dart';
 import 'auth_provider.dart';
 
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  // Add this property
+  final String? tableSessionId;
+
+  const MenuScreen({super.key, this.tableSessionId}); // Update constructor
+  //const MenuScreen({super.key});
   @override
   _MenuScreenState createState() => _MenuScreenState();
 }
@@ -164,7 +168,9 @@ class _MenuScreenState extends State<MenuScreen> {
             child: IconButton(
               icon: const Icon(Icons.shopping_cart_outlined),
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const CartScreen()),
+                MaterialPageRoute(
+                    builder: (context) =>
+                        CartScreen(tableSessionId: widget.tableSessionId)),
               ),
             ),
           ),
@@ -282,19 +288,19 @@ class _MenuScreenState extends State<MenuScreen> {
                           const double cardWidth = 320;
                           final int crossAxisCount =
                               (constraints.maxWidth / cardWidth).floor().clamp(
-                                1,
-                                4,
-                              );
+                                    1,
+                                    4,
+                                  );
 
                           return GridView.builder(
                             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: 24,
-                                  mainAxisSpacing: 24,
-                                  mainAxisExtent: 340,
-                                ),
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 24,
+                              mainAxisSpacing: 24,
+                              mainAxisExtent: 340,
+                            ),
                             itemCount: selectedCategory.items.length,
                             itemBuilder: (context, index) {
                               return MenuItemCard(
@@ -417,9 +423,8 @@ class CategoryListItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isExpanded
-              ? 20
-              : 8, // Less horizontal padding when narrow
+          horizontal:
+              isExpanded ? 20 : 8, // Less horizontal padding when narrow
           vertical: 16,
         ),
         decoration: BoxDecoration(
@@ -456,8 +461,8 @@ class CategoryListItem extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
