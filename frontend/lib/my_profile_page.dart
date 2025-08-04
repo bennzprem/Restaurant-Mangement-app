@@ -8,6 +8,7 @@ import 'theme.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
 import 'order_history_page.dart';
+import 'api_service.dart'; // Ensure ApiService is imported
 
 // CHANGED: Converted to a StatefulWidget to handle image picking
 class MyProfilePage extends StatefulWidget {
@@ -20,28 +21,34 @@ class MyProfilePage extends StatefulWidget {
 class _MyProfilePageState extends State<MyProfilePage> {
   final ImagePicker _picker = ImagePicker();
 
-  // This is the function to handle picking and uploading the image
+  // In lib/my_profile_page.dart
+
+// This is the function to handle picking and uploading the image
   Future<void> _pickAndUploadImage() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user; // Get the user object
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-    if (image == null) return; // User canceled the picker
+    if (image == null || user == null)
+      return; // User canceled or is not logged in
 
     try {
-      final bytes = await image.readAsBytes();
-      await StorageService().uploadProfilePicture(context, bytes, image.name);
+      // CORRECTED: We now call ApiService and pass the userId and the image file
+      // Make sure you have an instance of ApiService available in this class
+      // final ApiService _apiService = ApiService();
+      await ApiService().uploadProfilePicture(user.id, image);
 
       // Refresh user data to get the new avatar_url
       await authProvider.refreshUser();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile picture updated!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture updated!')),
+      );
     } catch (e) {
       print('Caught error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
     }
   }
 
@@ -80,9 +87,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       radius: 50,
                       backgroundColor: AppTheme.primaryLight,
                       // Display the uploaded image if it exists
-                      backgroundImage: avatarUrl != null
-                          ? NetworkImage(avatarUrl)
-                          : null,
+                      backgroundImage:
+                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
                       child: avatarUrl == null
                           ? Text(
                               userName.isNotEmpty
@@ -198,9 +204,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppTheme.lightTextColor,
-        ),
+              fontWeight: FontWeight.bold,
+              color: AppTheme.lightTextColor,
+            ),
       ),
     );
   }

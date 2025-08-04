@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart'; // or file_picker
 import 'package:restaurant_app/models.dart' as app_models;
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   final String baseUrl = "http://localhost:5000"; // For Web and Desktop
@@ -185,20 +186,26 @@ class ApiService {
     if (accessToken == null) throw Exception('User not logged in');
 
     final uri = Uri.parse('$baseUrl/users/$userId/profile-picture');
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $accessToken'
-      ..files.add(
-        http.MultipartFile.fromBytes(
-          'profile_picture',
-          await imageFile.readAsBytes(),
-          filename: imageFile.name,
-        ),
-      );
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $accessToken';
+
+    // --- THIS IS THE KEY FIX ---
+    // The key has been changed from 'profile_picture' to 'avatar'
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'avatar', // <-- THE CORRECT KEY
+        await imageFile.readAsBytes(),
+        filename: imageFile.name,
+        contentType: MediaType('image', imageFile.name.split('.').last),
+      ),
+    );
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200) {
+      print('Upload failed with response: ${response.body}');
       throw Exception('Failed to upload image');
     }
   }

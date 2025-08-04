@@ -43,8 +43,22 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
 
       await _showConfirmationDialog(tableNumber, sessionId);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Invalid Table Code'),
+          // We clean up the error message to be more user-friendly
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                // This button closes the dialog
+                Navigator.of(ctx).pop();
+              },
+            )
+          ],
+        ),
       );
     } finally {
       setState(() => _isLoading = false);

@@ -705,6 +705,8 @@ def cancel_reservation(reservation_id):
 
 # In your app.py file
 
+# In your app.py
+
 @app.route('/api/table-sessions/start', methods=['POST'])
 def start_table_session():
     """
@@ -719,16 +721,16 @@ def start_table_session():
         if not session_code:
             return jsonify({"error": "session_code is required"}), 400
 
-        # Query the database for the session code, converting input to uppercase
         session_response = supabase.table('table_sessions').select('*, tables(*)') \
             .eq('session_code', session_code.upper()) \
             .eq('status', 'active') \
             .maybe_single().execute()
 
-        # THIS IS THE CRITICAL FIX:
-        # This check handles when no data is found and sends a friendly error instead of crashing.
-        if not session_response.data:
-            print(f"Code '{session_code.upper()}' not found or inactive.", flush=True)
+        # --- THIS IS THE FINAL, ULTRA-DEFENSIVE FIX ---
+        # We now check if the response object ITSELF is None OR if its data is empty.
+        # This will prevent the 'NoneType' has no attribute 'data' crash.
+        if session_response is None or not session_response.data:
+            print(f"Code '{session_code.upper()}' not found or the database query failed.", flush=True)
             return jsonify({"error": "Invalid table code. Please check the code and try again."}), 404
 
         # If we get here, the code was found
@@ -744,8 +746,6 @@ def start_table_session():
     except Exception as e:
         print(f"An error CRASHED the function: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
-
-
 @app.route('/api/orders/add-items', methods=['POST'])
 def add_items_to_order():
     """
