@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.didChangeDependencies();
     // We pre-cache the image for better performance.
     precacheImage(
-      const AssetImage('assests/images/food_background.jpg'),
+      const AssetImage('assets/images/food_background.jpg'),
       context,
     );
   }
@@ -147,7 +147,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assests/images/food_background.jpg'),
+                image: AssetImage('assets/images/food_background.jpg'),
                 fit: BoxFit.cover,
               ),
             ),
