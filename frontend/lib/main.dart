@@ -54,6 +54,8 @@ import 'takeaway_page.dart';
 import 'book_table_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
+import 'takeaway_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -100,7 +102,7 @@ class MyApp extends StatelessWidget {
           '/change_password': (context) => const ChangePasswordPage(),
           '/order_history': (context) => const OrderHistoryPage(),
           '/dine-in': (context) => const DineInPage(),
-          '/takeaway': (context) => const TakeawayPage(),
+          '/takeaway': (context) => TakeawayPage(),
           '/booking-history': (context) => const BookingHistoryPage(),
         },
       ),

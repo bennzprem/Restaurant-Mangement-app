@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
       case 'Takeaway':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TakeawayPage()),
+          MaterialPageRoute(builder: (context) => TakeawayPage()),
         );
         break;
     }
