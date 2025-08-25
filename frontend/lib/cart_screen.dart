@@ -2,23 +2,107 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart'; // 1. Added Razorpay import
+
 import 'api_service.dart';
 import 'cart_provider.dart';
-//import 'order_tracking_screen.dart';
 import 'auth_provider.dart';
-//import 'theme.dart';
-import 'address_page.dart';
-import 'location_picker_page.dart';
+import 'models.dart';
 
-class CartScreen extends StatelessWidget {
+// 2. Added the main StatefulWidget class definition
+class CartScreen extends StatefulWidget {
   final String? tableSessionId;
   const CartScreen({super.key, this.tableSessionId});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  late Razorpay _razorpay;
+  late CartProvider _cart;
+  late AuthProvider _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void _initiatePayment() async {
+    // Store providers in member variables before the async gap to safely use them later
+    _cart = Provider.of<CartProvider>(context, listen: false);
+    _auth = Provider.of<AuthProvider>(context, listen: false);
+    final apiService = ApiService();
+
+    if (_auth.user == null) {
+      showLoginPrompt(context);
+      return;
+    }
+
+    try {
+      final razorpayOrderId =
+          await apiService.createRazorpayOrder(_cart.totalAmount);
+
+      var options = {
+        'key': 'YOUR_TEST_KEY_ID', // <-- IMPORTANT: USE YOUR TEST KEY ID HERE
+        'amount': _cart.totalAmount * 100, // amount in paise
+        'name': 'ByteEat',
+        'order_id': razorpayOrderId,
+        'description': 'Food Order Payment',
+        'prefill': {'email': _auth.user?.email ?? ''}
+      };
+
+      _razorpay.open(options);
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    final apiService = ApiService();
+
+    // Use the stored member variables, NOT Provider.of(context)
+    apiService.placeOrder(
+      _cart.items.values.toList(),
+      _cart.totalAmount,
+      _auth.user!.id,
+      '123 Test Address', // TODO: Get a real address from the user before payment
+    );
+
+    _cart.clearCart();
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment Successful! Order Placed.')),
+      );
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment failed. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
     final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\₹');
-    final bool isTableMode = tableSessionId != null;
+    final bool isTableMode = widget.tableSessionId != null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your Cart')),
@@ -33,14 +117,12 @@ class CartScreen extends StatelessWidget {
                       final cartItem = cart.items.values.toList()[i];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            cartItem.menuItem.imageUrl,
-                          ),
+                          backgroundImage:
+                              NetworkImage(cartItem.menuItem.imageUrl),
                         ),
                         title: Text(cartItem.menuItem.name),
                         subtitle: Text(
-                          currencyFormat.format(cartItem.menuItem.price),
-                        ),
+                            currencyFormat.format(cartItem.menuItem.price)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -66,14 +148,10 @@ class CartScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Total:',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    currencyFormat.format(cart.totalAmount),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+                  Text('Total:',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  Text(currencyFormat.format(cart.totalAmount),
+                      style: Theme.of(context).textTheme.headlineSmall),
                 ],
               ),
             ),
@@ -82,83 +160,20 @@ class CartScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
-                child: Text(isTableMode ? 'Send to Kitchen' : 'Place Order'),
-                // Find the "Place Order" ElevatedButton and update its onPressed
-                // In CartScreen, inside the ElevatedButton...
-                /*onPressed: () async {
-                  final authProvider = Provider.of<AuthProvider>(
-                    context,
-                    listen: false,
-                  );
-                  final cart = Provider.of<CartProvider>(
-                    context,
-                    listen: false,
-                  );
-
-                  if (authProvider.isLoggedIn) {
-                    try {
-                      // This is the actual order placement logic
-                      final result = await ApiService().placeOrder(
-                        cart.items.values.toList(),
-                        cart.totalAmount,
-                        authProvider.user!.id, // Pass the user ID
-                      );
-                      final orderId = result['order_id'];
-                      cart.clear();
-                      // Navigate to tracking screen (if you have one)
-                      // For now, just show a success message and pop
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Order #${orderId} placed successfully!',
-                          ),
-                        ),
-                      );
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error placing order: $e')),
-                      );
-                    }
-                  } else {
-                    showLoginPrompt(context);
-                  }
-                },*/
+                child: Text(isTableMode ? 'Send to Kitchen' : 'Proceed to Pay'),
                 onPressed: () {
-                  // --- THIS IS THE COMBINED LOGIC ---
-
                   if (isTableMode) {
-                    // --- Table Mode Logic ---
-                    // This is where you will call your new ApiService method that hits the
-                    // /api/orders/add-items endpoint. We'll add a placeholder for now.
-
-                    print(
-                        'Sending items to the kitchen for session: $tableSessionId');
-
-                    // After a successful API call, you would clear the cart and go back.
-                    Provider.of<CartProvider>(context, listen: false).clear();
+                    // Table Mode Logic (Unchanged)
+                    Provider.of<CartProvider>(context, listen: false)
+                        .clearCart();
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text('Items sent to the kitchen!')),
                     );
                   } else {
-                    // --- Online Delivery Logic (This is your first block of code) ---
-                    final authProvider = Provider.of<AuthProvider>(
-                      context,
-                      listen: false,
-                    );
-                    if (authProvider.isLoggedIn) {
-                      // Navigate to the location picker page to start delivery checkout
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LocationPickerPage(),
-                        ),
-                      );
-                    } else {
-                      // If not logged in, prompt the user to log in first
-                      showLoginPrompt(context);
-                    }
+                    // Online Delivery Logic now initiates payment
+                    _initiatePayment();
                   }
                 },
               ),
@@ -168,7 +183,6 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
-// Add this function at the bottom of lib/menu_screen.dart
 
 void showLoginPrompt(BuildContext context) {
   showDialog(
@@ -184,8 +198,8 @@ void showLoginPrompt(BuildContext context) {
         ElevatedButton(
           child: const Text('Login'),
           onPressed: () {
-            Navigator.of(ctx).pop(); // Close the dialog
-            Navigator.pushNamed(context, '/login'); // Go to login page
+            Navigator.of(ctx).pop();
+            Navigator.pushNamed(context, '/login');
           },
         ),
       ],

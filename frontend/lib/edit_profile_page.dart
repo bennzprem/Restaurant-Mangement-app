@@ -19,16 +19,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    final userName =
-        Provider.of<AuthProvider>(
-          context,
-          listen: false,
-        ).user?.userMetadata?['name'] ??
-        '';
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userName = authProvider.user?.name ?? '';
     _nameController = TextEditingController(text: userName);
   }
-
-  // In class _EditProfilePageState...
 
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) return;
@@ -46,10 +41,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     try {
-      // THIS IS THE FIX: Pass both the userId and the name
       await ApiService().updateProfile(userId, _nameController.text.trim());
 
-      await authProvider.refreshUser();
+      // THIS IS THE ONLY CHANGE: Use the correct method name
+      await authProvider.refreshUserProfile();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),

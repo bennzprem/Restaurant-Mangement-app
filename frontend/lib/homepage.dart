@@ -4,8 +4,9 @@ import 'auth_provider.dart';
 import 'book_table_page.dart';
 import 'menu_screen.dart';
 import 'takeaway_page.dart';
-import 'theme.dart'; // Import your AppTheme
+import 'theme.dart';
 import 'dine_in_page.dart';
+import 'admin_dashboard_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,9 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Helper function to handle taps on the cards
-  // THIS IS THE NEW, UPDATED FUNCTION
   void _handleNavigation(BuildContext context, String serviceType) {
-    // The login check is removed. Navigation now happens directly.
     switch (serviceType) {
       case 'Delivery':
         Navigator.push(
@@ -45,6 +44,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
+    final userName = user?.name;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,9 +76,9 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              authProvider.isLoggedIn
-                  ? 'Welcome, ${user?.userMetadata?['name'] ?? 'User'}!'
-                  : 'Welcome to ByteEat!',
+              authProvider.isLoggedIn && userName != null && userName.isNotEmpty
+                  ? 'Welcome, $userName!'
+                  : 'Welcome to Byteat!',
               style: Theme.of(context).textTheme.displayLarge,
             ),
             const SizedBox(height: 8),
@@ -90,6 +90,27 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: ListView(
                 children: [
+                  // vvv THIS IS THE ONLY SECTION THAT HAS BEEN ADDED vvv
+                  // If the user is an admin, show the dashboard card
+                  if (authProvider.isAdmin) ...[
+                    _ServiceSelectionCard(
+                      title: 'Admin Dashboard',
+                      description: 'Manage users, items, and orders.',
+                      icon: Icons.dashboard_customize,
+                      onTap: () {
+                        // IMPORTANT: You will need to create this page.
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminDashboardPage()));
+                        print(
+                            "Navigating to Admin Dashboard..."); // Placeholder
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   _ServiceSelectionCard(
                     title: 'Delivery',
                     description:
@@ -119,7 +140,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // The BottomNavigationBar is now removed.
     );
   }
 }

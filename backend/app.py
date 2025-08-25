@@ -12,6 +12,7 @@ from twilio.rest import Client as TwilioClient
 from twilio.base.exceptions import TwilioRestException
 from werkzeug.utils import secure_filename
 import mimetypes
+import razorpay
 
 # --- CONFIGURATION: FILL IN YOUR CREDENTIALS HERE ---
 
@@ -57,7 +58,8 @@ app.config['MAIL_USERNAME'] = EMAIL_USER
 app.config['MAIL_PASSWORD'] = EMAIL_PASS
 app.config['MAIL_DEFAULT_SENDER'] = EMAIL_USER
 mail = Mail(app)
-
+# Initialize Razorpay client with your keys
+client = razorpay.Client(auth=("rzp_test_R9IWhVRyO9Ga0k", "QKfOOhOaSDh5kVloa5XCeSL6"))
 # Headers for REST API calls (for menu routes)
 headers = {
     "apikey": SUPABASE_KEY,
@@ -87,47 +89,57 @@ def verify_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 # --- AUTHENTICATION ROUTES ---
-
+@app.route('/create-razorpay-order', methods=['POST'])
+def create_razorpay_order():
+    try:
+        data = request.get_json()
+        amount_in_rupees = data.get('amount')
+        
+        order_data = {
+            "amount": int(amount_in_rupees * 100),  # Amount in the smallest currency unit (paise)
+            "currency": "INR",
+            "receipt": "order_rcptid_11" # A unique receipt ID
+        }
+        razorpay_order = client.order.create(data=order_data)
+        
+        # Return the order_id created by Razorpay
+        return jsonify({"order_id": razorpay_order['id']})
+    except Exception as e:
+        print(f"Error creating Razorpay order: {e}")
+        return jsonify({"error": str(e)}), 500
 # In app.py, replace the entire signup function
-
 @app.route('/signup', methods=['POST'])
 def signup():
     try:
         data = request.get_json()
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip().lower()
-        password = data.get('password', '')
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
 
-        if not all([name, email, password]): return jsonify({'error': 'All fields are required'}), 400
-        if len(password) < 6: return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        if not all([name, email, password]):
+            return jsonify({'error': 'Name, email, and password are required'}), 400
 
-        # Step 1: Create the user in Supabase Auth
+        # This securely signs up the user and provides the 'name'
+        # to your database trigger via the metadata.
         auth_response = supabase.auth.sign_up({
             "email": email,
             "password": password,
+            "options": {
+                "data": {
+                    'name': name
+                }
+            }
         })
-        
-        new_user = auth_response.user
-        if not new_user:
-            return jsonify({'error': 'Failed to create user in authentication system.'}), 500
 
-        # Step 2: Hash the password and create the public profile
-        hashed_password = hash_password(password) # <-- Hash the password
-        profile_data = {
-            'id': new_user.id,
-            'name': name,
-            'email': email,
-            'password': hashed_password # <-- Save the hashed password
-        }
-        result = supabase.table('users').insert(profile_data).execute()
+        if auth_response.user is None:
+            return jsonify({'error': 'User may already exist or another error occurred.'}), 409
 
-        return jsonify({'message': 'User created successfully! Please check your email to verify your account.'}), 201
+        return jsonify({'message': 'Signup successful! Please check your email for confirmation.'}), 201
 
     except Exception as e:
-        if 'User already registered' in str(e):
-            return jsonify({'error': 'A user with this email already exists.'}), 409
-        print(f"Error during signup: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        print(f"Error during signup: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # In app.py, replace the entire login function
 
 @app.route('/login', methods=['POST'])
@@ -345,12 +357,17 @@ def place_order():
         new_order = order_response.json()[0]
         order_id = new_order['id']
 
+        
         order_items_payload = [
             {
-                "order_id": order_id, "menu_item_id": item['id'],
-                "quantity": item['quantity'], "price_per_item": item['price']
+                "order_id": order_id, 
+                "menu_item_id": item['menu_item_id'],  # Use 'menu_item_id' from Flutter
+                "quantity": item['quantity'], 
+                "price_at_order": item['price_at_order'] # Use 'price_at_order' from Flutter and for the column name
             } for item in cart_items
         ]
+        
+        
         items_response = requests.post(f"{SUPABASE_URL}/rest/v1/order_items", json=order_items_payload, headers=headers)
         items_response.raise_for_status()
 

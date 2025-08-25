@@ -13,6 +13,8 @@ import 'package:image_picker/image_picker.dart'; // or file_picker
 import 'package:restaurant_app/models.dart' as app_models;
 import 'package:http_parser/http_parser.dart';
 
+import 'user_models.dart';
+
 class ApiService {
   //final String baseUrl = "http://localhost:5000"; // For Web and Desktop
   final String baseUrl = kIsWeb
@@ -68,13 +70,15 @@ class ApiService {
       body: jsonEncode({
         'total': total,
         'user_id': userId,
-        'address': address, // <-- Make sure to send the address
+        'address': address,
         'items': items
             .map(
               (item) => {
-                'id': item.menuItem.id,
+                // --- THIS IS THE FIX ---
+                // Use the exact column names from your Supabase table
+                'menu_item_id': item.menuItem.id,
                 'quantity': item.quantity,
-                'price': item.menuItem.price,
+                'price_at_order': item.menuItem.price,
               },
             )
             .toList(),
@@ -319,6 +323,49 @@ class ApiService {
       // Try to parse a specific error message from the backend
       final errorData = json.decode(response.body);
       throw Exception(errorData['error'] ?? 'Failed to start table session.');
+    }
+  }
+
+  Future<List<AppUser>> getAllUsers() async {
+    // IMPORTANT: Make sure this is your permanent admin's user ID.
+    const String permanentAdminId = 'db13418e-05f9-4101-9567-ecbfc938a325';
+
+    try {
+      final response = await _supabase
+          .from('users')
+          .select()
+          .neq('id', permanentAdminId); // Exclude the permanent admin
+
+      final users = (response as List)
+          .map((userData) => AppUser.fromJson(userData))
+          .toList();
+      return users;
+    } catch (e) {
+      print('Error getting all users: $e');
+      throw 'Failed to load users.';
+    }
+  }
+
+  /// Updates the role for a specific user in the 'users' table.
+  Future<void> updateUserRole(String userId, String newRole) async {
+    try {
+      await _supabase.from('users').update({'role': newRole}).eq('id', userId);
+    } catch (e) {
+      print('Error updating user role: $e');
+      throw 'Failed to update role.';
+    }
+  }
+
+  Future<String> createRazorpayOrder(double amount) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/create-razorpay-order'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'amount': amount}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['order_id'];
+    } else {
+      throw Exception('Failed to create Razorpay order.');
     }
   }
 }
