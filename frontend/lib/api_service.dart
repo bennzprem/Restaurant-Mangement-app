@@ -1,6 +1,7 @@
 // lib/api_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'models.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +14,10 @@ import 'package:restaurant_app/models.dart' as app_models;
 import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  final String baseUrl = "http://localhost:5000"; // For Web and Desktop
-
+  //final String baseUrl = "http://localhost:5000"; // For Web and Desktop
+  final String baseUrl = kIsWeb
+      ? "http://127.0.0.1:5000" // for web
+      : "http://10.0.2.2:5000"; // for Android emulator
   // In lib/api_service.dart
 
   // Change this method

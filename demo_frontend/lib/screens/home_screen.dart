@@ -6,10 +6,10 @@ import '../widgets/about_section.dart';
 import '../widgets/testimonials_section.dart';
 import '../widgets/newsletter_section.dart';
 import '../widgets/footer_widget.dart';
+import '../widgets/navbar_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,21 +17,35 @@ class HomeScreen extends StatelessWidget {
       body: Stack(
         children: [
           // Main scrollable content
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Remove HeaderWidget here!
-                  HeroSection(),
-                  _MenuCategoryCarousel(),
-                  AboutSection(),
-                  TestimonialsSection(),
-                  NewsletterSection(),
-                  FooterWidget(),
-                ],
-              ),
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // Hero section with the navbar overlayed within the white part
+                Stack(
+                  children: [
+                    HeroSection(),
+                    // Overlay NavbarWidget left-aligned, above headline, in white
+                    Positioned(
+                      top:
+                          90, // Keep your existing or adjust slightly to sit just above Dine-In
+                      left:
+                          56, // Add a left value to move nav in from the edge (matches hero section padding)
+                      child:
+                          NavbarWidget(), // No Center widget, left-aligned in white area
+                    ),
+                  ],
+                ),
+
+                _MenuCategoryCarousel(),
+                AboutSection(),
+                TestimonialsSection(),
+                NewsletterSection(),
+                FooterWidget(),
+              ],
             ),
-          // Glassmorphic fixed header
-          const Positioned(
+          ),
+          // Header fixed at the top, always visible
+          Positioned(
             top: 0,
             left: 0,
             right: 0,
@@ -63,7 +77,6 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   final ScrollController _scrollController = ScrollController();
 
-  // You can assign custom icons or colors as needed.
   final Map<String, IconData> categoryIcons = {
     'Appetizers': Icons.fastfood,
     'Soup & Salad': Icons.ramen_dining,
@@ -78,7 +91,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   void scrollLeft() {
     _scrollController.animateTo(
-      _scrollController.offset - 300, // Adjust scroll jump as needed
+      _scrollController.offset - 300,
       duration: const Duration(milliseconds: 300),
       curve: Curves.ease,
     );
