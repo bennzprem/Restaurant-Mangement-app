@@ -39,7 +39,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       await ApiService().uploadProfilePicture(user.id, image);
 
       // Refresh user data to get the new avatar_url
-      await authProvider.refreshUser();
+      await authProvider.refreshUserProfile();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile picture updated!')),
@@ -57,9 +57,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
     // We use context.watch here so the UI rebuilds when the user data changes
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    final userName = user?.userMetadata?['name'] ?? 'User';
+
+    // CORRECTED: Get data directly from the user object's properties
+    final userName = user?.name ?? 'User';
     final userEmail = user?.email ?? 'No email provided';
-    final avatarUrl = user?.userMetadata?['avatar_url'];
+    final avatarUrl = user?.avatarUrl; // This comes from your AppUser model
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,

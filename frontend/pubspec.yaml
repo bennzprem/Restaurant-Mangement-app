@@ -43,6 +43,7 @@ dependencies:
   latlong2: ^0.9.1 # <-- ADD THIS LINE
   # maps_webservice: ^0.0.20-nullsafety-1
   image_picker: ^1.1.2
+  razorpay_flutter: ^1.4.0
   
 
   # The following adds the Cupertino Icons font to your application.

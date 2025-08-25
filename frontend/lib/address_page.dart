@@ -64,7 +64,7 @@ class _AddressPageState extends State<AddressPage> {
         finalAddress,
       );
       final orderId = result['order_id'];
-      cart.clear();
+      cart.clearCart();
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
