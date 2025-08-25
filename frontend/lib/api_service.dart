@@ -326,6 +326,8 @@ class ApiService {
     }
   }
 
+  final _supabase = Supabase.instance.client;
+
   Future<List<AppUser>> getAllUsers() async {
     // IMPORTANT: Make sure this is your permanent admin's user ID.
     const String permanentAdminId = 'db13418e-05f9-4101-9567-ecbfc938a325';
