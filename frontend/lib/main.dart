@@ -51,10 +51,8 @@ import 'order_history_page.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
 import 'takeaway_page.dart';
-import 'book_table_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
-import 'takeaway_page.dart';
 import 'menu_screen.dart';
 
 void main() async {

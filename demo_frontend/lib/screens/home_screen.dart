@@ -21,7 +21,7 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 // Hero section with the navbar overlayed within the white part
-                Stack(
+                const Stack(
                   children: [
                     HeroSection(),
                     // Overlay NavbarWidget left-aligned, above headline, in white
@@ -37,15 +37,15 @@ class HomeScreen extends StatelessWidget {
                 ),
 
                 _MenuCategoryCarousel(),
-                AboutSection(),
-                TestimonialsSection(),
-                NewsletterSection(),
-                FooterWidget(),
+                const AboutSection(),
+                const TestimonialsSection(),
+                const NewsletterSection(),
+                const FooterWidget(),
               ],
             ),
           ),
           // Header fixed at the top, always visible
-          Positioned(
+          const Positioned(
             top: 0,
             left: 0,
             right: 0,
@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
- 
+
 class _MenuCategoryCarousel extends StatefulWidget {
   @override
   State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();

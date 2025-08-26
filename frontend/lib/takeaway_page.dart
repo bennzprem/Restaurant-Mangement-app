@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 void main() => runApp(RestaurantTemplateApp());
 
 class RestaurantTemplateApp extends StatelessWidget {
+  const RestaurantTemplateApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -13,6 +15,8 @@ class RestaurantTemplateApp extends StatelessWidget {
 }
 
 class TakeawayPage extends StatelessWidget {
+  const TakeawayPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final Color accentColor = Color(0xFFEFF440); // Yellow-green accent
@@ -148,4 +152,3 @@ class TakeawayPage extends StatelessWidget {
     );
   }
 }
-

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:html' as html;
 
 import 'phone-login_page.dart';
+import 'theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -252,14 +253,24 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          _buildLogoSection(),
-          const SizedBox(height: 40),
-          _buildFormSection(),
-          const SizedBox(height: 40),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height -
+              MediaQuery.of(context).padding.top -
+              MediaQuery.of(context).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
+            _buildLogoSection(),
+            SizedBox(
+                height: MediaQuery.of(context).size.height < 700 ? 10 : 20),
+            _buildFormSection(),
+            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
+          ],
+        ),
       ),
     );
   }
@@ -275,41 +286,43 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: MediaQuery.of(context).size.width < 600 ? 60 : 80,
+                  height: MediaQuery.of(context).size.width < 600 ? 60 : 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFB8C96C), // ByteEat lime green
+                    color: AppTheme.primaryColor, // Using mint lime theme color
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFB8C96C).withOpacity(0.3),
+                        color: AppTheme.primaryColor.withOpacity(0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.restaurant,
-                    size: 40,
+                    size: MediaQuery.of(context).size.width < 600 ? 30 : 40,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                Text(
                   'ByteEat',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 24 : 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF212529), // Dark text
+                    color: AppTheme.darkTextColor, // Using theme color
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
                 Text(
                   'Welcome back to your food journey',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                    color: AppTheme.lightTextColor, // Using theme color
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -324,7 +337,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildFormSection() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: EdgeInsets.all(
+          MediaQuery.of(context).size.width < 600
+              ? (MediaQuery.of(context).size.height < 700 ? 12.0 : 16.0)
+              : 32.0,
+        ),
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -338,11 +355,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   Widget _buildVisualSection() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF204C3A), Color(0xFF0E3327)],
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.accentColor
+          ], // Using mint lime theme colors
         ),
       ),
       child: Stack(
@@ -484,13 +504,22 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   Widget _buildLoginFormCard() {
     final bool compact = MediaQuery.of(context).size.height < 700;
-    final double cardPadding = compact ? 24.0 : 40.0;
-    final double titleSize = compact ? 28.0 : 32.0;
-    final double gapLarge = compact ? 24.0 : 40.0;
-    final double gapMed = compact ? 16.0 : 24.0;
-    final double gapSmall = compact ? 8.0 : 12.0;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double cardPadding =
+        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
+    final double titleSize = compact || isMobile ? 24.0 : 32.0;
+    final double gapLarge =
+        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
+    final double gapMed = compact || isMobile ? (isMobile ? 12.0 : 16.0) : 24.0;
+    final double gapSmall = compact || isMobile ? (isMobile ? 4.0 : 6.0) : 12.0;
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 450),
+      constraints: BoxConstraints(
+        maxWidth: isMobile ? double.infinity : 450,
+        maxHeight: isMobile
+            ? MediaQuery.of(context).size.height * 0.7
+            : double.infinity,
+      ),
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -508,39 +537,41 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Welcome Back',
-            style: TextStyle(
-              fontSize: titleSize,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF212529),
-              letterSpacing: -0.5,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Welcome Back',
+              style: TextStyle(
+                fontSize: titleSize,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF212529),
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-          SizedBox(height: gapSmall),
-          Text(
-            'Sign in to continue to your account',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+            SizedBox(height: gapSmall),
+            Text(
+              'Sign in to continue to your account',
+              style: TextStyle(
+                fontSize: isMobile ? 14 : 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          SizedBox(height: gapLarge),
-          _buildFormFields(),
-          SizedBox(height: gapMed),
-          _buildLoginButton(),
-          SizedBox(height: gapMed),
-          _buildDivider(),
-          SizedBox(height: gapMed),
-          _buildSocialButtons(),
-          SizedBox(height: compact ? 20 : 32),
-          _buildSignUpLink(),
-        ],
+            SizedBox(height: gapLarge),
+            _buildFormFields(),
+            SizedBox(height: gapMed),
+            _buildLoginButton(),
+            SizedBox(height: gapMed),
+            _buildDivider(),
+            SizedBox(height: gapMed),
+            _buildSocialButtons(),
+            SizedBox(height: compact || isMobile ? 16 : 32),
+            _buildSignUpLink(),
+          ],
+        ),
       ),
     );
   }
@@ -563,7 +594,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 24),
           _buildInputField(
             controller: _passwordController,
             labelText: 'Password',
@@ -577,7 +608,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
           Row(
             children: [
               Checkbox(
@@ -623,7 +654,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             color: Color(0xFF495057),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
         TextFormField(
           controller: controller,
           obscureText: isPassword && !_isPasswordVisible,
@@ -659,8 +690,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 : null,
             filled: true,
             fillColor: const Color(0xFFF8F9FA),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 18.0,
+            contentPadding: EdgeInsets.symmetric(
+              vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,
             ),
             border: OutlineInputBorder(
@@ -673,8 +704,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(
-                color: Color(0xFFB8C96C),
+              borderSide: BorderSide(
+                color: AppTheme.primaryColor, // Using mint lime theme color
                 width: 2,
               ),
             ),
@@ -706,17 +737,17 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1E3C2F),
+          backgroundColor: AppTheme.primaryColor, // Using mint lime theme color
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
-          shadowColor: Colors.black26,
+          shadowColor: AppTheme.primaryColor.withOpacity(0.3),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -780,7 +811,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           textColor: const Color(0xFF212529),
           borderColor: Colors.grey[300]!,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
         _buildSocialButton(
           onPressed: () {
             Navigator.push(
@@ -808,7 +839,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
@@ -880,8 +911,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             const TextSpan(text: "Don't have an account? "),
             TextSpan(
               text: 'Sign Up',
-              style: const TextStyle(
-                color: Color(0xFFB8C96C), // ByteEat lime green
+              style: TextStyle(
+                color: AppTheme.primaryColor, // Using mint lime theme color
                 fontWeight: FontWeight.bold,
               ),
               recognizer: TapGestureRecognizer()

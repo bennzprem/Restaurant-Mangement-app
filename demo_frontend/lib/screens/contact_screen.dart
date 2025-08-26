@@ -48,16 +48,16 @@ class ContactScreen extends StatelessWidget {
             const SizedBox(height: 48),
 
             // Simple Contact Form (optional)
-            TextField(
-              decoration: const InputDecoration(
+            const TextField(
+              decoration: InputDecoration(
                 labelText: 'Your Name',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 24),
-            TextField(
+            const TextField(
               maxLines: 4,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Your Message',
                 border: OutlineInputBorder(),
               ),

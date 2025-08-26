@@ -30,7 +30,7 @@ class HeaderWidget extends StatelessWidget {
           child: Row(
             children: [
               // Logo
-              Icon(Icons.restaurant_menu_rounded,
+              const Icon(Icons.restaurant_menu_rounded,
                   color: Color(0xFFDAE952), size: 28),
               const SizedBox(width: 14),
               const Text(
@@ -42,7 +42,7 @@ class HeaderWidget extends StatelessWidget {
                   color: Colors.black,
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Container(
                 width: 300, // Adjust width as needed
                 height: 48, // Adjust height to match button
@@ -62,12 +62,14 @@ class HeaderWidget extends StatelessWidget {
                     hintText: 'Search...',
                     prefixIcon: Icon(Icons.search, color: Colors.grey),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   ),
                   style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
               ),
-              const SizedBox(width: 14), // Space between search bar and signup button
+              const SizedBox(
+                  width: 14), // Space between search bar and signup button
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/signup');

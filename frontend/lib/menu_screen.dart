@@ -201,8 +201,9 @@ class _MenuScreenState extends State<MenuScreen> {
           ? FutureBuilder<List<MenuCategory>>(
               future: _menuFuture,
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const SizedBox.shrink(); // Return empty if no data
+                }
                 final menuCategories = snapshot.data!;
                 return Container(
                   width: 280,

@@ -163,8 +163,9 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                             )
                             .toList(),
                     onChanged: (value) {
-                      if (value != null)
+                      if (value != null) {
                         setState(() => _specialOccasion = value);
+                      }
                     },
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),

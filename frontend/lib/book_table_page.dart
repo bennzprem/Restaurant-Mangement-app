@@ -19,7 +19,7 @@ class _BookTablePageState extends State<BookTablePage> {
   int _partySize = 2;
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
-  String _specialOccasion =
+  final String _specialOccasion =
       'None'; // This can be passed to the confirmation page
 
   // --- API State ---
@@ -213,8 +213,7 @@ class _BookTablePageState extends State<BookTablePage> {
               child: Row(
                 children: List.generate(14, (index) {
                   final date = DateTime.now().add(Duration(days: index));
-                  final isSelected =
-                      _selectedDate.day == date.day &&
+                  final isSelected = _selectedDate.day == date.day &&
                       _selectedDate.month == date.month &&
                       _selectedDate.year == date.year;
                   return Padding(
@@ -291,8 +290,7 @@ class _BookTablePageState extends State<BookTablePage> {
               runSpacing: 8.0,
               children: _timeSlots.map((time) {
                 final now = DateTime.now();
-                final isToday =
-                    _selectedDate.year == now.year &&
+                final isToday = _selectedDate.year == now.year &&
                     _selectedDate.month == now.month &&
                     _selectedDate.day == now.day;
 

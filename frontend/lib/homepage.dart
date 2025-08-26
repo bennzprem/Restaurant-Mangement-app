@@ -191,7 +191,7 @@ class _ServiceSelectionCard extends StatelessWidget {
 class _MenuCategoryCarousel extends StatefulWidget {
   final String searchQuery;
 
-  const _MenuCategoryCarousel({super.key, this.searchQuery = ''});
+  const _MenuCategoryCarousel({this.searchQuery = ''});
 
   @override
   State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();

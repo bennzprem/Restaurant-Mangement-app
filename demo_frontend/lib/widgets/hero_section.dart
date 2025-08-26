@@ -57,7 +57,7 @@ class _HeroSectionState extends State<HeroSection> {
     final selected = modes[selectedIndex];
 
     // Heights
-    final double minHeight = 665;
+    const double minHeight = 665;
 
     return SizedBox(
       width: double.infinity,
@@ -185,7 +185,7 @@ class _HeroSectionState extends State<HeroSection> {
                   ),
                 ),
                 // EXPANDED FOR GREEN, no image here!
-                Expanded(flex: 5, child: SizedBox()),
+                const Expanded(flex: 5, child: SizedBox()),
                 // EXTREME RIGHT ARROW
                 Padding(
                   padding: const EdgeInsets.only(left: 12, right: 18),

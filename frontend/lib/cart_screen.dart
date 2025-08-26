@@ -63,9 +63,10 @@ class _CartScreenState extends State<CartScreen> {
 
       _razorpay.open(options);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
     }
   }
 
@@ -101,7 +102,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-    final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\₹');
+    final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '₹');
     final bool isTableMode = widget.tableSessionId != null;
 
     return Scaffold(
