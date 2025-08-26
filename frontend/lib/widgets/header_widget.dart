@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:restaurant_app/widgets/expanding_search_bar.dart';
 
 class HeaderWidget extends StatelessWidget {
-  const HeaderWidget({super.key});
+  final TextEditingController searchController;
+  final ValueChanged<bool> onSearchExpansionChanged;
+  final bool isSearchExpanded;
+
+  const HeaderWidget({
+    super.key,
+    required this.searchController,
+    required this.onSearchExpansionChanged,
+    required this.isSearchExpanded,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,31 +53,11 @@ class HeaderWidget extends StatelessWidget {
                 ),
               ),
               Spacer(),
-              Container(
-                width: 300, // Adjust width as needed
-                height: 48, // Adjust height to match button
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search...',
-                    prefixIcon: Icon(Icons.search, color: Colors.grey),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  ),
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                ),
+              ExpandingSearchBar(
+                controller: searchController,
+                onExpansionChanged: onSearchExpansionChanged,
               ),
-              const SizedBox(width: 14), // Space between search bar and signup button
+              const SizedBox(width: 14),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/signup');

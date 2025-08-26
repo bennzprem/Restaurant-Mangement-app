@@ -55,6 +55,7 @@ import 'book_table_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'takeaway_page.dart';
+import 'menu_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,6 +105,7 @@ class MyApp extends StatelessWidget {
           '/dine-in': (context) => const DineInPage(),
           '/takeaway': (context) => TakeawayPage(),
           '/booking-history': (context) => const BookingHistoryPage(),
+          '/menu': (context) => const MenuScreen(),
         },
       ),
     );

@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth_provider.dart';
-import 'book_table_page.dart';
+import 'dart:async';
+
+import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen.dart';
-import 'takeaway_page.dart';
-import 'theme.dart';
 import 'dine_in_page.dart';
-import 'admin_dashboard_page.dart';
+import 'takeaway_page.dart';
+
+import '../widgets/header_widget.dart';
+import '../widgets/hero_section.dart';
+import '../widgets/menu_section.dart';
+import '../widgets/about_section.dart';
+import '../widgets/testimonials_section.dart';
+import '../widgets/newsletter_section.dart';
+import '../widgets/footer_widget.dart';
+import '../widgets/navbar_widget.dart';
+
+import 'theme.dart'; // Your AppTheme
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +26,36 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Helper function to handle taps on the cards
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (_searchQuery != _searchController.text) {
+        setState(() {
+          _searchQuery = _searchController.text;
+        });
+      }
+    });
+  }
+
   void _handleNavigation(BuildContext context, String serviceType) {
     switch (serviceType) {
       case 'Delivery':
@@ -44,107 +83,54 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    final userName = user?.name;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ByteEat'),
-        actions: [
-          authProvider.isLoggedIn
-              ? TextButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/profile'),
-                  icon: const Icon(Icons.person, color: AppTheme.darkTextColor),
-                  label: const Text(
-                    'My Profile',
-                    style: TextStyle(color: AppTheme.darkTextColor),
-                  ),
-                )
-              : TextButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/login'),
-                  icon: const Icon(Icons.login, color: AppTheme.darkTextColor),
-                  label: const Text(
-                    'Login',
-                    style: TextStyle(color: AppTheme.darkTextColor),
-                  ),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                HeroSection(
+                  onOrderNow: () => _handleNavigation(context, 'Delivery'),
+                  onExplore: () => _handleNavigation(context, 'Dine-In'),
+                  onPickup: () => _handleNavigation(context, 'Takeaway'),
                 ),
-          const SizedBox(width: 10),
-        ],
-      ),
-      body: Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              authProvider.isLoggedIn && userName != null && userName.isNotEmpty
-                  ? 'Welcome, $userName!'
-                  : 'Welcome to Byteat!',
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'How would you like to order today?',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: ListView(
-                children: [
-                  // vvv THIS IS THE ONLY SECTION THAT HAS BEEN ADDED vvv
-                  // If the user is an admin, show the dashboard card
-                  if (authProvider.isAdmin) ...[
-                    _ServiceSelectionCard(
-                      title: 'Admin Dashboard',
-                      description: 'Manage users, items, and orders.',
-                      icon: Icons.dashboard_customize,
-                      onTap: () {
-                        // IMPORTANT: You will need to create this page.
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const AdminDashboardPage()));
-                        print(
-                            "Navigating to Admin Dashboard..."); // Placeholder
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
 
-                  _ServiceSelectionCard(
-                    title: 'Delivery',
-                    description:
-                        'Get your favorite food delivered to your door.',
-                    icon: Icons.delivery_dining,
-                    onTap: () => _handleNavigation(context, 'Delivery'),
-                  ),
-                  const SizedBox(height: 16),
-                  _ServiceSelectionCard(
-                    title: 'Dine-In',
-                    description:
-                        'Book a table and enjoy our restaurant ambiance.',
-                    icon: Icons.restaurant,
-                    onTap: () => _handleNavigation(context, 'Dine-In'),
-                  ),
-                  const SizedBox(height: 16),
-                  _ServiceSelectionCard(
-                    title: 'Takeaway',
-                    description:
-                        'Place an order online and pick it up yourself.',
-                    icon: Icons.shopping_bag,
-                    onTap: () => _handleNavigation(context, 'Takeaway'),
-                  ),
-                ],
-              ),
+                // Continuing the home_screen.dart sections
+                _MenuCategoryCarousel(searchQuery: _searchQuery),
+                AboutSection(),
+                TestimonialsSection(),
+                NewsletterSection(),
+                FooterWidget(),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Fixed header always visible
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: HeaderWidget(
+              searchController: _searchController,
+              onSearchExpansionChanged: (isExpanded) {
+                setState(() {
+                  _isSearching = isExpanded;
+                });
+              },
+              isSearchExpanded: _isSearching,
+            ),
+          ),
+
+          // Positioned login/profile button can be added if needed here,
+          // but the original home_page used AppBar for this - we can optionally add a floating or header widget for that separately if needed
+        ],
       ),
     );
   }
 }
 
-// A private helper widget for the selection cards
 class _ServiceSelectionCard extends StatelessWidget {
   final String title;
   final String description;
@@ -161,8 +147,8 @@ class _ServiceSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -170,7 +156,7 @@ class _ServiceSelectionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: AppTheme.primaryColor),
+              Icon(icon, size: 40, color: Color(0xFFDAE952)),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -178,20 +164,168 @@ class _ServiceSelectionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style:
+                          const TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              const Icon(Icons.arrow_forward_ios, color: Color(0xFFDAE952)),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MenuCategoryCarousel extends StatefulWidget {
+  final String searchQuery;
+
+  const _MenuCategoryCarousel({super.key, this.searchQuery = ''});
+
+  @override
+  State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();
+}
+
+class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
+  final List<String> categories = [
+    'Appetizers',
+    'Soups & Salads',
+    'Pizzas (11-inch)',
+    'Pasta',
+    'Sandwiches & Wraps',
+    'Main Course - Indian',
+    'Main Course - Global',
+    'Desserts',
+    'Beverages',
+  ];
+
+  final ScrollController _scrollController = ScrollController();
+
+  final Map<String, IconData> categoryIcons = {
+    'Appetizers': Icons.fastfood,
+    'Soup & Salad': Icons.ramen_dining,
+    'Pizza': Icons.local_pizza,
+    'Pasta': Icons.restaurant_menu,
+    'Sandwich & Wrap': Icons.lunch_dining,
+    'Maincourse - Indian': Icons.dinner_dining,
+    'Maincourse - Global': Icons.public,
+    'Dessert': Icons.icecream,
+    'Beverage': Icons.local_cafe,
+  };
+
+  void scrollLeft() {
+    _scrollController.animateTo(
+      _scrollController.offset - 300,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.ease,
+    );
+  }
+
+  void scrollRight() {
+    _scrollController.animateTo(
+      _scrollController.offset + 300,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.ease,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredCategories = categories
+        .where((category) =>
+            category.toLowerCase().contains(widget.searchQuery.toLowerCase()))
+        .toList();
+
+    return Container(
+      color: const Color(0xFFDAE952).withOpacity(0.08),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+      child: Column(
+        children: [
+          const Text(
+            'Menu Categories',
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_left, size: 32),
+                onPressed: scrollLeft,
+              ),
+              Expanded(
+                child: SizedBox(
+                  height: 200,
+                  child: ListView.separated(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filteredCategories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 20),
+                    itemBuilder: (context, index) {
+                      final name = filteredCategories[index];
+                      final icon = categoryIcons[name] ?? Icons.restaurant_menu;
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MenuScreen(initialCategory: name),
+                            ),
+                          );
+                        },
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 5,
+                          color: Colors.white,
+                          child: Container(
+                            width: 140,
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(icon, size: 36, color: Colors.black),
+                                const SizedBox(height: 16),
+                                Text(
+                                  name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                const Icon(Icons.arrow_forward,
+                                    color: Color(0xFFDAE952), size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_right, size: 32),
+                onPressed: scrollRight,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

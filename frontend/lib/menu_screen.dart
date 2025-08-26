@@ -10,12 +10,17 @@ import 'theme.dart';
 import 'cart_screen.dart';
 import 'favorites_screen.dart';
 import 'auth_provider.dart';
+import 'package:restaurant_app/widgets/expanding_search_bar.dart';
 
 class MenuScreen extends StatefulWidget {
   // Add this property
   final String? tableSessionId;
+  final String? initialCategory;
 
-  const MenuScreen({super.key, this.tableSessionId}); // Update constructor
+  const MenuScreen(
+      {super.key,
+      this.tableSessionId,
+      this.initialCategory}); // Update constructor
   //const MenuScreen({super.key});
   @override
   _MenuScreenState createState() => _MenuScreenState();
@@ -64,6 +69,28 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     _loadMenu();
+
+    // Listen for category argument
+    _menuFuture = _apiService.fetchMenu(
+      vegOnly: _isVegOnly,
+      veganOnly: _isVegan,
+      glutenFreeOnly: _isGlutenFree,
+      nutsFree: _isNutsFree,
+      searchQuery: _searchQuery,
+    );
+
+    _menuFuture!.then((menuCategories) {
+      if (widget.initialCategory != null) {
+        final index =
+            menuCategories.indexWhere((c) => c.name == widget.initialCategory);
+        if (index != -1) {
+          setState(() {
+            _selectedCategoryIndex = index;
+          });
+        }
+      }
+    });
+
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -124,22 +151,12 @@ class _MenuScreenState extends State<MenuScreen> {
             : null,
         title: isWide ? const Text('Our Menu') : null,
         actions: [
-          SizedBox(
-            width: 250,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search items...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: AppTheme.surfaceColor,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-            ),
+          ExpandingSearchBar(
+            controller: _searchController,
+            onExpansionChanged: (isExpanded) {
+              // Optionally set a state variable if you want to track expansion in menu_screen
+              // No change is needed for logical search functionality
+            },
           ),
           const SizedBox(width: 16),
           IconButton(

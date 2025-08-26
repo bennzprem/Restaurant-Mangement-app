@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
+ 
 class _MenuCategoryCarousel extends StatefulWidget {
   @override
   State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();
