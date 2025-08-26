@@ -1,42 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:ui';
-import 'package:restaurant_app/widgets/expanding_search_bar.dart';
+import '../theme_provider.dart';
 
-//updated
 class HeaderWidget extends StatelessWidget {
-  final TextEditingController searchController;
-  final ValueChanged<bool> onSearchExpansionChanged;
-  final bool isSearchExpanded;
-
-  const HeaderWidget({
-    super.key,
-    required this.searchController,
-    required this.onSearchExpansionChanged,
-    required this.isSearchExpanded,
-  });
+  const HeaderWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22), // glassmorphism
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.68),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              )
-            ],
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white.withOpacity(0.13),
-                width: 1.0,
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Container(
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode 
+                    ? Colors.grey.shade900.withOpacity(0.68)
+                    : Colors.white.withOpacity(0.68),
+                boxShadow: [
+                  BoxShadow(
+                    color: themeProvider.isDarkMode 
+                        ? Colors.black.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+                border: Border(
+                  bottom: BorderSide(
+                    color: themeProvider.isDarkMode 
+                        ? Colors.grey.shade700.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.13),
+                    width: 1.0,
+                  ),
+                ),
               ),
-            ),
-          ),
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
           child: Row(
             children: [
@@ -44,21 +43,52 @@ class HeaderWidget extends StatelessWidget {
               Icon(Icons.restaurant_menu_rounded,
                   color: Color(0xFFDAE952), size: 28),
               const SizedBox(width: 14),
-              const Text(
+              Text(
                 'Byte Eat',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.85,
-                  color: Colors.black,
+                  color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
               Spacer(),
-              ExpandingSearchBar(
-                controller: searchController,
-                onExpansionChanged: onSearchExpansionChanged,
+              // Theme Toggle Button
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode 
+                          ? Colors.grey.shade800 
+                          : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: const Color(0xFFDAE952),
+                        width: 2,
+                      ),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        themeProvider.toggleTheme();
+                      },
+                      icon: Icon(
+                        themeProvider.isDarkMode 
+                            ? Icons.light_mode 
+                            : Icons.dark_mode,
+                        color: const Color(0xFFDAE952),
+                        size: 20,
+                      ),
+                      style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: 14),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/signup');
@@ -79,6 +109,8 @@ class HeaderWidget extends StatelessWidget {
               ),
             ],
           ),
+        );
+          },
         ),
       ),
     );

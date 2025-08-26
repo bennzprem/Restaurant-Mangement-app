@@ -6,52 +6,45 @@ import 'api_service.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
-import 'theme.dart';
-import 'cart_screen.dart';
-import 'favorites_screen.dart';
-import 'auth_provider.dart';
-import 'package:restaurant_app/widgets/expanding_search_bar.dart';
 
-//updated
+import 'auth_provider.dart';
+import 'package:restaurant_app/widgets/header_widget.dart';
+import 'package:restaurant_app/widgets/navbar_widget.dart';
+
 class MenuScreen extends StatefulWidget {
-  // Add this property
   final String? tableSessionId;
   final String? initialCategory;
 
-  const MenuScreen(
-      {super.key,
+  const MenuScreen({
+    super.key,
       this.tableSessionId,
-      this.initialCategory}); // Update constructor
-  //const MenuScreen({super.key});
+    this.initialCategory,
+  });
+
   @override
   _MenuScreenState createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> {
+class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Future<List<MenuCategory>>? _menuFuture;
   int _selectedCategoryIndex = 0;
   bool _isVegOnly = false;
-  bool _isVegan = false; // <-- ADD THIS
-  bool _isGlutenFree = false; // <-- ADD THIS
-  bool _isNutsFree = false; // <-- ADD THIS
+  bool _isVegan = false;
+  bool _isGlutenFree = false;
+  bool _isNutsFree = false;
   String _searchQuery = '';
   Timer? _debounce;
+  bool _isSearching = false;
 
   final TextEditingController _searchController = TextEditingController();
-  // In class _MenuScreenState...
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ApiService _apiService = ApiService();
 
-  /*final Map<String, String> categoryIcons = {
-    'Together Combos': '🤝',
-    'Comfort Meals': '🍲',
-    'All-in-1-Meals': '🍱',
-    'Mini Meals': '🍛',
-    'Desi Box': '🥡',
-    'Dum Biryani Thali': '🥘',
-    'Main Course': '🍽️',
-  };*/
-  // In class _MenuScreenState...
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _slideAnimation;
 
   final Map<String, String> categoryIcons = {
     'Appetizers': '🍽️',
@@ -63,12 +56,42 @@ class _MenuScreenState extends State<MenuScreen> {
     'Main Course - Global': '🌍',
     'Desserts': '🍰',
     'Beverages': '🥤',
-    // You can add more mappings here if needed
   };
 
   @override
   void initState() {
     super.initState();
+    
+    // Initialize animation controllers
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    ));
+
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+
     _loadMenu();
 
     // Listen for category argument
@@ -82,8 +105,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
     _menuFuture!.then((menuCategories) {
       if (widget.initialCategory != null) {
-        final index =
-            menuCategories.indexWhere((c) => c.name == widget.initialCategory);
+        final index = menuCategories.indexWhere((c) => c.name == widget.initialCategory);
         if (index != -1) {
           setState(() {
             _selectedCategoryIndex = index;
@@ -100,6 +122,8 @@ class _MenuScreenState extends State<MenuScreen> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _debounce?.cancel();
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -119,9 +143,9 @@ class _MenuScreenState extends State<MenuScreen> {
     setState(() {
       _menuFuture = _apiService.fetchMenu(
         vegOnly: _isVegOnly,
-        veganOnly: _isVegan, // <-- ADD THIS
-        glutenFreeOnly: _isGlutenFree, // <-- ADD THIS
-        nutsFree: _isNutsFree, // <-- ADD THIS
+        veganOnly: _isVegan,
+        glutenFreeOnly: _isGlutenFree,
+        nutsFree: _isNutsFree,
         searchQuery: _searchQuery,
       );
       _selectedCategoryIndex = 0;
@@ -130,124 +154,36 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine the layout mode at the top level of the build method.
     const double wideLayoutThreshold = 800;
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isWide = screenWidth > wideLayoutThreshold;
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Colors.white,
+      appBar: null,
+      drawer: !isWide ? _buildDrawer() : null,
+      body: Stack(
+        children: [
+          // Main content
+          Column(
+            children: [
+              // Space for fixed header
+              const SizedBox(height: 120),
 
-      // The AppBar's logic remains the same and uses the 'isWide' variable.
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryLight,
-        elevation: 0,
-        leading: !isWide
-            ? IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Show Menu',
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              )
-            : null,
-        title: isWide ? const Text('Our Menu') : null,
-        actions: [
-          ExpandingSearchBar(
-            controller: _searchController,
-            onExpansionChanged: (isExpanded) {
-              // Optionally set a state variable if you want to track expansion in menu_screen
-              // No change is needed for logical search functionality
-            },
-          ),
-          const SizedBox(width: 16),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'More Filters',
-            onPressed: () => _showFilterDialog(context),
-          ),
-          const SizedBox(width: 20),
-          IconButton(
-            icon: const Icon(Icons.favorite_outline),
-            tooltip: 'Favorites',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const FavoritesScreen()),
-            ),
-          ),
-          Consumer<CartProvider>(
-            builder: (_, cart, ch) => Badge(
-              label: Text(
-                cart.items.values
-                    .fold(0, (sum, item) => sum + item.quantity)
-                    .toString(),
-              ),
-              isLabelVisible: cart.items.isNotEmpty,
-              child: ch,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.shopping_cart_outlined),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (context) =>
-                        CartScreen(tableSessionId: widget.tableSessionId)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
-      ),
-
-      // The drawer for narrow screens now gets its content from the FutureBuilder.
-      drawer: !isWide
-          ? FutureBuilder<List<MenuCategory>>(
-              future: _menuFuture,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData)
-                  return const SizedBox.shrink(); // Return empty if no data
-                final menuCategories = snapshot.data!;
-                return Container(
-                  width: 280,
-                  color: AppTheme.primaryLight,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(
-                      top: 40,
-                    ), // Extra padding for status bar
-                    itemCount: menuCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = menuCategories[index];
-                      return CategoryListItem(
-                        icon: categoryIcons[category.name] ?? '🍴',
-                        title: category.name,
-                        itemCount: category.items.length,
-                        isSelected: index == _selectedCategoryIndex,
-                        isExpanded: true,
-                        onTap: () {
-                          setState(() => _selectedCategoryIndex = index);
-                          Navigator.of(context).pop(); // Close drawer
-                        },
-                      );
-                    },
-                  ),
-                );
-              },
-            )
-          : null,
-
-      // The body contains the main content.
-      body: FutureBuilder<List<MenuCategory>>(
+              // Menu content
+              Expanded(
+                child: FutureBuilder<List<MenuCategory>>(
         future: _menuFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
-            );
+                      return _buildLoadingState();
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+                      return _buildErrorState(snapshot.error.toString());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text('No menu items found for your filter.'),
-            );
+                      return _buildEmptyState();
           }
 
           final menuCategories = snapshot.data!;
@@ -258,517 +194,532 @@ class _MenuScreenState extends State<MenuScreen> {
 
           return Row(
             children: [
-              // The side panel is only shown on wide screens.
-              if (isWide)
-                Container(
-                  width: 280,
-                  color: AppTheme.primaryLight,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 24),
-                    itemCount: menuCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = menuCategories[index];
-                      return CategoryListItem(
-                        icon: categoryIcons[category.name] ?? '🍴',
-                        title: category.name,
-                        itemCount: category.items.length,
-                        isSelected: index == _selectedCategoryIndex,
-                        isExpanded: true,
-                        onTap: () {
-                          setState(() => _selectedCategoryIndex = index);
-                        },
+                        // Sidebar for wide screens
+                        if (isWide) _buildSidebar(menuCategories),
+                        
+                        // Main menu content
+                        Expanded(
+                          child: _buildMenuContent(selectedCategory),
+                        ),
+                      ],
                       );
                     },
                   ),
                 ),
-              if (isWide)
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: Color(0xFFEEEEEE),
-                ),
+            ],
+          ),
 
-              // The menu item grid takes the remaining space.
-              Expanded(
+          // Fixed header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                      child: Text(
-                        selectedCategory.name,
-                        style: Theme.of(context).textTheme.displayLarge,
-                      ),
-                    ),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          const double cardWidth = 320;
-                          final int crossAxisCount =
-                              (constraints.maxWidth / cardWidth).floor().clamp(
-                                    1,
-                                    4,
-                                  );
-
-                          return GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 24,
-                              mainAxisSpacing: 24,
-                              mainAxisExtent: 340,
-                            ),
-                            itemCount: selectedCategory.items.length,
-                            itemBuilder: (context, index) {
-                              return MenuItemCard(
-                                item: selectedCategory.items[index],
-                              );
-                            },
-                          );
-                        },
-                      ),
+                HeaderWidget(),
+                NavbarWidget(
+                  searchController: _searchController,
+                  onSearchExpansionChanged: (isExpanded) {
+                    setState(() {
+                      _isSearching = isExpanded;
+                    });
+                  },
+                  isSearchExpanded: _isSearching,
+                  onFilterPressed: () => _showFilterDialog(context),
+                  tableSessionId: widget.tableSessionId,
                     ),
                   ],
                 ),
               ),
             ],
-          );
-        },
       ),
     );
   }
-  // In class _MenuScreenState...
 
-  // In class _MenuScreenState...
-
-  void _showFilterDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        // Use a StatefulWidget to manage the state within the dialog
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Dietary Filters'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+  Widget _buildDrawer() {
+    return FutureBuilder<List<MenuCategory>>(
+      future: _menuFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        
+        final menuCategories = snapshot.data!;
+        return Drawer(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFDAE952), Color(0xFFF3F8C5)],
+              ),
+            ),
+            child: Column(
                 children: [
-                  // ADDED THE VEGETARIAN OPTION HERE
-                  SwitchListTile(
-                    title: const Text('Vegetarian'),
-                    value: _isVegOnly,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        _isVegOnly = value;
-                      });
-                    },
-                  ),
-                  // The other filters remain below
-                  SwitchListTile(
-                    title: const Text('Vegan'),
-                    value: _isVegan,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        _isVegan = value;
-                      });
-                    },
-                  ),
-                  SwitchListTile(
-                    title: const Text('Gluten-Free'),
-                    value: _isGlutenFree,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        _isGlutenFree = value;
-                      });
-                    },
-                  ),
-                  SwitchListTile(
-                    title: const Text('Nuts-Free'),
-                    value: _isNutsFree,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        _isNutsFree = value;
-                      });
-                    },
+                // Drawer header
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.restaurant_menu,
+                          color: Color(0xFFDAE952),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Menu Categories',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Apply the filters and reload the menu
-                    _loadMenu();
+                
+                // Categories list
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: menuCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = menuCategories[index];
+                      return AnimatedBuilder(
+                        animation: _slideController,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(0, 30 * (1 - _slideAnimation.value) * (index + 1)),
+                            child: Opacity(
+                              opacity: _slideAnimation.value,
+                              child: _buildCategoryItem(
+                                category,
+                                index,
+                                isSelected: index == _selectedCategoryIndex,
+                                onTap: () {
+                                  setState(() => _selectedCategoryIndex = index);
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Apply'),
                 ),
-              ],
+                            ),
             );
           },
         );
       },
-    );
-  }
-}
-
-class CategoryListItem extends StatelessWidget {
-  final String icon;
-  final String title;
-  final int itemCount;
-  final bool isSelected;
-  final bool isExpanded;
-  final VoidCallback onTap;
-
-  const CategoryListItem({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.itemCount,
-    required this.isSelected,
-    required this.isExpanded,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // The main container and gesture detector stay the same.
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal:
-              isExpanded ? 20 : 8, // Less horizontal padding when narrow
-          vertical: 16,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: isSelected ? AppTheme.accentColor : Colors.transparent,
-              width: 4,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        // The child now changes based on the 'isExpanded' flag
-        child: isExpanded ? _buildWideLayout(context) : _buildNarrowLayout(),
+        );
+      },
+    );
+  }
+
+
+
+  Widget _buildSidebar(List<MenuCategory> menuCategories) {
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(left: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
-
-  // This is the icon-only layout for narrow screens.
-  Widget _buildNarrowLayout() {
-    return Tooltip(
-      message: title, // Show the full name on hover
-      waitDuration: const Duration(milliseconds: 300),
-      child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
-    );
-  }
-
-  // This is your original layout, now extracted into a method.
-  Widget _buildWideLayout(BuildContext context) {
-    return Row(
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 16),
+      child: Column(
+        children: [
+                    // Sidebar header
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(top: 24), // Add top margin to move down
+            decoration: BoxDecoration(
+              color: const Color(0xFFDAE952),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+            children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.category,
+                    color: Color(0xFFDAE952),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Text(
+                  'Categories',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Categories list
         Expanded(
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: menuCategories.length,
+              itemBuilder: (context, index) {
+                final category = menuCategories[index];
+                return AnimatedBuilder(
+                  animation: _slideController,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - _slideAnimation.value) * (index + 1)),
+                      child: Opacity(
+                        opacity: _slideAnimation.value,
+                        child: _buildCategoryItem(
+                          category,
+                          index,
+                          isSelected: index == _selectedCategoryIndex,
+                          onTap: () => setState(() => _selectedCategoryIndex = index),
+                        ),
+                      ),
+                    );
+                  },
+                    );
+                  },
                 ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+              ),
+            ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          itemCount.toString(),
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
     );
   }
-}
 
-// THIS IS THE FULLY CORRECTED WIDGET THAT FIXES THE CRASH
-class MenuItemCard extends StatelessWidget {
-  final MenuItem item;
-  const MenuItemCard({super.key, required this.item});
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Container(
+    Widget _buildCategoryItem(MenuCategory category, int index, {
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(bottom: 8),
+      transform: Matrix4.identity()..scale(isSelected ? 1.02 : 1.0),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        color: isSelected ? const Color(0xFFDAE952) : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: isSelected ? null : Border.all(color: Colors.grey.shade200, width: 1.5),
+        boxShadow: isSelected ? [
+          BoxShadow(
+            color: const Color(0xFFDAE952).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ] : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: isSelected ? [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ] : null,
+                  ),
+                  child: Text(
+                    categoryIcons[category.name] ?? '🍴',
+                    style: TextStyle(
+                      fontSize: isSelected ? 22 : 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 300),
+                        style: TextStyle(
+                          fontSize: isSelected ? 16 : 14,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
+                        child: Text(category.name),
+                      ),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 300),
+                        style: TextStyle(
+                          fontSize: isSelected ? 11 : 10,
+                          color: isSelected ? Colors.white70 : Colors.grey.shade600,
+                        ),
+                        child: Text('${category.items.length} items'),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuContent(MenuCategory selectedCategory) {
+    return Container(
+      margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: Image.network(
-                  item.imageUrl,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.broken_image,
-                    size: 150,
-                    color: Colors.grey,
-                  ),
-                ),
+                    // Category header
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDAE952),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Consumer<FavoritesProvider>(
-                  builder: (context, favoritesProvider, child) {
-                    final isFavorited = favoritesProvider.isFavorite(item.id);
-                    return CircleAvatar(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      radius: 18,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        iconSize: 20,
-                        icon: Icon(
-                          isFavorited ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorited ? Colors.redAccent : Colors.white,
-                        ),
-                        onPressed: () => favoritesProvider.toggleFavorite(item),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          // THE BUG WAS HERE: An 'Expanded' widget was wrongfully placed here.
-          // It has now been removed.
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '₹ ${item.price.toStringAsFixed(0)}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displayLarge?.copyWith(fontSize: 18),
-                    ),
-                    Consumer<CartProvider>(
-                      builder: (context, cart, child) {
-                        final quantity = cart.getItemQuantity(item.id);
-                        return quantity == 0
-                            ? ElevatedButton(
-                                onPressed: () => cart.addItem(item),
-                                child: const Text('ADD +'),
-                              )
-                            : QuantityCounter(item: item);
-                      },
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFDAE952).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
+            ),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    categoryIcons[selectedCategory.name] ?? '🍴',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 400),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                        child: Text(selectedCategory.name),
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 400),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          letterSpacing: 0.3,
+                        ),
+                        child: Text('${selectedCategory.items.length} delicious items'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Menu items grid
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const double cardWidth = 300;
+                final int crossAxisCount = (constraints.maxWidth / cardWidth).floor().clamp(1, 4);
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(20),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    mainAxisExtent: 300,
+                  ),
+                  itemCount: selectedCategory.items.length,
+                  itemBuilder: (context, index) {
+                    return AnimatedBuilder(
+                      animation: _fadeController,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _fadeAnimation.value,
+                          child: Opacity(
+                            opacity: _fadeAnimation.value,
+                            child: _buildMenuItemCard(selectedCategory.items[index]),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
       ),
     );
-  }*/
-  // In class MenuItemCard...
+  }
 
-  // In class MenuItemCard...
-
-  /*@override
-  Widget build(BuildContext context) {
+  Widget _buildMenuItemCard(MenuItem item) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize
-            .min, // <-- This allows the card to shrink to fit its content
         children: [
+          // Image section
           Stack(
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
-                child: Image.network(
-                  item.imageUrl,
-                  height:
-                      160, // <-- INCREASE THIS VALUE TO MAKE THE IMAGE BIGGER
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.broken_image,
-                    size: 160,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Consumer<FavoritesProvider>(
-                  builder: (context, favoritesProvider, child) {
-                    final isFavorited = favoritesProvider.isFavorite(item.id);
-                    return CircleAvatar(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      radius: 18,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        iconSize: 20,
-                        icon: Icon(
-                          isFavorited ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorited ? Colors.redAccent : Colors.white,
-                        ),
-                        onPressed: () => favoritesProvider.toggleFavorite(item),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: 3, // <-- ALLOW MORE LINES FOR DESCRIPTION IF NEEDED
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '₹ ${item.price.toStringAsFixed(0)}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displayLarge?.copyWith(fontSize: 18),
-                    ),
-                    Consumer<CartProvider>(
-                      builder: (context, cart, child) {
-                        final quantity = cart.getItemQuantity(item.id);
-                        return quantity == 0
-                            ? ElevatedButton(
-                                onPressed: () => cart.addItem(item),
-                                child: const Text('ADD +'),
-                              )
-                            : QuantityCounter(item: item);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }this works without available feature*/
-  // In class MenuItemCard...
-
-  @override
-  Widget build(BuildContext context) {
-    // We no longer wrap the whole card. The filter is now applied inside.
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              // The ColorFiltered widget now wraps ONLY the image.
-              ColorFiltered(
+                child: ColorFiltered(
                 colorFilter: ColorFilter.mode(
                   item.isAvailable ? Colors.transparent : Colors.grey,
                   BlendMode.saturation,
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
                   ),
                   child: Image.network(
                     item.imageUrl,
-                    height: 150, // size of the image
+                    height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.broken_image,
-                      size: 120,
-                      color: Colors.grey,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 160,
+                      color: const Color(0xFFF3F8C5),
+                      child: const Icon(
+                        Icons.restaurant,
+                        size: 50,
+                        color: Color(0xFFDAE952),
                     ),
                   ),
                 ),
               ),
-              // The favorite icon is outside the ColorFiltered widget, so it keeps its color.
+              ),
+              
+              // Favorite button
               Positioned(
                 top: 8,
                 right: 8,
                 child: Consumer<FavoritesProvider>(
                   builder: (context, favoritesProvider, child) {
                     final isFavorited = favoritesProvider.isFavorite(item.id);
-                    return CircleAvatar(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      radius: 18,
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                       child: IconButton(
-                        padding: EdgeInsets.zero,
-                        iconSize: 20,
+                        padding: const EdgeInsets.all(8),
+                        iconSize: 18,
                         icon: Icon(
                           isFavorited ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorited ? Colors.redAccent : Colors.white,
+                          color: isFavorited ? Colors.red : Colors.grey.shade600,
                         ),
-
-                        // Inside MenuItemCard's build method, in the favorite IconButton...
                         onPressed: () {
-                          // Check for login status before toggling favorite
                           final authProvider = Provider.of<AuthProvider>(
                             context,
                             listen: false,
@@ -787,132 +738,525 @@ class MenuItemCard extends StatelessWidget {
                   },
                 ),
               ),
+
+              // Availability badge
+              if (!item.isAvailable)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Unavailable',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ),
+              ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
+
+          // Content section
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                  // Title
                 Text(
                   item.name,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                  
                 const SizedBox(height: 4),
-                Text(
+                  
+                  // Description
+                  Expanded(
+                    child: Text(
                   item.description,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        height: 1.3,
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Price and action
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // THIS 'EXPANDED' WIDGET IS THE FIX
-                    Expanded(
-                      child: Text(
-                        '₹ ${item.price.toStringAsFixed(0)}',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.displayLarge?.copyWith(fontSize: 18),
+                      // Price
+                      Text(
+                        '₹${item.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFDAE952),
+                        ),
                       ),
-                    ),
+                      
+                      // Action button
                     Consumer<CartProvider>(
                       builder: (context, cart, child) {
-                        // THIS IS THE FIX: Check for availability first.
                         if (!item.isAvailable) {
-                          return const Chip(
-                            label: Text('Unavailable'),
-                            backgroundColor: Colors.grey,
-                            labelStyle: TextStyle(
-                              color: Colors.white,
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Unavailable',
+                                style: TextStyle(
+                                  color: Colors.grey,
                               fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                             ),
                           );
                         }
 
-                        // If the item is available, show the button or counter.
                         final quantity = cart.getItemQuantity(item.id);
                         return quantity == 0
                             ? ElevatedButton(
                                 onPressed: () => cart.addItem(item),
-                                child: const Text('ADD +'),
-                              )
-                            : QuantityCounter(item: item);
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDAE952),
+                                    foregroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text(
+                                    'Add',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              : _buildQuantityCounter(item);
                       },
                     ),
                   ],
                 ),
               ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-// WIDGET FOR THE - 1 + COUNTER (No Changes)
-class QuantityCounter extends StatelessWidget {
-  const QuantityCounter({super.key, required this.item});
-  final MenuItem item;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildQuantityCounter(MenuItem item) {
     final cart = Provider.of<CartProvider>(context);
     final quantity = cart.getItemQuantity(item.id);
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        color: const Color(0xFFDAE952).withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFDAE952)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.remove, size: 16),
+            icon: const Icon(Icons.remove, size: 16, color: Color(0xFFDAE952)),
             onPressed: () => cart.removeSingleItem(item.id),
-            splashRadius: 20,
+            splashRadius: 16,
             constraints: const BoxConstraints(),
           ),
-          Text(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
             quantity.toString(),
-            style: Theme.of(context).textTheme.bodyLarge,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.add, size: 16),
+            icon: const Icon(Icons.add, size: 16, color: Color(0xFFDAE952)),
             onPressed: () => cart.addItem(item),
-            splashRadius: 20,
+            splashRadius: 16,
             constraints: const BoxConstraints(),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDAE952),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Loading delicious menu...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error: $error',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_off,
+              size: 48,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No menu items found for your filter.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
+  void _showFilterDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDAE952),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.filter_list,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Dietary Filters',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildFilterTile(
+                      title: 'Vegetarian',
+                      subtitle: 'Show only vegetarian dishes',
+                      icon: Icons.eco,
+                      value: _isVegOnly,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _isVegOnly = value;
+                        });
+                      },
+                    ),
+                    _buildFilterTile(
+                      title: 'Vegan',
+                      subtitle: 'Show only vegan dishes',
+                      icon: Icons.spa,
+                      value: _isVegan,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _isVegan = value;
+                        });
+                      },
+                    ),
+                    _buildFilterTile(
+                      title: 'Gluten-Free',
+                      subtitle: 'Show only gluten-free dishes',
+                      icon: Icons.grain,
+                      value: _isGlutenFree,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _isGlutenFree = value;
+                        });
+                      },
+                    ),
+                    _buildFilterTile(
+                      title: 'Nuts-Free',
+                      subtitle: 'Show only nuts-free dishes',
+                      icon: Icons.no_food,
+                      value: _isNutsFree,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _isNutsFree = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                  ),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _loadMenu();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDAE952),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Apply Filters', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: value ? const Color(0xFFDAE952).withOpacity(0.1) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: value ? const Color(0xFFDAE952) : Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: SwitchListTile(
+        title: Row(
+          children: [
+            Icon(
+              icon,
+              color: value ? const Color(0xFFDAE952) : Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: value ? Colors.black87 : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(left: 32),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              color: value ? Colors.black87 : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        value: value,
+        onChanged: onChanged,
+        activeColor: const Color(0xFFDAE952),
+        activeTrackColor: const Color(0xFFDAE952).withOpacity(0.5),
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF9EAD3A); // Darker green for the toggle dot
+          }
+          return Colors.grey.shade400; // Default grey for untoggled state
+        }),
+      ),
+    );
+  }
 }
-// Add this function at the bottom of lib/menu_screen.dart
 
 void showLoginPrompt(BuildContext context) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Login Required'),
-      content: const Text('You need to be logged in to perform this action.'),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDAE952),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.login,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Login Required',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+      content: const Text(
+        'You need to be logged in to add items to favorites.',
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.grey,
+        ),
+      ),
       actions: <Widget>[
         TextButton(
-          child: const Text('Cancel'),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
+          ),
           onPressed: () => Navigator.of(ctx).pop(),
         ),
         ElevatedButton(
-          child: const Text('Login'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFDAE952),
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          child: const Text(
+            'Login',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           onPressed: () {
-            Navigator.of(ctx).pop(); // Close the dialog
-            Navigator.pushNamed(context, '/login'); // Go to login page
+            Navigator.of(ctx).pop();
+            Navigator.pushNamed(context, '/login');
           },
         ),
       ],
