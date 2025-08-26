@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:html' as html;
-// The video_player import is no longer needed.
-// import 'package:video_player/video_player.dart';
 
 import 'phone-login_page.dart';
 
@@ -23,56 +21,95 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _rememberMe = false;
 
   // Animation Controllers
   late AnimationController _formAnimationController;
+  late AnimationController _logoAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _logoScaleAnimation;
+  late Animation<double> _logoRotateAnimation;
+  late AnimationController _visualAnimationController;
+  late Animation<double> _sunRiseAnimation;
+  late Animation<double> _cloudDriftAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Controller for the form entrance animation
+    // Form entrance animation
     _formAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
+    // Logo animation
+    _logoAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _formAnimationController,
         curve: Curves.easeInOut,
       ),
     );
+
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.8), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _formAnimationController,
         curve: Curves.easeOutCubic,
       ),
     );
-    _formAnimationController.forward();
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // We pre-cache the image for better performance.
-    precacheImage(
-      const AssetImage('assets/images/food_background.jpg'),
-      context,
+    _logoScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.elasticOut,
+      ),
     );
+
+    _logoRotateAnimation = Tween<double>(begin: -0.1, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    // Visual (sun + clouds) animation
+    _visualAnimationController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat();
+    _sunRiseAnimation = Tween<double>(begin: 60, end: 0).animate(
+      CurvedAnimation(
+          parent: _visualAnimationController, curve: Curves.easeInOutSine),
+    );
+    _cloudDriftAnimation = Tween<double>(begin: -40, end: 40).animate(
+      CurvedAnimation(parent: _visualAnimationController, curve: Curves.linear),
+    );
+
+    // Start animations
+    _logoAnimationController.forward();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _formAnimationController.forward();
+    });
   }
 
   @override
   void dispose() {
     _formAnimationController.dispose();
+    _logoAnimationController.dispose();
+    _visualAnimationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // --- Core Authentication Logic (Unchanged) ---
+  // Core Authentication Logic (Unchanged)
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -101,7 +138,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 backgroundColor: Colors.red.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 margin: const EdgeInsets.all(16),
               ),
@@ -110,9 +147,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -130,35 +167,314 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $e')),
+        );
       }
     }
   }
 
-  // --- BUILD METHOD REVERTED TO SHOW BACKGROUND IMAGE ---
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
+    return ScrollConfiguration(
+      behavior: const ScrollBehavior().copyWith(scrollbars: false),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF212529)),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+          ),
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF8F9FA), // Light white
+                Color(0xFFE9ECEF), // Very light gray
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 900) {
+                  // Desktop layout
+                  return _buildDesktopLayout();
+                } else {
+                  // Mobile layout
+                  return _buildMobileLayout();
+                }
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 640),
+        child: Material(
+          elevation: 24,
+          shadowColor: Colors.black12,
+          borderRadius: BorderRadius.circular(24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Row(
+              children: [
+                // Left side - Form on light background
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    color: const Color(0xFFF7F8F9),
+                    child: _buildFormSection(),
+                  ),
+                ),
+                // Right side - Visual
+                Expanded(
+                  flex: 1,
+                  child: _buildVisualSection(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      child: Column(
         children: [
-          // Layer 1: Background Image
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/food_background.jpg'),
-                fit: BoxFit.cover,
+          const SizedBox(height: 40),
+          _buildLogoSection(),
+          const SizedBox(height: 40),
+          _buildFormSection(),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoSection() {
+    return AnimatedBuilder(
+      animation: _logoAnimationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _logoScaleAnimation.value,
+          child: Transform.rotate(
+            angle: _logoRotateAnimation.value,
+            child: Column(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB8C96C), // ByteEat lime green
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFB8C96C).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.restaurant,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'ByteEat',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF212529), // Dark text
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Welcome back to your food journey',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFormSection() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: _buildLoginFormCard(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisualSection() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF204C3A), Color(0xFF0E3327)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Support text top-right
+          Positioned(
+            top: 24,
+            right: 24,
+            child: Row(
+              children: const [
+                Icon(Icons.headset_mic, color: Colors.white70, size: 18),
+                SizedBox(width: 8),
+                Text('Support',
+                    style: TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          // Rising sun
+          AnimatedBuilder(
+            animation: _visualAnimationController,
+            builder: (context, _) {
+              return Positioned(
+                top: 80 + _sunRiseAnimation.value,
+                left: 80,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                        colors: [Color(0xFFFFF59D), Color(0x00FFF59D)]),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Floating clouds
+          AnimatedBuilder(
+            animation: _visualAnimationController,
+            builder: (context, _) {
+              return Stack(children: [
+                _cloud(x: 120 + _cloudDriftAnimation.value, y: 140, scale: 1.0),
+                _cloud(x: 260 - _cloudDriftAnimation.value, y: 90, scale: 0.8),
+              ]);
+            },
+          ),
+          // Food card mock
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 40),
+              width: 420,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white24, width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 160,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16)),
+                      image: const DecorationImage(
+                        image: AssetImage('assets/images/food_background.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Reach food goals faster',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Order breakfast with no hassle. Save time and enjoy mouthwatering meals.',
+                          style:
+                              TextStyle(color: Colors.white.withOpacity(0.9)),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white54),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24)),
+                            ),
+                            child: const Text('Learn more'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          // Layer 2: Dark Overlay
-          Container(color: Colors.black.withOpacity(0.4)),
-          // Layer 3: Login Form
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: _buildAnimatedFormCard(),
+          // Section title bottom
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 40.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Introducing new features',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Discover smart ordering and faster checkouts to start your morning right.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -166,30 +482,29 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAnimatedFormCard() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: _buildLoginFormCard(),
-      ),
-    );
-  }
-
-  // --- UI WIDGETS REVERTED TO DARK THEME ---
-
   Widget _buildLoginFormCard() {
+    final bool compact = MediaQuery.of(context).size.height < 700;
+    final double cardPadding = compact ? 24.0 : 40.0;
+    final double titleSize = compact ? 28.0 : 32.0;
+    final double gapLarge = compact ? 24.0 : 40.0;
+    final double gapMed = compact ? 16.0 : 24.0;
+    final double gapSmall = compact ? 8.0 : 12.0;
     return Container(
-      constraints: const BoxConstraints(maxWidth: 400),
-      padding: const EdgeInsets.all(32.0),
+      constraints: const BoxConstraints(maxWidth: 450),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.75), // Translucent black background
-        borderRadius: BorderRadius.circular(16.0),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 25,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -197,31 +512,33 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Welcome Back',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: titleSize,
               fontWeight: FontWeight.bold,
-              color: Colors.white, // Light text for dark background
+              color: const Color(0xFF212529),
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: gapSmall),
           Text(
-            'Sign in to continue to your account.',
+            'Sign in to continue to your account',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[300], // Light grey text
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: gapLarge),
           _buildFormFields(),
-          const SizedBox(height: 24),
+          SizedBox(height: gapMed),
           _buildLoginButton(),
-          const SizedBox(height: 24),
+          SizedBox(height: gapMed),
           _buildDivider(),
-          const SizedBox(height: 24),
+          SizedBox(height: gapMed),
           _buildSocialButtons(),
-          const SizedBox(height: 32),
+          SizedBox(height: compact ? 20 : 32),
           _buildSignUpLink(),
         ],
       ),
@@ -233,40 +550,26 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       key: _formKey,
       child: Column(
         children: [
-          TextFormField(
+          _buildInputField(
             controller: _emailController,
+            labelText: 'Email Address',
+            hintText: 'Enter your email',
+            prefixIcon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            style: const TextStyle(color: Colors.white),
-            decoration: _modernInputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[400]),
-            ),
             validator: (value) {
               if (value == null || value.isEmpty || !value.contains('@')) {
-                return 'Please enter a valid email';
+                return 'Please enter a valid email address';
               }
               return null;
             },
           ),
-          const SizedBox(height: 20),
-          TextFormField(
+          const SizedBox(height: 24),
+          _buildInputField(
             controller: _passwordController,
-            obscureText: !_isPasswordVisible,
-            style: const TextStyle(color: Colors.white),
-            decoration: _modernInputDecoration(
-              labelText: 'Password',
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isPasswordVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: Colors.grey[400],
-                ),
-                onPressed: () =>
-                    setState(() => _isPasswordVisible = !_isPasswordVisible),
-              ),
-            ),
+            labelText: 'Password',
+            hintText: 'Enter your password',
+            prefixIcon: Icons.lock_outline,
+            isPassword: true,
             validator: (value) {
               if (value == null || value.length < 6) {
                 return 'Password must be at least 6 characters';
@@ -274,63 +577,146 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               return null;
             },
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Checkbox(
+                value: _rememberMe,
+                onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4)),
+              ),
+              const Text('Remember me',
+                  style: TextStyle(
+                      color: Color(0xFF495057), fontWeight: FontWeight.w600)),
+              const Spacer(),
+              TextButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/forget_password_page'),
+                child: const Text('Forgot Password?',
+                    style: TextStyle(color: Color(0xFF495057))),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  InputDecoration _modernInputDecoration({
+  Widget _buildInputField({
+    required TextEditingController controller,
     required String labelText,
-    Widget? prefixIcon,
-    Widget? suffixIcon,
+    required String hintText,
+    required IconData prefixIcon,
+    bool isPassword = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
-    return InputDecoration(
-      labelText: labelText,
-      labelStyle: TextStyle(color: Colors.grey[400]),
-      prefixIcon: prefixIcon,
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.1),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 16.0,
-        horizontal: 16.0,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: const BorderSide(color: Color(0xFFB8C96C), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: Colors.red[300]!, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: Colors.red[300]!, width: 2),
-      ),
-      errorStyle: TextStyle(color: Colors.red[300]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          labelText,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF495057),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword && !_isPasswordVisible,
+          keyboardType: keyboardType,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF212529),
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontWeight: FontWeight.w400,
+            ),
+            prefixIcon: Icon(
+              prefixIcon,
+              color: Colors.grey[500],
+              size: 22,
+            ),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: Colors.grey[500],
+                      size: 22,
+                    ),
+                    onPressed: () => setState(
+                        () => _isPasswordVisible = !_isPasswordVisible),
+                  )
+                : null,
+            filled: true,
+            fillColor: const Color(0xFFF8F9FA),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 18.0,
+              horizontal: 20.0,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(
+                color: Color(0xFFB8C96C),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(
+                color: Colors.red[300]!,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(
+                color: Colors.red[300]!,
+                width: 2,
+              ),
+            ),
+            errorStyle: TextStyle(
+              color: Colors.red[400],
+              fontSize: 13,
+            ),
+          ),
+          validator: validator,
+        ),
+      ],
     );
   }
 
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 56,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD4E49C),
-          foregroundColor: Colors.black87,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          elevation: 2,
-          shadowColor: const Color(0xFFD4E49C).withOpacity(0.5),
+          backgroundColor: const Color(0xFF1E3C2F),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+          shadowColor: Colors.black26,
         ),
         child: _isLoading
             ? const SizedBox(
@@ -338,12 +724,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 width: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : const Text(
                 'Sign In',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
       ),
     );
@@ -352,12 +742,29 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.grey[700])),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('OR', style: TextStyle(color: Colors.grey[400])),
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
         ),
-        Expanded(child: Divider(color: Colors.grey[700])),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: Colors.grey[300],
+            thickness: 1,
+          ),
+        ),
       ],
     );
   }
@@ -365,42 +772,97 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildSocialButtons() {
     return Column(
       children: [
-        OutlinedButton.icon(
+        _buildSocialButton(
           onPressed: _isLoading ? null : _signInWithGoogle,
-          style: _socialButtonStyle(),
-          icon: Icon(Icons.g_mobiledata_outlined, color: Colors.white),
-          label: const Text(
-            'Sign in with Google',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white),
-          ),
+          icon: Icons.g_mobiledata_outlined,
+          label: 'Sign in with Google',
+          backgroundColor: Colors.white,
+          textColor: const Color(0xFF212529),
+          borderColor: Colors.grey[300]!,
         ),
         const SizedBox(height: 16),
-        OutlinedButton.icon(
+        _buildSocialButton(
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const PhoneLoginPage()),
             );
           },
-          style: _socialButtonStyle(),
-          icon: Icon(Icons.phone_android_outlined, color: Colors.white),
-          label: const Text(
-            ' Login with Phone',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white),
-          ),
+          icon: Icons.phone_android_outlined,
+          label: 'Login with Phone',
+          backgroundColor: const Color(0xFFF8F9FA),
+          textColor: const Color(0xFF212529),
+          borderColor: Colors.grey[300]!,
         ),
       ],
     );
   }
 
-  ButtonStyle _socialButtonStyle() {
-    return OutlinedButton.styleFrom(
-      minimumSize: const Size(double.infinity, 50),
-      backgroundColor: Colors.white.withOpacity(0.1),
-      side: BorderSide(color: Colors.grey[700]!),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  Widget _buildSocialButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          side: BorderSide(color: borderColor, width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 0,
+        ),
+        icon: Icon(icon, color: textColor, size: 24),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Simple cloud painter
+  Widget _cloud({required double x, required double y, required double scale}) {
+    return Positioned(
+      left: x,
+      top: y,
+      child: Transform.scale(
+        scale: scale,
+        child: Opacity(
+          opacity: 0.85,
+          child: Row(
+            children: [
+              _cloudCircle(34),
+              const SizedBox(width: 6),
+              _cloudCircle(26),
+              const SizedBox(width: 6),
+              _cloudCircle(20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cloudCircle(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(100),
+      ),
     );
   }
 
@@ -409,13 +871,17 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: TextStyle(color: Colors.grey[300], fontSize: 14),
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
           children: <TextSpan>[
             const TextSpan(text: "Don't have an account? "),
             TextSpan(
               text: 'Sign Up',
               style: const TextStyle(
-                color: Color(0xFFD4E49C), // Accent color
+                color: Color(0xFFB8C96C), // ByteEat lime green
                 fontWeight: FontWeight.bold,
               ),
               recognizer: TapGestureRecognizer()

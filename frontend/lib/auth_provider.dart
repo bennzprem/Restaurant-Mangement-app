@@ -15,6 +15,10 @@ class AuthProvider with ChangeNotifier {
 
   bool get isLoggedIn => _user != null;
   bool get isAdmin => _user?.role == 'admin';
+  bool get isManager => _user?.role == 'manager';
+  bool get isEmployee => _user?.role == 'employee';
+  bool get isDelivery => _user?.role == 'delivery';
+  bool get isKitchen => _user?.role == 'kitchen';
 
   AuthProvider() {
     _supabase.auth.onAuthStateChange.listen((data) {
