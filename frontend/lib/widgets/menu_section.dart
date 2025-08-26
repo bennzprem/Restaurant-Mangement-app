@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//updated
 class MenuSection extends StatelessWidget {
   const MenuSection({super.key});
 
@@ -9,26 +10,34 @@ class MenuSection extends StatelessWidget {
       MenuItem(
         name: 'Special Salad',
         price: '\$12',
-        image: 'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
-        description: 'Food is any substance consumed by an organism for nutritional support.',
+        image:
+            'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
+        description:
+            'Food is any substance consumed by an organism for nutritional support.',
       ),
       MenuItem(
         name: 'Russian Salad',
         price: '\$12',
-        image: 'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
-        description: 'Food is any substance consumed by an organism for nutritional support.',
+        image:
+            'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
+        description:
+            'Food is any substance consumed by an organism for nutritional support.',
       ),
       MenuItem(
         name: 'Asian Salad',
         price: '\$12',
-        image: 'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
-        description: 'Food is any substance consumed by an organism for nutritional support.',
+        image:
+            'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
+        description:
+            'Food is any substance consumed by an organism for nutritional support.',
       ),
       MenuItem(
         name: 'American Salad',
         price: '\$12',
-        image: 'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
-        description: 'Food is any substance consumed by an organism for nutritional support.',
+        image:
+            'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
+        description:
+            'Food is any substance consumed by an organism for nutritional support.',
       ),
     ];
 
@@ -73,15 +82,18 @@ class MenuSection extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 64),
-          
+
           // Menu Grid
           LayoutBuilder(
             builder: (context, constraints) {
-              int crossAxisCount = constraints.maxWidth > 1200 ? 4 : 
-                                 constraints.maxWidth > 800 ? 2 : 1;
-              
+              int crossAxisCount = constraints.maxWidth > 1200
+                  ? 4
+                  : constraints.maxWidth > 800
+                      ? 2
+                      : 1;
+
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -98,14 +110,15 @@ class MenuSection extends StatelessWidget {
               );
             },
           ),
-          
+
           const SizedBox(height: 64),
-          
+
           // Star ratings
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) => 
-              Container(
+            children: List.generate(
+              5,
+              (index) => Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 child: const Icon(
                   Icons.star,
@@ -186,7 +199,7 @@ class MenuItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Image
               Positioned(
                 top: 0,
@@ -206,7 +219,7 @@ class MenuItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Title
               Positioned(
                 bottom: 24,
@@ -224,7 +237,7 @@ class MenuItemCard extends StatelessWidget {
             ],
           ),
         ),
-        
+
         // Description
         const SizedBox(height: 24),
         Padding(

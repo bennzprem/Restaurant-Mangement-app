@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:restaurant_app/widgets/expanding_search_bar.dart';
 
+//updated
 class HeaderWidget extends StatelessWidget {
   final TextEditingController searchController;
   final ValueChanged<bool> onSearchExpansionChanged;

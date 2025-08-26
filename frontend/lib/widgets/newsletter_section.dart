@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//updated
 class NewsletterSection extends StatelessWidget {
   const NewsletterSection({super.key});
 
@@ -38,9 +39,9 @@ class NewsletterSection extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 64),
-              
+
               // Subscription Form
               Container(
                 constraints: const BoxConstraints(maxWidth: 800),
@@ -52,7 +53,7 @@ class NewsletterSection extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     bool isDesktop = constraints.maxWidth > 600;
-                    
+
                     if (isDesktop) {
                       return Row(
                         children: [
@@ -118,7 +119,8 @@ class NewsletterSection extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
                               ),
                               child: const Text(
                                 'Subscribe',
@@ -135,9 +137,9 @@ class NewsletterSection extends StatelessWidget {
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               // Decorative dots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

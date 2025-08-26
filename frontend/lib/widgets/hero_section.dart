@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'navbar_widget.dart';
 
+//updated
 class HeroSection extends StatefulWidget {
   final VoidCallback onOrderNow;
   final VoidCallback onExplore;

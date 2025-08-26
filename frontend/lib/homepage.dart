@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-
+//updated
 import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen.dart';
 import 'dine_in_page.dart';

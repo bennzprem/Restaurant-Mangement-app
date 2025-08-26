@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//updated
 class AboutSection extends StatelessWidget {
   const AboutSection({super.key});
 

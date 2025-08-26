@@ -12,6 +12,7 @@ import 'favorites_screen.dart';
 import 'auth_provider.dart';
 import 'package:restaurant_app/widgets/expanding_search_bar.dart';
 
+//updated
 class MenuScreen extends StatefulWidget {
   // Add this property
   final String? tableSessionId;

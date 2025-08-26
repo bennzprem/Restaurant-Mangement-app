@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//updated
 class FooterWidget extends StatelessWidget {
   const FooterWidget({super.key});
 
