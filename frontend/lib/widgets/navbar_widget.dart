@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../cart_provider.dart';
+import '../favorites_screen.dart';
+import '../cart_screen.dart';
 
-//updated
 class NavbarWidget extends StatefulWidget {
-  const NavbarWidget({super.key});
+  final TextEditingController? searchController;
+  final ValueChanged<bool>? onSearchExpansionChanged;
+  final bool? isSearchExpanded;
+  final VoidCallback? onFilterPressed;
+  final String? tableSessionId;
+
+  const NavbarWidget({
+    super.key,
+    this.searchController,
+    this.onSearchExpansionChanged,
+    this.isSearchExpanded,
+    this.onFilterPressed,
+    this.tableSessionId,
+  });
+
   @override
   State createState() => _NavbarWidgetState();
 }
@@ -11,6 +28,7 @@ class _NavbarWidgetState extends State<NavbarWidget> {
   int _activeIndex = 0;
   int _hoverIndex = -1;
   final List<String> _navItems = ['Home', 'Menu', 'About', 'Contact'];
+  bool _isSearchExpanded = false;
 
   @override
   void initState() {
@@ -66,60 +84,245 @@ class _NavbarWidgetState extends State<NavbarWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center, // Center in white part
-        children: List.generate(_navItems.length, (index) {
-          bool isActive = index == _activeIndex;
-          bool isHover = index == _hoverIndex;
-          return MouseRegion(
-            onEnter: (_) => setState(() => _hoverIndex = index),
-            onExit: (_) => setState(() => _hoverIndex = -1),
-            child: InkWell(
-              onTap: () => _onNavTap(index),
-              hoverColor: Colors.transparent,
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              //borderRadius: BorderRadius.circular(32),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                margin: const EdgeInsets.symmetric(horizontal: 14),
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Text(
-                      _navItems[index],
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight:
-                            isActive ? FontWeight.bold : FontWeight.w400,
-                        color: isActive
-                            ? const Color(0xFFDAE952)
-                            : isHover
-                                ? const Color(0xFFDAE952)
-                                : Colors.black87,
-                        letterSpacing: 1.3,
+        children: [
+          // Left side - Navigation items
+          Expanded(
+            child: Row(
+              children: List.generate(_navItems.length, (index) {
+                bool isActive = index == _activeIndex;
+                bool isHover = index == _hoverIndex;
+                return MouseRegion(
+                  onEnter: (_) => setState(() => _hoverIndex = index),
+                  onExit: (_) => setState(() => _hoverIndex = -1),
+                  child: InkWell(
+                    onTap: () => _onNavTap(index),
+                    hoverColor: Colors.transparent,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      margin: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Text(
+                            _navItems[index],
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: isActive ? FontWeight.bold : FontWeight.w400,
+                              color: isActive
+                                  ? const Color(0xFFDAE952)
+                                  : isHover
+                                      ? const Color(0xFFDAE952)
+                                      : Colors.black87,
+                              letterSpacing: 1.3,
+                            ),
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 210),
+                            height: 4,
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              color: (isActive || isHover)
+                                  ? const Color(0xFFDAE952)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            width: (isActive || isHover) ? 28 : 0,
+                          ),
+                        ],
                       ),
                     ),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 210),
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 4),
-                      decoration: BoxDecoration(
-                        color: (isActive || isHover)
-                            ? const Color(0xFFDAE952)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      width: (isActive || isHover) ? 28 : 0,
+                  ),
+                );
+              }),
+            ),
+          ),
+          
+          // Right side - Search, Filter, Favorites, Cart
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Expandable Search
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _isSearchExpanded ? 260 : 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
+                child: Row(
+                  children: [
+                    if (_isSearchExpanded) ...[
+                      Expanded(
+                        child: TextField(
+                          controller: widget.searchController,
+                          decoration: const InputDecoration(
+                            hintText: 'Search for dishes...',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _isSearchExpanded = false;
+                          });
+                          widget.onSearchExpansionChanged?.call(false);
+                        },
+                      ),
+                    ] else ...[
+                      IconButton(
+                        icon: Icon(
+                          Icons.search_rounded,
+                          size: 22,
+                          color: const Color(0xFFDAE952),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isSearchExpanded = true;
+                          });
+                          widget.onSearchExpansionChanged?.call(true);
+                        },
+                                              style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          );
-        }),
+              
+              const SizedBox(width: 12),
+              
+              // Filter button
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.filter_list_rounded,
+                    size: 22,
+                    color: const Color(0xFFDAE952),
+                  ),
+                  onPressed: widget.onFilterPressed,
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Favorites button
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.favorite_rounded,
+                    size: 22,
+                    color: const Color(0xFFDAE952),
+                  ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                  ),
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Cart button with badge
+              Consumer<CartProvider>(
+                builder: (_, cart, ch) => Badge(
+                  label: Text(
+                    cart.items.values.fold(0, (sum, item) => sum + item.quantity).toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  isLabelVisible: cart.items.isNotEmpty,
+                  backgroundColor: const Color(0xFFDAE952),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.shopping_cart_rounded,
+                        size: 22,
+                        color: const Color(0xFFDAE952),
+                      ),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => CartScreen(tableSessionId: widget.tableSessionId),
+                        ),
+                      ),
+                      style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -40,6 +40,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
+import 'theme_provider.dart';
 import 'homepage.dart';
 import 'loginpage.dart';
 import 'signuppage.dart';
@@ -77,6 +78,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (ctx) => AuthProvider()),
         ChangeNotifierProvider(create: (ctx) => CartProvider()),
+        ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
         // FavoritesProvider now depends on AuthProvider
         ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(
           create: (ctx) => FavoritesProvider(null),
@@ -84,10 +86,13 @@ class MyApp extends StatelessWidget {
               FavoritesProvider(authProvider),
         ),
       ],
-      child: MaterialApp(
-        title: 'Restaurant App',
-        debugShowCheckedModeBanner: false,
-        initialRoute: '/',
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Restaurant App',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.currentTheme,
+            initialRoute: '/',
         routes: {
           // CHANGED: '/' now points to AuthWrapper which handles redirects
           '/': (context) => const HomePage(),
@@ -104,6 +109,8 @@ class MyApp extends StatelessWidget {
           '/takeaway': (context) => TakeawayPage(),
           '/booking-history': (context) => const BookingHistoryPage(),
           '/menu': (context) => const MenuScreen(),
+        },
+      );
         },
       ),
     );

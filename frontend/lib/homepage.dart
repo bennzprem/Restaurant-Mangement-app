@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-//updated
+
 import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen.dart';
 import 'dine_in_page.dart';
@@ -26,36 +26,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  Timer? _debounce;
-  bool _isSearching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (_searchQuery != _searchController.text) {
-        setState(() {
-          _searchQuery = _searchController.text;
-        });
-      }
-    });
-  }
-
   void _handleNavigation(BuildContext context, String serviceType) {
     switch (serviceType) {
       case 'Delivery':
@@ -98,7 +68,7 @@ class _HomePageState extends State<HomePage> {
                 ),
 
                 // Continuing the home_screen.dart sections
-                _MenuCategoryCarousel(searchQuery: _searchQuery),
+                _MenuCategoryCarousel(),
                 AboutSection(),
                 TestimonialsSection(),
                 NewsletterSection(),
@@ -112,15 +82,7 @@ class _HomePageState extends State<HomePage> {
             top: 0,
             left: 0,
             right: 0,
-            child: HeaderWidget(
-              searchController: _searchController,
-              onSearchExpansionChanged: (isExpanded) {
-                setState(() {
-                  _isSearching = isExpanded;
-                });
-              },
-              isSearchExpanded: _isSearching,
-            ),
+            child: HeaderWidget(),
           ),
 
           // Positioned login/profile button can be added if needed here,
@@ -242,11 +204,6 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredCategories = categories
-        .where((category) =>
-            category.toLowerCase().contains(widget.searchQuery.toLowerCase()))
-        .toList();
-
     return Container(
       color: const Color(0xFFDAE952).withOpacity(0.08),
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
@@ -269,10 +226,10 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                   child: ListView.separated(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
-                    itemCount: filteredCategories.length,
+                    itemCount: categories.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 20),
                     itemBuilder: (context, index) {
-                      final name = filteredCategories[index];
+                      final name = categories[index];
                       final icon = categoryIcons[name] ?? Icons.restaurant_menu;
                       return GestureDetector(
                         onTap: () {
