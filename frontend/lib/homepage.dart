@@ -26,7 +26,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   void _handleNavigation(BuildContext context, String serviceType) {
     switch (serviceType) {
       case 'Delivery':
@@ -152,7 +151,9 @@ class _ServiceSelectionCard extends StatelessWidget {
 }
 
 class _MenuCategoryCarousel extends StatefulWidget {
-  const _MenuCategoryCarousel({super.key});
+  final String searchQuery;
+
+  const _MenuCategoryCarousel({this.searchQuery = ''});
 
   @override
   State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();

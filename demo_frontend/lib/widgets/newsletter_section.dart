@@ -7,7 +7,7 @@ class NewsletterSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 600,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         image: DecorationImage(
           image: NetworkImage(
             'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
@@ -38,9 +38,9 @@ class NewsletterSection extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 64),
-              
+
               // Subscription Form
               Container(
                 constraints: const BoxConstraints(maxWidth: 800),
@@ -52,13 +52,13 @@ class NewsletterSection extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     bool isDesktop = constraints.maxWidth > 600;
-                    
+
                     if (isDesktop) {
                       return Row(
                         children: [
-                          Expanded(
+                          const Expanded(
                             child: TextField(
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Type your email and get',
                                 border: InputBorder.none,
                                 hintStyle: TextStyle(
@@ -66,7 +66,7 @@ class NewsletterSection extends StatelessWidget {
                                   fontSize: 18,
                                 ),
                               ),
-                              style: const TextStyle(fontSize: 18),
+                              style: TextStyle(fontSize: 18),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -96,8 +96,8 @@ class NewsletterSection extends StatelessWidget {
                     } else {
                       return Column(
                         children: [
-                          TextField(
-                            decoration: const InputDecoration(
+                          const TextField(
+                            decoration: InputDecoration(
                               hintText: 'Type your email and get',
                               border: InputBorder.none,
                               hintStyle: TextStyle(
@@ -105,7 +105,7 @@ class NewsletterSection extends StatelessWidget {
                                 fontSize: 18,
                               ),
                             ),
-                            style: const TextStyle(fontSize: 18),
+                            style: TextStyle(fontSize: 18),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
@@ -118,7 +118,8 @@ class NewsletterSection extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
                               ),
                               child: const Text(
                                 'Subscribe',
@@ -135,9 +136,9 @@ class NewsletterSection extends StatelessWidget {
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               // Decorative dots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

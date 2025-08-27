@@ -29,8 +29,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final user = authProvider.user; // Get the user object
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-    if (image == null || user == null)
+    if (image == null || user == null) {
       return; // User canceled or is not logged in
+    }
 
     try {
       // CORRECTED: We now call ApiService and pass the userId and the image file

@@ -3,8 +3,6 @@ import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/contact_screen.dart';
-import 'screens/loginpage.dart';
-import 'screens/signuppage.dart';
 
 void main() {
   runApp(const MyApp());

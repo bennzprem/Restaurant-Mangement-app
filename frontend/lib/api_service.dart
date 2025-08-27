@@ -1,14 +1,9 @@
 // lib/api_service.dart
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'models.dart';
-import 'package:provider/provider.dart';
-import 'auth_provider.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart'; // or file_picker
 import 'package:restaurant_app/models.dart' as app_models;
 import 'package:http_parser/http_parser.dart';

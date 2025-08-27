@@ -4,7 +4,6 @@ import 'api_service.dart';
 import 'auth_provider.dart';
 import 'menu_screen.dart';
 import 'qr_scanner_page.dart'; // Import the new scanner page
-import 'theme.dart';
 
 class OrderFromTablePage extends StatefulWidget {
   const OrderFromTablePage({super.key});

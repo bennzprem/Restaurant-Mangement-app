@@ -202,7 +202,7 @@ class FooterWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
+        SizedBox(
           width: 40,
           height: 40,
           child: Image.asset(

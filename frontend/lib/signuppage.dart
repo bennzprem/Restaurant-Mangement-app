@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
+import 'theme.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -37,6 +38,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
   late Animation<double> _logoScaleAnimation;
   late Animation<double> _logoRotateAnimation;
+  late AnimationController _visualAnimationController;
+  late Animation<double> _sunRiseAnimation;
+  late Animation<double> _cloudDriftAnimation;
 
   final Uri baseUrl = Uri.parse('http://localhost:5000');
 
@@ -55,6 +59,19 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
       vsync: this,
     );
 
+    // Visual (sun + clouds) animation
+    _visualAnimationController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat();
+    _sunRiseAnimation = Tween<double>(begin: 60, end: 0).animate(
+      CurvedAnimation(
+          parent: _visualAnimationController, curve: Curves.easeInOutSine),
+    );
+    _cloudDriftAnimation = Tween<double>(begin: -40, end: 40).animate(
+      CurvedAnimation(parent: _visualAnimationController, curve: Curves.linear),
+    );
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _formAnimationController,
@@ -63,7 +80,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     );
 
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.8), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _formAnimationController,
         curve: Curves.easeOutCubic,
@@ -121,6 +138,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   void dispose() {
     _formAnimationController.dispose();
     _logoAnimationController.dispose();
+    _visualAnimationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -236,105 +254,100 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF212529)),
-          onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+    return ScrollConfiguration(
+      behavior: const ScrollBehavior().copyWith(scrollbars: false),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppTheme.darkTextColor),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF8F9FA),
-                  Color(0xFFE9ECEF),
-                ],
-              ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF8F9FA), // Light white
+                Color(0xFFE9ECEF), // Very light gray
+              ],
             ),
           ),
-          Positioned(
-            top: -60,
-            left: -40,
-            child:
-                _decorBlob(180, const [Color(0x33B8C96C), Color(0x11FFFFFF)]),
-          ),
-          Positioned(
-            bottom: -80,
-            right: -30,
-            child:
-                _decorBlob(220, const [Color(0x22B8C96C), Color(0x119CAF88)]),
-          ),
-          SafeArea(
+          child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth > 900) {
+                  // Desktop layout
                   return _buildDesktopLayout();
                 } else {
+                  // Mobile layout
                   return _buildMobileLayout();
                 }
               },
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _decorBlob(double size, List<Color> colors) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.first.withOpacity(0.2),
-            blurRadius: 40,
-            spreadRadius: 10,
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildDesktopLayout() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: _buildFormSection(),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 640),
+        child: Material(
+          elevation: 24,
+          shadowColor: Colors.black12,
+          borderRadius: BorderRadius.circular(24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Row(
+              children: [
+                // Left side - Form on light background
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    color: const Color(0xFFF7F8F9),
+                    child: _buildFormSection(),
+                  ),
+                ),
+                // Right side - Visual
+                Expanded(
+                  flex: 1,
+                  child: _buildVisualSection(),
+                ),
+              ],
+            ),
+          ),
         ),
-        Expanded(
-          flex: 1,
-          child: _buildVisualSection(),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          _buildLogoSection(),
-          const SizedBox(height: 40),
-          _buildFormSection(),
-          const SizedBox(height: 40),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height -
+              MediaQuery.of(context).padding.top -
+              MediaQuery.of(context).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
+            _buildLogoSection(),
+            SizedBox(
+                height: MediaQuery.of(context).size.height < 700 ? 10 : 20),
+            _buildFormSection(),
+            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
+          ],
+        ),
       ),
     );
   }
@@ -350,41 +363,43 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: MediaQuery.of(context).size.width < 600 ? 60 : 80,
+                  height: MediaQuery.of(context).size.width < 600 ? 60 : 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFB8C96C),
+                    color: AppTheme.primaryColor, // Using theme color
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFB8C96C).withOpacity(0.3),
+                        color: AppTheme.primaryColor.withOpacity(0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.restaurant,
-                    size: 40,
+                    size: MediaQuery.of(context).size.width < 600 ? 30 : 40,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                Text(
                   'ByteEat',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 24 : 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF212529),
+                    color: AppTheme.darkTextColor, // Using theme color
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
                 Text(
                   'Create your account',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                    color: AppTheme.lightTextColor, // Using theme color
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -398,8 +413,12 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
 
   Widget _buildFormSection() {
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
+      child: Padding(
+        padding: EdgeInsets.all(
+          MediaQuery.of(context).size.width < 600
+              ? (MediaQuery.of(context).size.height < 700 ? 12.0 : 16.0)
+              : 32.0,
+        ),
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -415,52 +434,173 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF9CAF88),
-            const Color(0xFF7A8F6A),
-          ],
+            AppTheme.accentColor,
+            AppTheme.darkTextColor
+          ], // Using theme colors
         ),
       ),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_add, size: 120, color: Colors.white),
-            SizedBox(height: 40),
-            Text(
-              'Join ByteEat',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                height: 1.2,
+      child: Stack(
+        children: [
+          // Support text top-right
+          Positioned(
+            top: 24,
+            right: 24,
+            child: Row(
+              children: [
+                Icon(Icons.headset_mic, color: Colors.white70, size: 18),
+                const SizedBox(width: 8),
+                const Text('Support',
+                    style: TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          // Rising sun
+          AnimatedBuilder(
+            animation: _visualAnimationController,
+            builder: (context, _) {
+              return Positioned(
+                top: 80 + _sunRiseAnimation.value,
+                left: 80,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                        colors: [Color(0xFFFFF59D), Color(0x00FFF59D)]),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Floating clouds
+          AnimatedBuilder(
+            animation: _visualAnimationController,
+            builder: (context, _) {
+              return Stack(children: [
+                _cloud(x: 120 + _cloudDriftAnimation.value, y: 140, scale: 1.0),
+                _cloud(x: 260 - _cloudDriftAnimation.value, y: 90, scale: 0.8),
+              ]);
+            },
+          ),
+          // Food card mock
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 40),
+              width: 420,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white24, width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 160,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16)),
+                      image: const DecorationImage(
+                        image: AssetImage('assets/images/food_background.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Join ByteEat today',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Create an account to start exploring delicious food options.',
+                          style:
+                              TextStyle(color: Colors.white.withOpacity(0.9)),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white54),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24)),
+                            ),
+                            child: const Text('Learn more'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Create an account to start exploring',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-                fontWeight: FontWeight.w500,
+          ),
+          // Section title bottom
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 40.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Join our community',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Create an account to start your food journey with ByteEat.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSignUpFormCard() {
+    final bool compact = MediaQuery.of(context).size.height < 700;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double cardPadding =
+        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
+    final double titleSize = compact || isMobile ? 24.0 : 32.0;
+    final double gapLarge =
+        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
+    final double gapMed = compact || isMobile ? (isMobile ? 12.0 : 16.0) : 24.0;
+    final double gapSmall = compact || isMobile ? (isMobile ? 4.0 : 6.0) : 12.0;
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 450),
-      padding: const EdgeInsets.all(40.0),
+      constraints: BoxConstraints(
+        maxWidth: isMobile ? double.infinity : 450,
+        maxHeight: isMobile
+            ? MediaQuery.of(context).size.height * 0.7
+            : double.infinity,
+      ),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28.0),
+        borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -474,43 +614,45 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Create Account',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF212529),
-              letterSpacing: -0.5,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Create Account',
+              style: TextStyle(
+                fontSize: titleSize,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.darkTextColor, // Using theme color
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Sign up to get started with ByteEat',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+            SizedBox(height: gapSmall),
+            Text(
+              'Sign up to get started with ByteEat',
+              style: TextStyle(
+                fontSize: isMobile ? 14 : 16,
+                color: AppTheme.lightTextColor, // Using theme color
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 40),
-          _buildFormFields(),
-          const SizedBox(height: 12),
-          _buildPasswordStrength(),
-          const SizedBox(height: 16),
-          _buildTermsRow(),
-          const SizedBox(height: 16),
-          _buildSignUpButton(),
-          const SizedBox(height: 24),
-          _buildDivider(),
-          const SizedBox(height: 24),
-          _buildSocialButtons(),
-          const SizedBox(height: 32),
-          _buildLoginLink(),
-        ],
+            SizedBox(height: gapLarge),
+            _buildFormFields(),
+            SizedBox(height: gapMed),
+            _buildPasswordStrength(),
+            SizedBox(height: gapMed),
+            _buildTermsRow(),
+            SizedBox(height: gapMed),
+            _buildSignUpButton(),
+            SizedBox(height: gapMed),
+            _buildDivider(),
+            SizedBox(height: gapMed),
+            _buildSocialButtons(),
+            SizedBox(height: compact || isMobile ? 16 : 32),
+            _buildLoginLink(),
+          ],
+        ),
       ),
     );
   }
@@ -528,7 +670,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             validator: (value) =>
                 value!.isEmpty ? 'Please enter your name' : null,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 24),
           _buildInputField(
             controller: _emailController,
             labelText: 'Email Address',
@@ -542,7 +684,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 24),
           _buildInputField(
             controller: _passwordController,
             labelText: 'Password',
@@ -556,7 +698,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 24),
           _buildInputField(
             controller: _confirmPasswordController,
             labelText: 'Confirm Password',
@@ -595,7 +737,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             color: Color(0xFF495057),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
         TextFormField(
           controller: controller,
           obscureText: isPassword
@@ -642,8 +784,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                 : null,
             filled: true,
             fillColor: const Color(0xFFF8F9FA),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 18.0,
+            contentPadding: EdgeInsets.symmetric(
+              vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,
             ),
             border: OutlineInputBorder(
@@ -656,8 +798,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(
-                color: Color(0xFFB8C96C),
+              borderSide: BorderSide(
+                color: AppTheme.primaryColor, // Using theme color
                 width: 2,
               ),
             ),
@@ -689,17 +831,17 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   Widget _buildSignUpButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
       child: ElevatedButton(
         onPressed: _isLoading || !_acceptTerms ? null : _signUp,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB8C96C),
+          backgroundColor: AppTheme.primaryColor, // Using mint lime theme color
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
-          shadowColor: const Color(0xFFB8C96C).withOpacity(0.3),
+          shadowColor: AppTheme.primaryColor.withOpacity(0.3),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -755,55 +897,97 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   Widget _buildSocialButtons() {
     return Column(
       children: [
-        OutlinedButton.icon(
+        _buildSocialButton(
           onPressed: _isLoading ? null : _signInWithGoogle,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.white,
-            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          icon: const Icon(Icons.g_mobiledata_outlined,
-              color: Color(0xFF212529), size: 24),
-          label: const Text(
-            'Sign up with Google',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Color(0xFF212529),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          icon: Icons.g_mobiledata_outlined,
+          label: 'Sign up with Google',
+          backgroundColor: Colors.white,
+          textColor: AppTheme.darkTextColor, // Using theme color
+          borderColor: Colors.grey[300]!,
         ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
+        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
+        _buildSocialButton(
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const PhoneSignUpPage()),
             );
           },
-          style: OutlinedButton.styleFrom(
-            backgroundColor: const Color(0xFFF8F9FA),
-            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          icon: const Icon(Icons.phone_android_outlined,
-              color: Color(0xFF212529), size: 22),
-          label: const Text(
-            'Sign up with Phone',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Color(0xFF212529),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          icon: Icons.phone_android_outlined,
+          label: 'Sign up with Phone',
+          backgroundColor: const Color(0xFFF8F9FA),
+          textColor: AppTheme.darkTextColor, // Using theme color
+          borderColor: Colors.grey[300]!,
         ),
       ],
+    );
+  }
+
+  Widget _buildSocialButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          side: BorderSide(color: borderColor, width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 0,
+        ),
+        icon: Icon(icon, color: textColor, size: 24),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Simple cloud painter
+  Widget _cloud({required double x, required double y, required double scale}) {
+    return Positioned(
+      left: x,
+      top: y,
+      child: Transform.scale(
+        scale: scale,
+        child: Opacity(
+          opacity: 0.85,
+          child: Row(
+            children: [
+              _cloudCircle(34),
+              const SizedBox(width: 6),
+              _cloudCircle(26),
+              const SizedBox(width: 6),
+              _cloudCircle(20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cloudCircle(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(100),
+      ),
     );
   }
 
@@ -812,13 +996,17 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: TextStyle(color: Colors.grey[700], fontSize: 14),
+          style: TextStyle(
+            color: AppTheme.lightTextColor, // Using theme color
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
           children: <TextSpan>[
             const TextSpan(text: "Already have an account? "),
             TextSpan(
               text: 'Login',
-              style: const TextStyle(
-                color: Color(0xFFB8C96C),
+              style: TextStyle(
+                color: AppTheme.primaryColor, // Using theme color
                 fontWeight: FontWeight.bold,
               ),
               recognizer: TapGestureRecognizer()
@@ -876,20 +1064,20 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           child: RichText(
             text: TextSpan(
               style: TextStyle(color: Colors.grey[700], fontSize: 13),
-              children: const [
-                TextSpan(text: 'I agree to the '),
+              children: [
+                const TextSpan(text: 'I agree to the '),
                 TextSpan(
                   text: 'Terms of Service',
                   style: TextStyle(
-                    color: Color(0xFFB8C96C),
+                    color: AppTheme.primaryColor, // Using theme color
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextSpan(text: ' and '),
+                const TextSpan(text: ' and '),
                 TextSpan(
                   text: 'Privacy Policy',
                   style: TextStyle(
-                    color: Color(0xFFB8C96C),
+                    color: AppTheme.primaryColor, // Using theme color
                     fontWeight: FontWeight.w600,
                   ),
                 ),
