@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
     final user = authProvider.user;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -203,20 +203,22 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: const Color(0xFFDAE952).withOpacity(0.08),
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
       child: Column(
         children: [
-          const Text(
-            'Menu Categories',
-            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-          ),
+          Text('Menu Categories',
+              style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 24),
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_left, size: 32),
+                icon: Icon(Icons.arrow_left, size: 32, color: isDark ? Colors.white70 : Colors.black87),
                 onPressed: scrollLeft,
               ),
               Expanded(
@@ -239,12 +241,19 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             ),
                           );
                         },
-                        child: Card(
-                          shape: RoundedRectangleBorder(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: Colors.white.withOpacity(isDark ? 0.12 : 0.2)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDark ? 0.5 : 0.06),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          elevation: 5,
-                          color: Colors.white,
                           child: Container(
                             width: 140,
                             padding: const EdgeInsets.all(8),
@@ -252,15 +261,15 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(icon, size: 36, color: Colors.black),
+                                Icon(icon, size: 36, color: isDark ? Colors.white : Colors.black),
                                 const SizedBox(height: 16),
                                 Text(
                                   name,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.black,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -276,7 +285,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.arrow_right, size: 32),
+                icon: Icon(Icons.arrow_right, size: 32, color: isDark ? Colors.white70 : Colors.black87),
                 onPressed: scrollRight,
               ),
             ],

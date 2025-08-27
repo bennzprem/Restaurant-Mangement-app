@@ -51,7 +51,7 @@ class ThemeProvider extends ChangeNotifier {
       iconTheme: const IconThemeData(
         color: Color(0xFF212121),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
         shadowColor: Colors.black12,
@@ -66,7 +66,8 @@ class ThemeProvider extends ChangeNotifier {
     return ThemeData(
       brightness: Brightness.dark,
       primaryColor: const Color(0xFFDAE952),
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      // Use pure black background to match the requested dark mode look
+      scaffoldBackgroundColor: const Color(0xFF000000),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1E1E1E),
         elevation: 1,
@@ -108,7 +109,7 @@ class ThemeProvider extends ChangeNotifier {
       iconTheme: const IconThemeData(
         color: Colors.white,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: const Color(0xFF1E1E1E),
         elevation: 2,
         shadowColor: Colors.black26,

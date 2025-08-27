@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart'; // Import the new provider
 import 'menu_screen.dart';
+import 'about_page.dart';
+import 'contact_page.dart';
 import 'theme.dart';
 
 void main() {
@@ -57,7 +59,8 @@ import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'takeaway_page.dart';
 import 'menu_screen.dart';
-
+import 'about_page.dart';
+import 'contact_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -111,6 +114,8 @@ class MyApp extends StatelessWidget {
           '/takeaway': (context) => TakeawayPage(),
           '/booking-history': (context) => const BookingHistoryPage(),
           '/menu': (context) => const MenuScreen(),
+          '/about': (context) => AboutPage(),
+          '/contact': (context) => const ContactPage(),
         },
       );
         },
