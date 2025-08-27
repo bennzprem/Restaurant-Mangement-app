@@ -98,26 +98,6 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: themeProvider.currentTheme,
             initialRoute: '/',
-        routes: {
-          // CHANGED: '/' now points to AuthWrapper which handles redirects
-          '/': (context) => const HomePage(),
-          '/login': (context) => const LoginPage(),
-          '/signup': (context) => const SignUpPage(),
-          '/profile': (context) => const MyProfilePage(),
-          '/forget_password_page': (context) => const ForgotPasswordPage(),
-          '/phone_login': (context) => const PhoneLoginPage(),
-          '/phone_signup': (context) => const PhoneSignUpPage(),
-          '/edit_profile': (context) => const EditProfilePage(),
-          '/change_password': (context) => const ChangePasswordPage(),
-          '/order_history': (context) => const OrderHistoryPage(),
-          '/dine-in': (context) => const DineInPage(),
-          '/takeaway': (context) => TakeawayPage(),
-          '/booking-history': (context) => const BookingHistoryPage(),
-          '/menu': (context) => const MenuScreen(),
-          '/about': (context) => AboutPage(),
-          '/contact': (context) => const ContactPage(),
-        },
-      );
             routes: {
               // CHANGED: '/' now points to AuthWrapper which handles redirects
               '/': (context) => const HomePage(),
@@ -134,6 +114,8 @@ class MyApp extends StatelessWidget {
               '/takeaway': (context) => TakeawayPage(),
               '/booking-history': (context) => const BookingHistoryPage(),
               '/menu': (context) => const MenuScreen(),
+              '/about': (context) => AboutPage(),
+              '/contact': (context) => const ContactPage(),
               '/admin_dashboard': (context) => const AdminDashboardPage(),
             },
           );
