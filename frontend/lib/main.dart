@@ -55,6 +55,7 @@ import 'takeaway_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'menu_screen.dart';
+import 'admin_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,24 +94,25 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: themeProvider.currentTheme,
             initialRoute: '/',
-        routes: {
-          // CHANGED: '/' now points to AuthWrapper which handles redirects
-          '/': (context) => const HomePage(),
-          '/login': (context) => const LoginPage(),
-          '/signup': (context) => const SignUpPage(),
-          '/profile': (context) => const MyProfilePage(),
-          '/forget_password_page': (context) => const ForgotPasswordPage(),
-          '/phone_login': (context) => const PhoneLoginPage(),
-          '/phone_signup': (context) => const PhoneSignUpPage(),
-          '/edit_profile': (context) => const EditProfilePage(),
-          '/change_password': (context) => const ChangePasswordPage(),
-          '/order_history': (context) => const OrderHistoryPage(),
-          '/dine-in': (context) => const DineInPage(),
-          '/takeaway': (context) => TakeawayPage(),
-          '/booking-history': (context) => const BookingHistoryPage(),
-          '/menu': (context) => const MenuScreen(),
-        },
-      );
+            routes: {
+              // CHANGED: '/' now points to AuthWrapper which handles redirects
+              '/': (context) => const HomePage(),
+              '/login': (context) => const LoginPage(),
+              '/signup': (context) => const SignUpPage(),
+              '/profile': (context) => const MyProfilePage(),
+              '/forget_password_page': (context) => const ForgotPasswordPage(),
+              '/phone_login': (context) => const PhoneLoginPage(),
+              '/phone_signup': (context) => const PhoneSignUpPage(),
+              '/edit_profile': (context) => const EditProfilePage(),
+              '/change_password': (context) => const ChangePasswordPage(),
+              '/order_history': (context) => const OrderHistoryPage(),
+              '/dine-in': (context) => const DineInPage(),
+              '/takeaway': (context) => TakeawayPage(),
+              '/booking-history': (context) => const BookingHistoryPage(),
+              '/menu': (context) => const MenuScreen(),
+              '/admin_dashboard': (context) => const AdminDashboardPage(),
+            },
+          );
         },
       ),
     );
