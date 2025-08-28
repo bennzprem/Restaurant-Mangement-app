@@ -8,6 +8,7 @@ import 'dart:html' as html;
 
 import 'phone-login_page.dart';
 import 'theme.dart';
+import 'widgets/header_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -256,27 +257,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF212529)),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-          ),
-        ),
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF8F9FA), // Light white
-                Color(0xFFE9ECEF), // Very light gray
-              ],
+              colors: isDark
+                  ? const [Color(0xFF000000), Color(0xFF0F0F10)]
+                  : const [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
             ),
           ),
           child: SafeArea(
@@ -284,10 +278,28 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               builder: (context, constraints) {
                 if (constraints.maxWidth > 900) {
                   // Desktop layout
-                  return _buildDesktopLayout();
+                  return Column(
+                    children: [
+                      HeaderWidget(
+                        active: HeaderActive.login,
+                        showBack: true,
+                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                      ),
+                      Expanded(child: _buildDesktopLayout()),
+                    ],
+                  );
                 } else {
                   // Mobile layout
-                  return _buildMobileLayout();
+                  return Column(
+                    children: [
+                      HeaderWidget(
+                        active: HeaderActive.login,
+                        showBack: true,
+                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                      ),
+                      Expanded(child: _buildMobileLayout()),
+                    ],
+                  );
                 }
               },
             ),
@@ -298,6 +310,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildDesktopLayout() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 640),
@@ -313,7 +326,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 Expanded(
                   flex: 1,
                   child: Container(
-                    color: const Color(0xFFF7F8F9),
+                    color: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF7F8F9),
                     child: _buildFormSection(),
                   ),
                 ),
@@ -582,6 +595,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildLoginFormCard() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool compact = MediaQuery.of(context).size.height < 700;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
     final double cardPadding =
@@ -601,7 +615,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       ),
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
           BoxShadow(
@@ -626,7 +640,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               style: TextStyle(
                 fontSize: titleSize,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF212529),
+                color: isDark ? Colors.white : const Color(0xFF212529),
                 letterSpacing: -0.5,
               ),
             ),
@@ -635,7 +649,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               'Sign in to continue to your account',
               style: TextStyle(
                 fontSize: isMobile ? 14 : 16,
-                color: Colors.grey[600],
+                color: isDark ? Colors.grey[300] : Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -722,6 +736,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -738,20 +753,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           controller: controller,
           obscureText: isPassword && !_isPasswordVisible,
           keyboardType: keyboardType,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF212529),
+            color: isDark ? Colors.white : const Color(0xFF212529),
             fontWeight: FontWeight.w500,
           ),
+          cursorColor: AppTheme.primaryColor,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
-              color: Colors.grey[400],
+              color: isDark ? Colors.grey[500] : Colors.grey[400],
               fontWeight: FontWeight.w400,
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: Colors.grey[500],
+              color: isDark ? Colors.grey[400] : Colors.grey[500],
               size: 22,
             ),
             suffixIcon: isPassword
@@ -760,7 +776,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       _isPasswordVisible
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: Colors.grey[500],
+                      color: isDark ? Colors.grey[400] : Colors.grey[500],
                       size: 22,
                     ),
                     onPressed: () => setState(
@@ -768,7 +784,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   )
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF8F9FA),
+            fillColor: isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
             contentPadding: EdgeInsets.symmetric(
               vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,

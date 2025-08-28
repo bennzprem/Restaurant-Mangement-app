@@ -26,8 +26,12 @@ TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID')
 
 # Email Credentials (for password reset)
-EMAIL_USER = "your-email@gmail.com"
-EMAIL_PASS = "your-gmail-app-password"
+# Prefer environment variables for security. Falls back to placeholders.
+EMAIL_USER = os.environ.get('EMAIL_USER', "benzprem165@gmail.com")
+EMAIL_PASS = os.environ.get('EMAIL_PASS', "fisd ztcu jkkz gucz")
+
+# Where your Flutter web is served (used in email links)
+FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611')
 
 # ----------------------------------------------------
 
@@ -50,14 +54,44 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Initialize Twilio client
 twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_SID else None
 
-# Initialize Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
+"""Flask-Mail configuration
+For Gmail: use an App Password. Set env vars EMAIL_USER and EMAIL_PASS.
+You can adapt MAIL_SERVER/PORT for other providers.
+"""
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = EMAIL_USER
 app.config['MAIL_PASSWORD'] = EMAIL_PASS
-app.config['MAIL_DEFAULT_SENDER'] = EMAIL_USER
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', EMAIL_USER)
+app.config['MAIL_SUPPRESS_SEND'] = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() == 'true'
 mail = Mail(app)
+
+def _is_mail_configured() -> bool:
+    return bool(app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'))
+
+def _send_password_reset_email(recipient_email: str, token: str) -> tuple[bool, str]:
+    """Sends password reset email. Returns (sent, link_used).
+
+    sent: True if mail sent without exception
+    link_used: The reset link included in the email (for logging/debug)
+    """
+    reset_link = f"{FRONTEND_BASE_URL.rstrip('/')}/reset-password.html?token={token}"
+    if not _is_mail_configured():
+        print("Flask-Mail not configured: EMAIL_USER/EMAIL_PASS missing.")
+        return False, reset_link
+    try:
+        msg = Message('Password Reset Request', recipients=[recipient_email])
+        msg.body = (
+            "Hello,\n\nPlease use the following link to reset your password:\n"
+            f"{reset_link}\n\nThis link will expire in one hour."
+        )
+        mail.send(msg)
+        return True, reset_link
+    except Exception as e:
+        print(f"Mail send failed: {e}")
+        return False, reset_link
 # Initialize Razorpay client with your keys
 client = razorpay.Client(auth=("rzp_test_R9IWhVRyO9Ga0k", "QKfOOhOaSDh5kVloa5XCeSL6"))
 # Headers for REST API calls (for menu routes)
@@ -179,24 +213,35 @@ def login():
 def forgot_password():
     data = request.get_json()
     email = data.get('email', '').strip().lower()
-    if not email: return jsonify({'message': 'Email is required.'}), 400
+    if not email:
+        return jsonify({'message': 'Email is required.'}), 400
     try:
         user_result = supabase.table('users').select('id').eq('email', email).execute()
+        # Respond the same regardless of user existence for privacy
+        generic_msg = 'If an account with that email exists, a reset link has been sent.'
         if not user_result.data:
-            return jsonify({'message': 'If an account with that email exists, a reset link has been sent.'}), 200
+            return jsonify({'message': generic_msg}), 200
+
         user_id = user_result.data[0]['id']
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        supabase.table('password_reset_tokens').insert({'user_id': user_id, 'token': token, 'expires_at': expires_at.isoformat()}).execute()
-        
-        reset_link = f"http://localhost:3000/reset-password.html?token={token}"
-        msg = Message('Password Reset Request', recipients=[email])
-        msg.body = f"Hello,\n\nPlease use the following link to reset your password:\n{reset_link}\n\nThis link will expire in one hour."
-        mail.send(msg)
-        return jsonify({'message': 'If an account with that email exists, a reset link has been sent.'}), 200
+        supabase.table('password_reset_tokens').insert({
+            'user_id': user_id,
+            'token': token,
+            'expires_at': expires_at.isoformat()
+        }).execute()
+
+        # Attempt to send email only if credentials are configured
+        sent, reset_link = _send_password_reset_email(email, token)
+        response_payload = {'message': generic_msg, 'email_sent': sent}
+        # In dev, include the link so you can proceed even if email didn't send
+        if not sent:
+            response_payload['reset_link'] = reset_link
+        return jsonify(response_payload), 200
     except Exception as e:
         print(f"Error during forgot password: {str(e)}")
-        return jsonify({'error': 'An internal server error occurred.'}), 500
+        # Still respond generically to avoid leaking details to the client
+        return jsonify({'message': 'If an account with that email exists, a reset link has been sent.'}), 200
 
 @app.route('/reset-password', methods=['POST'])
 def reset_password():
@@ -214,8 +259,9 @@ def reset_password():
         if expires_at < datetime.now(timezone.utc):
             return jsonify({'error': 'Token has expired.'}), 400
         user_id = token_data['user_id']
-        hashed_password = hash_password(new_password)
-        supabase.table('users').update({'password': hashed_password}).eq('id', user_id).execute()
+
+        # Update the password in Supabase Auth using Admin API
+        supabase.auth.admin.update_user_by_id(user_id, { 'password': new_password })
         supabase.table('password_reset_tokens').delete().eq('id', token_data['id']).execute()
         return jsonify({'message': 'Password has been reset successfully.'}), 200
     except Exception as e:

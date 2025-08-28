@@ -5,8 +5,18 @@ import 'dart:math';
 import '../theme_provider.dart';
 import '../auth_provider.dart';
 
+enum HeaderActive { none, login, signup }
+
 class HeaderWidget extends StatelessWidget {
-  const HeaderWidget({super.key});
+  final HeaderActive active;
+  final bool showBack;
+  final VoidCallback? onBack;
+  const HeaderWidget({
+    super.key,
+    this.active = HeaderActive.none,
+    this.showBack = false,
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +65,27 @@ class HeaderWidget extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
                   child: Row(
                     children: [
+                      if (showBack)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: IconButton(
+                            onPressed: onBack,
+                            icon: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                              size: 18,
+                            ),
+                            style: IconButton.styleFrom(
+                              padding: const EdgeInsets.all(10),
+                              shape: const CircleBorder(),
+                              backgroundColor: themeProvider.isDarkMode
+                                  ? Colors.grey.shade900
+                                  : Colors.grey.shade200,
+                            ),
+                          ),
+                        ),
                       // Logo
                       Icon(Icons.restaurant_menu_rounded,
                           color: Color(0xFFDAE952), size: 28),
@@ -207,54 +238,20 @@ class HeaderWidget extends StatelessWidget {
                             // User is not logged in - show login and sign up buttons
                             return Row(
                               children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/login');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: themeProvider.isDarkMode
-                                        ? Colors.white
-                                        : Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    elevation: 0,
-                                    side: BorderSide(
-                                      color: const Color(0xFFDAE952),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Login',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15),
-                                  ),
+                                _AuthButton(
+                                  label: 'Login',
+                                  isActive: active == HeaderActive.login,
+                                  isDark: themeProvider.isDarkMode,
+                                  onPressed: () => Navigator.pushNamed(
+                                      context, '/login'),
                                 ),
                                 const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/signup');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFDAE952),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text(
-                                    'Sign Up',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15),
-                                  ),
+                                _AuthButton(
+                                  label: 'Sign Up',
+                                  isActive: active == HeaderActive.signup,
+                                  isDark: themeProvider.isDarkMode,
+                                  onPressed: () =>
+                                      Navigator.pushNamed(context, '/signup'),
                                 ),
                               ],
                             );
@@ -591,3 +588,45 @@ class _ModernHeaderPainter extends CustomPainter {
         oldDelegate.isDark != isDark;
   }
 }
+
+class _AuthButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final bool isDark;
+  final VoidCallback onPressed;
+  const _AuthButton({
+    required this.label,
+    required this.isActive,
+    required this.isDark,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color green = const Color(0xFFDAE952);
+    final bool filled = isActive;
+    final Color background = filled
+        ? green
+        : (isDark ? Colors.black : Colors.white);
+    final Color textColor = filled
+        ? Colors.black
+        : (isDark ? Colors.white : Colors.black);
+
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: background,
+        foregroundColor: textColor,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        side: BorderSide(color: green, width: 2),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      ),
+    );
+  }
+}
+
