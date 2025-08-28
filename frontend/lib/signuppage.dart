@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
 import 'theme.dart';
+import 'widgets/header_widget.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -254,27 +255,20 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: AppTheme.darkTextColor),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-          ),
-        ),
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF8F9FA), // Light white
-                Color(0xFFE9ECEF), // Very light gray
-              ],
+              colors: isDark
+                  ? const [Color(0xFF000000), Color(0xFF0F0F10)]
+                  : const [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
             ),
           ),
           child: SafeArea(
@@ -282,10 +276,28 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               builder: (context, constraints) {
                 if (constraints.maxWidth > 900) {
                   // Desktop layout
-                  return _buildDesktopLayout();
+                  return Column(
+                    children: [
+                      HeaderWidget(
+                        active: HeaderActive.signup,
+                        showBack: true,
+                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                      ),
+                      Expanded(child: _buildDesktopLayout()),
+                    ],
+                  );
                 } else {
                   // Mobile layout
-                  return _buildMobileLayout();
+                  return Column(
+                    children: [
+                      HeaderWidget(
+                        active: HeaderActive.signup,
+                        showBack: true,
+                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                      ),
+                      Expanded(child: _buildMobileLayout()),
+                    ],
+                  );
                 }
               },
             ),
@@ -296,6 +308,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   }
 
   Widget _buildDesktopLayout() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 640),
@@ -311,7 +324,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                 Expanded(
                   flex: 1,
                   child: Container(
-                    color: const Color(0xFFF7F8F9),
+                    color: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF7F8F9),
                     child: _buildFormSection(),
                   ),
                 ),
@@ -580,6 +593,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSignUpFormCard() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool compact = MediaQuery.of(context).size.height < 700;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
     final double cardPadding =
@@ -599,7 +613,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
       ),
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
           BoxShadow(
@@ -624,7 +638,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               style: TextStyle(
                 fontSize: titleSize,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.darkTextColor, // Using theme color
+                color: isDark ? Colors.white : AppTheme.darkTextColor, // Using theme color
                 letterSpacing: -0.5,
               ),
             ),
@@ -633,7 +647,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               'Sign up to get started with ByteEat',
               style: TextStyle(
                 fontSize: isMobile ? 14 : 16,
-                color: AppTheme.lightTextColor, // Using theme color
+                color: isDark ? Colors.grey[300] : AppTheme.lightTextColor, // Using theme color
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -726,6 +740,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -746,20 +761,21 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   : _obscurePassword)
               : false,
           keyboardType: keyboardType,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF212529),
+            color: isDark ? Colors.white : const Color(0xFF212529),
             fontWeight: FontWeight.w500,
           ),
+          cursorColor: AppTheme.primaryColor,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
-              color: Colors.grey[400],
+              color: isDark ? Colors.grey[500] : Colors.grey[400],
               fontWeight: FontWeight.w400,
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: Colors.grey[500],
+              color: isDark ? Colors.grey[400] : Colors.grey[500],
               size: 22,
             ),
             suffixIcon: isPassword
@@ -770,7 +786,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                               : _obscurePassword)
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: Colors.grey[500],
+                      color: isDark ? Colors.grey[400] : Colors.grey[500],
                       size: 22,
                     ),
                     onPressed: () => setState(() {
@@ -783,7 +799,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   )
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF8F9FA),
+            fillColor: isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
             contentPadding: EdgeInsets.symmetric(
               vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,
