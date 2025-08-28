@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart'; // 1. Added Razorpay import
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:js' as js;
 
 import 'api_service.dart';
 import 'cart_provider.dart';
@@ -18,54 +20,108 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  late Razorpay _razorpay;
+  Razorpay? _razorpay;
   late CartProvider _cart;
   late AuthProvider _auth;
+  String? _prefetchedOrderId;
+  int _prefetchedAmountPaise = 0;
+  bool _isPrefetching = false;
 
   @override
   void initState() {
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    if (!kIsWeb) {
+      _razorpay = Razorpay();
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    }
   }
 
   @override
   void dispose() {
-    _razorpay.clear();
+    if (!kIsWeb) {
+      _razorpay?.clear();
+    }
     super.dispose();
   }
 
-  void _initiatePayment() async {
-    // Store providers in member variables before the async gap to safely use them later
+  Future<void> _prefetchOrder() async {
+    if (_isPrefetching) return;
     _cart = Provider.of<CartProvider>(context, listen: false);
     _auth = Provider.of<AuthProvider>(context, listen: false);
-    final apiService = ApiService();
+    if (_auth.user == null || _cart.items.isEmpty) return;
+    _isPrefetching = true;
+    try {
+      final apiService = ApiService();
+      final orderId = await apiService.createRazorpayOrder(_cart.totalAmount);
+      setState(() {
+        _prefetchedOrderId = orderId;
+        _prefetchedAmountPaise = (_cart.totalAmount * 100).round();
+      });
+    } catch (_) {
+      // ignore for now; will retry on next build
+    } finally {
+      _isPrefetching = false;
+    }
+  }
+
+  void _openCheckout() {
+    // providers
+    _cart = Provider.of<CartProvider>(context, listen: false);
+    _auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (_auth.user == null) {
       showLoginPrompt(context);
       return;
     }
 
-    try {
-      final razorpayOrderId =
-          await apiService.createRazorpayOrder(_cart.totalAmount);
+    if (_prefetchedOrderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preparing payment... please try again.')),
+      );
+      // trigger prefetch for next click
+      _prefetchOrder();
+      return;
+    }
 
-      var options = {
-        'key': 'YOUR_TEST_KEY_ID', // <-- IMPORTANT: USE YOUR TEST KEY ID HERE
-        'amount': _cart.totalAmount * 100, // amount in paise
+    final String keyId = 'rzp_test_R9IWhVRyO9Ga0k';
+
+    if (kIsWeb) {
+      final options = {
+        'key': keyId,
+        'order_id': _prefetchedOrderId,
+        'amount': _prefetchedAmountPaise,
+        'currency': 'INR',
         'name': 'ByteEat',
-        'order_id': razorpayOrderId,
         'description': 'Food Order Payment',
-        'prefill': {'email': _auth.user?.email ?? ''}
+        'prefill': {'email': _auth.user?.email ?? ''},
+        'handler': js.allowInterop((response) {
+          _handlePaymentSuccess(PaymentSuccessResponse(
+            response['razorpay_payment_id'] ?? '',
+            response['razorpay_order_id'] ?? '',
+            response['razorpay_signature'] ?? '',
+            null,
+          ));
+        }),
+        'modal': {
+          'ondismiss': js.allowInterop(() {
+            // optional: notify user
+          })
+        }
       };
-
-      _razorpay.open(options);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-      }
+      final ctor = js.context['Razorpay'];
+      final instance = js.JsObject(ctor, [js.JsObject.jsify(options)]);
+      instance.callMethod('open');
+    } else {
+      final options = {
+        'key': keyId,
+        'order_id': _prefetchedOrderId,
+        'amount': _prefetchedAmountPaise,
+        'name': 'ByteEat',
+        'description': 'Food Order Payment',
+        'prefill': {'email': _auth.user?.email ?? ''},
+      };
+      _razorpay!.open(options);
     }
   }
 
@@ -172,8 +228,8 @@ class _CartScreenState extends State<CartScreen> {
                           content: Text('Items sent to the kitchen!')),
                     );
                   } else {
-                    // Online Delivery Logic now initiates payment
-                    _initiatePayment();
+                    // Web-safe: open checkout immediately, order prefetched earlier
+                    _openCheckout();
                   }
                 },
               ),

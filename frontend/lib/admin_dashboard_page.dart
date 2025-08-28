@@ -8,6 +8,7 @@ import 'manage_menu_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
 import 'models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -28,6 +29,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void initState() {
     super.initState();
     _loadDashboardData();
+    _subscribeToOrderChanges();
+  }
+
+  void _subscribeToOrderChanges() {
+    final supabase = Supabase.instance.client;
+    supabase
+        .channel('orders-changes')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'orders',
+          callback: (payload) {
+            _loadDashboardData();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _loadDashboardData() async {
