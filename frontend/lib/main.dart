@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart'; // Import the new provider
 import 'menu_screen.dart';
+import 'about_page.dart';
+import 'contact_page.dart';
 import 'theme.dart';
 
 void main() {
@@ -55,11 +57,14 @@ import 'takeaway_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'menu_screen.dart';
+import 'about_page.dart';
+import 'contact_page.dart';
 import 'admin_dashboard_page.dart';
 import 'manager_dashboard_page.dart';
 import 'employee_dashboard_page.dart';
 import 'delivery_dashboard_page.dart';
 import 'kitchen_dashboard_page.dart';
+import 'ch/user_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,7 +108,7 @@ class MyApp extends StatelessWidget {
               '/': (context) => const HomePage(),
               '/login': (context) => const LoginPage(),
               '/signup': (context) => const SignUpPage(),
-              '/profile': (context) => const MyProfilePage(),
+              '/profile': (context) => const UserDashboardPage(),
               '/forget_password_page': (context) => const ForgotPasswordPage(),
               '/phone_login': (context) => const PhoneLoginPage(),
               '/phone_signup': (context) => const PhoneSignUpPage(),
@@ -114,6 +119,8 @@ class MyApp extends StatelessWidget {
               '/takeaway': (context) => TakeawayPage(),
               '/booking-history': (context) => const BookingHistoryPage(),
               '/menu': (context) => const MenuScreen(),
+              '/about': (context) => AboutPage(),
+              '/contact': (context) => const ContactPage(),
               '/admin_dashboard': (context) => const AdminDashboardPage(),
               '/manager_dashboard': (context) => const ManagerDashboardPage(),
               '/employee_dashboard': (context) => const EmployeeDashboardPage(),

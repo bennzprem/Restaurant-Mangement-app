@@ -6,6 +6,7 @@ class NewsletterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 600,
       decoration: BoxDecoration(
@@ -47,8 +48,9 @@ class NewsletterSection extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 800),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.white10 : Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(isDark ? 0.15 : 0.2)),
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -59,15 +61,16 @@ class NewsletterSection extends StatelessWidget {
                         children: [
                           Expanded(
                             child: TextField(
-                              decoration: const InputDecoration(
+                              cursorColor: const Color(0xFFDAE952),
+                              decoration: InputDecoration(
                                 hintText: 'Type your email and get',
                                 border: InputBorder.none,
                                 hintStyle: TextStyle(
-                                  color: Colors.grey,
+                                  color: isDark ? Colors.white60 : Colors.grey,
                                   fontSize: 18,
                                 ),
                               ),
-                              style: const TextStyle(fontSize: 18),
+                              style: TextStyle(fontSize: 18, color: isDark ? Colors.white : Colors.black87),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -98,15 +101,16 @@ class NewsletterSection extends StatelessWidget {
                       return Column(
                         children: [
                           TextField(
-                            decoration: const InputDecoration(
+                            cursorColor: const Color(0xFFDAE952),
+                            decoration: InputDecoration(
                               hintText: 'Type your email and get',
                               border: InputBorder.none,
                               hintStyle: TextStyle(
-                                color: Colors.grey,
+                                color: isDark ? Colors.white60 : Colors.grey,
                                 fontSize: 18,
                               ),
                             ),
-                            style: const TextStyle(fontSize: 18),
+                            style: TextStyle(fontSize: 18, color: isDark ? Colors.white : Colors.black87),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(

@@ -107,7 +107,9 @@ class _HeroSectionState extends State<HeroSection> {
                       ? const Color(0xFFDAE952)
                       : _hoverIndex == index
                           ? const Color(0xFFDAE952)
-                          : Colors.black87,
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white70
+                              : Colors.black87),
                   letterSpacing: 1.3,
                 ),
               ),
@@ -142,14 +144,14 @@ class _HeroSectionState extends State<HeroSection> {
       child: Stack(
         children: [
 
-          // LEFT WHITE BACKGROUND (60%)
+          // LEFT BACKGROUND (60%)
           Positioned(
             left: 0,
             top: 0,
             bottom: 0,
             right: screenW * 0.4,
             child: Container(
-              color: Colors.white,
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: Stack(
                 children: [
                   // Navigation bar positioned on the left side
@@ -218,8 +220,11 @@ class _HeroSectionState extends State<HeroSection> {
                       24, // vertically center (24 = half of icon size)
                   left: 16, // some padding from the edge
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 36, color: Colors.black87),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 36,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white70
+                            : Colors.black87),
                     onPressed: scrollLeft,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -262,9 +267,9 @@ class _HeroSectionState extends State<HeroSection> {
                                         fontWeight: i == selectedIndex
                                             ? FontWeight.bold
                                             : FontWeight.w400,
-                                        color: i == selectedIndex
-                                            ? Colors.black
-                                            : Colors.black45,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? (i == selectedIndex ? Colors.white : Colors.white60)
+                                            : (i == selectedIndex ? Colors.black : Colors.black45),
                                         letterSpacing: 1.4,
                                       ),
                                     ),
@@ -279,9 +284,11 @@ class _HeroSectionState extends State<HeroSection> {
                           constraints: const BoxConstraints(maxWidth: 520),
                           child: Text(
                             selected['description']!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
-                              color: Colors.black87,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white70
+                                  : Colors.black87,
                               height: 1.45,
                             ),
                             maxLines: 3,
@@ -292,8 +299,8 @@ class _HeroSectionState extends State<HeroSection> {
                         ElevatedButton(
                           onPressed: _onButtonPressed,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
+                            backgroundColor: const Color(0xFFDAE952),
+                            foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 34, vertical: 16),
                             textStyle: const TextStyle(
@@ -313,8 +320,11 @@ class _HeroSectionState extends State<HeroSection> {
                   top: minHeight / 2 - 24, // vertically center
                   right: 16, // stick to the extreme right
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios_rounded,
-                        size: 36, color: Colors.black87),
+                    icon: Icon(Icons.arrow_forward_ios_rounded,
+                        size: 36,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white70
+                            : Colors.black87),
                     onPressed: scrollRight,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),

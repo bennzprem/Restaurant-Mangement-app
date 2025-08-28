@@ -5,6 +5,7 @@ class TestimonialsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final testimonials = [
       Testimonial(
         name: 'Abdullah Iqbal',
@@ -20,7 +21,7 @@ class TestimonialsSection extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 16),
-      color: const Color(0xFFDAE952).withOpacity(0.2),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
           // Header
@@ -28,13 +29,13 @@ class TestimonialsSection extends StatelessWidget {
             children: [
               RichText(
                 textAlign: TextAlign.center,
-                text: const TextSpan(
+                text: TextSpan(
                   style: TextStyle(
                     fontSize: 40,
-                    color: Colors.black,
+                    color: isDark ? Colors.white : Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(text: 'Our '),
                     TextSpan(
                       text: 'Dhabi',
@@ -45,14 +46,14 @@ class TestimonialsSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   'A customer is a person or business that buys goods or services from another business. Customers are crucial because they generate revenue. Without them, businesses would go out of business.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
-                    color: Colors.black87,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
               ),
@@ -114,17 +115,18 @@ class TestimonialCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 450,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.white.withOpacity(0.06) : Colors.white,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(64),
           topRight: Radius.circular(64),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -140,7 +142,7 @@ class TestimonialCard extends StatelessWidget {
               height: 96,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey[200],
+                color: isDark ? Colors.white12 : Colors.grey[200],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(48),
@@ -158,8 +160,8 @@ class TestimonialCard extends StatelessWidget {
               child: Text(
                 testimonial.review,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black87,
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
                   height: 1.5,
                   fontSize: 16,
                 ),
@@ -171,10 +173,10 @@ class TestimonialCard extends StatelessWidget {
             // Customer Name
             Text(
               testimonial.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
             

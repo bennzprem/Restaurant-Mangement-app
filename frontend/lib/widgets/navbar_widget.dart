@@ -83,6 +83,7 @@ class _NavbarWidgetState extends State<NavbarWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -116,7 +117,7 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                                   ? const Color(0xFFDAE952)
                                   : isHover
                                       ? const Color(0xFFDAE952)
-                                      : Colors.black87,
+                                      : (isDark ? Colors.white : Colors.black87),
                               letterSpacing: 1.3,
                             ),
                           ),
@@ -151,12 +152,12 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                 width: _isSearchExpanded ? 260 : 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -168,15 +169,17 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                       Expanded(
                         child: TextField(
                           controller: widget.searchController,
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                          decoration: InputDecoration(
                             hintText: 'Search for dishes...',
+                            hintStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black45),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 20),
+                        icon: Icon(Icons.close, size: 20, color: isDark ? Colors.white : Colors.black87),
                         onPressed: () {
                           setState(() {
                             _isSearchExpanded = false;
@@ -214,12 +217,12 @@ class _NavbarWidgetState extends State<NavbarWidget> {
               // Filter button
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -246,12 +249,12 @@ class _NavbarWidgetState extends State<NavbarWidget> {
               // Favorites button
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -288,12 +291,12 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                   backgroundColor: const Color(0xFFDAE952),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? Colors.white10 : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),

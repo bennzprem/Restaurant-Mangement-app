@@ -7,7 +7,7 @@ class AboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 16),
-      color: Colors.white,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
           // Main about content
@@ -21,7 +21,7 @@ class AboutSection extends StatelessWidget {
                   children: [
                     Expanded(child: _buildContent(context)),
                     const SizedBox(width: 64),
-                    Expanded(child: _buildImage()),
+                    Expanded(child: _buildImage(context)),
                   ],
                 );
               } else {
@@ -29,7 +29,7 @@ class AboutSection extends StatelessWidget {
                   children: [
                     _buildContent(context),
                     const SizedBox(height: 48),
-                    _buildImage(),
+                    _buildImage(context),
                   ],
                 );
               }
@@ -43,13 +43,15 @@ class AboutSection extends StatelessWidget {
             children: [
               RichText(
                 textAlign: TextAlign.center,
-                text: const TextSpan(
+                text: TextSpan(
                   style: TextStyle(
                     fontSize: 40,
-                    color: Colors.black,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(text: 'Our '),
                     TextSpan(
                       text: 'ByteEat',
@@ -60,14 +62,16 @@ class AboutSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   'Food, substance consisting essentially of protein, carbohydrate, fat, and other nutrients used in the body of an organism to sustain growth and vital processes and to furnish energy. The absorption and utilization of food by the body is fundamental to nutrition and is facilitated by digestion.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
-                    color: Colors.black87,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white70
+                        : Colors.black87,
                     height: 1.5,
                   ),
                 ),
@@ -84,13 +88,15 @@ class AboutSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
-          text: const TextSpan(
+          text: TextSpan(
             style: TextStyle(
               fontSize: 40,
-              color: Colors.black,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
               fontWeight: FontWeight.bold,
             ),
-            children: [
+            children: const [
               TextSpan(text: 'Welcome to our '),
               TextSpan(
                 text: 'ByteEat',
@@ -101,17 +107,21 @@ class AboutSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        const Text(
+        Text(
           'Food, substance consisting essentially of protein, carbohydrate, fat, and other nutrients used in the body of an organism to sustain growth and vital processes and to furnish energy. The absorption and utilization of food by the body is fundamental to nutrition and is facilitated by digestion.',
           style: TextStyle(
             fontSize: 20,
-            color: Colors.black87,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white70
+                : Colors.black87,
             height: 1.5,
           ),
         ),
         const SizedBox(height: 32),
         ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pushNamed(context, '/about');
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFDAE952),
             foregroundColor: Colors.black,
@@ -135,7 +145,7 @@ class AboutSection extends StatelessWidget {
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(BuildContext context) {
     return Stack(
       children: [
         Container(
@@ -144,7 +154,10 @@ class AboutSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black)
+                    .withOpacity(0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
