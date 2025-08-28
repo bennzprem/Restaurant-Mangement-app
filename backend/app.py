@@ -332,6 +332,83 @@ def get_menu():
         print(f"An error occurred in get_menu: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
+@app.route('/menu/<int:item_id>', methods=['DELETE'])
+def delete_menu_item(item_id):
+    """Deletes a specific menu item by ID."""
+    try:
+        print(f"DELETE request received for menu item ID: {item_id}")
+        
+        # Delete the menu item from Supabase
+        api_url = f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}"
+        print(f"Calling Supabase API: {api_url}")
+        
+        response = requests.delete(api_url, headers=headers)
+        print(f"Supabase response status: {response.status_code}")
+        print(f"Supabase response body: {response.text}")
+        
+        if response.status_code == 204:  # Success, no content
+            print("Item deleted successfully (204)")
+            response = jsonify({"message": "Menu item deleted successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+        elif response.status_code == 404:
+            print("Item not found (404)")
+            response = jsonify({"error": "Menu item not found"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 404
+        else:
+            print(f"Unexpected status code: {response.status_code}")
+            response.raise_for_status()
+            # Add return statement for successful response.raise_for_status()
+            response = jsonify({"message": "Menu item deleted successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+            
+    except Exception as e:
+        print(f"An error occurred in delete_menu_item: {e}")
+        response = jsonify({"error": "An internal server error occurred."})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/menu/<int:item_id>/availability', methods=['PATCH'])
+def update_menu_item_availability(item_id):
+    """Updates the availability of a specific menu item."""
+    try:
+        data = request.get_json()
+        is_available = data.get('is_available')
+        
+        if is_available is None:
+            response = jsonify({"error": "is_available field is required"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 400
+        
+        # Update the menu item availability in Supabase
+        api_url = f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}"
+        update_payload = {"is_available": is_available}
+        
+        response = requests.patch(api_url, json=update_payload, headers=headers)
+        
+        if response.status_code == 204:  # Success, no content
+            response = jsonify({"message": "Availability updated successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+        elif response.status_code == 404:
+            response = jsonify({"error": "Menu item not found"})
+            response.headers.add('Access-Control-Origin', '*')
+            return response, 404
+        else:
+            response.raise_for_status()
+            # Add return statement for successful response.raise_for_status()
+            response = jsonify({"message": "Availability updated successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+            
+    except Exception as e:
+        print(f"An error occurred in update_menu_item_availability: {e}")
+        response = jsonify({"error": "An internal server error occurred."})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
 # In app.py...
 
 @app.route('/order', methods=['POST'])
@@ -556,6 +633,14 @@ def handle_password_preflight():
 
 @app.route('/users/<string:user_id>/profile-picture', methods=['OPTIONS'])
 def handle_pfp_preflight(user_id):
+    return _build_cors_preflight_response()
+
+@app.route('/menu/<int:item_id>', methods=['OPTIONS'])
+def handle_menu_item_preflight(item_id):
+    return _build_cors_preflight_response()
+
+@app.route('/menu/<int:item_id>/availability', methods=['OPTIONS'])
+def handle_menu_availability_preflight(item_id):
     return _build_cors_preflight_response()
 
 def _build_cors_preflight_response():

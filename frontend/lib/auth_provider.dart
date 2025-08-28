@@ -56,6 +56,7 @@ class AuthProvider with ChangeNotifier {
       _user = null;
     }
     notifyListeners();
+    // After updating, optionally navigate based on role can be handled by UI layer
   }
 
   Future<void> signOut() async {

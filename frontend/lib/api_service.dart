@@ -11,9 +11,8 @@ import 'package:http_parser/http_parser.dart';
 import 'user_models.dart';
 
 class ApiService {
-  //final String baseUrl = "http://localhost:5000"; // For Web and Desktop
   final String baseUrl = kIsWeb
-      ? "http://127.0.0.1:5000" // for web
+      ? "http://localhost:5000" // for web
       : "http://10.0.2.2:5000"; // for Android emulator
   // In lib/api_service.dart
 
@@ -135,6 +134,45 @@ class ApiService {
       return data.map((json) => Order.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load order history');
+    }
+  }
+
+  Future<List<Order>> getAllOrders() async {
+    try {
+      final response = await _supabase
+          .from('orders')
+          .select()
+          .order('created_at', ascending: false);
+
+      final orders = (response as List)
+          .map((orderData) => Order.fromJson(orderData))
+          .toList();
+      return orders;
+    } catch (e) {
+      print('Error getting all orders: $e');
+      throw 'Failed to load orders.';
+    }
+  }
+
+  Future<List<MenuItem>> getAllMenuItems() async {
+    try {
+      // Use the existing fetchMenu method that we know works
+      final menuCategories = await fetchMenu(
+        vegOnly: false,
+        veganOnly: false,
+        glutenFreeOnly: false,
+        nutsFree: false,
+      );
+
+      List<MenuItem> allMenuItems = [];
+      for (var category in menuCategories) {
+        allMenuItems.addAll(category.items);
+      }
+
+      return allMenuItems;
+    } catch (e) {
+      print('Error getting all menu items: $e');
+      throw 'Failed to load menu items.';
     }
   }
 
@@ -324,22 +362,241 @@ class ApiService {
   final _supabase = Supabase.instance.client;
 
   Future<List<AppUser>> getAllUsers() async {
-    // IMPORTANT: Make sure this is your permanent admin's user ID.
-    const String permanentAdminId = 'db13418e-05f9-4101-9567-ecbfc938a325';
-
     try {
-      final response = await _supabase
-          .from('users')
-          .select()
-          .neq('id', permanentAdminId); // Exclude the permanent admin
+      print('=== DEBUG: Fetching all users ===');
+
+      // Get ALL users from the database without any exclusions
+      // Try different approaches to bypass RLS policies
+      print('--- Trying different query approaches ---');
+
+      // Method 1: Basic select
+      var response = await _supabase.from('users').select('*');
+      print('Method 1 result: ${response.length} users');
+
+      // Method 2: If first method returns only 1 user, try with different approach
+      if (response.length <= 1) {
+        print('--- Trying alternative approach ---');
+        try {
+          // Try to get users with explicit ordering
+          response = await _supabase
+              .from('users')
+              .select('*')
+              .order('created_at', ascending: false);
+          print('Method 2 result: ${response.length} users');
+        } catch (e) {
+          print('Method 2 failed: $e');
+        }
+      }
+
+      // Method 3: If still only 1 user, try selecting specific columns
+      if (response.length <= 1) {
+        print('--- Trying specific columns approach ---');
+        try {
+          response = await _supabase
+              .from('users')
+              .select('id, name, email, role, created_at');
+          print('Method 3 result: ${response.length} users');
+        } catch (e) {
+          print('Method 3 failed: $e');
+        }
+      }
+
+      print('Raw response from Supabase: $response');
+      print('Response type: ${response.runtimeType}');
+      print('Response length: ${response.length}');
+
+      if (response is List) {
+        print('Response is a List with ${response.length} items');
+
+        // Print first few items for debugging
+        for (int i = 0; i < response.length && i < 3; i++) {
+          print('Item $i: ${response[i]}');
+        }
+      }
 
       final users = (response as List)
-          .map((userData) => AppUser.fromJson(userData))
+          .map((userData) {
+            print('Processing user data: $userData');
+            print('Available keys: ${(userData as Map).keys.toList()}');
+
+            try {
+              // Check if required fields exist
+              if (userData['id'] == null) {
+                print('WARNING: User missing ID field');
+                return null;
+              }
+
+              if (userData['name'] == null) {
+                print('WARNING: User missing name field');
+                return null;
+              }
+
+              if (userData['role'] == null) {
+                print('WARNING: User missing role field, setting to "user"');
+                userData['role'] = 'user';
+              }
+
+              final user =
+                  AppUser.fromJson(Map<String, dynamic>.from(userData));
+              print(
+                  'Successfully created AppUser: ${user.name} (${user.role})');
+              return user;
+            } catch (parseError) {
+              print('Error parsing user data: $parseError');
+              print('Problematic data: $userData');
+              print('Available fields: ${(userData as Map).keys.toList()}');
+
+              // Try to create a minimal user object
+              try {
+                final minimalUser = AppUser(
+                  id: userData['id']?.toString() ?? 'unknown',
+                  email: userData['email']?.toString(),
+                  name: userData['name']?.toString() ?? 'Unknown User',
+                  role: userData['role']?.toString() ?? 'user',
+                  avatarUrl: userData['avatar_Url']?.toString() ??
+                      userData['avatar_url']?.toString(),
+                );
+                print('Created minimal user: ${minimalUser.name}');
+                return minimalUser;
+              } catch (minimalError) {
+                print('Failed to create minimal user: $minimalError');
+                return null;
+              }
+            }
+          })
+          .where((user) => user != null)
+          .cast<AppUser>()
           .toList();
+
+      print('=== SUCCESS: Fetched ${users.length} users ===');
+      print('User names: ${users.map((u) => u.name).toList()}');
+      print('User roles: ${users.map((u) => u.role).toList()}');
+
+      // Check for any users without roles
+      final usersWithoutRole =
+          users.where((u) => u.role.isEmpty || u.role == 'null').toList();
+      if (usersWithoutRole.isNotEmpty) {
+        print('WARNING: Found ${usersWithoutRole.length} users without roles:');
+        for (final user in usersWithoutRole) {
+          print('  - ${user.name} (ID: ${user.id})');
+        }
+      }
+
+      // If we only got 1 user but should have 6, this indicates an RLS issue
+      if (users.length == 1) {
+        print('⚠️  WARNING: Only 1 user returned, but database has 6 users!');
+        print(
+            'This suggests Row Level Security (RLS) policies are blocking access.');
+        print('Current user role: ${users.first.role}');
+        print('Current user ID: ${users.first.id}');
+      }
+
       return users;
     } catch (e) {
-      print('Error getting all users: $e');
-      throw 'Failed to load users.';
+      print('=== ERROR: Failed to get users ===');
+      print('Error details: $e');
+      throw 'Failed to load users: $e';
+    }
+  }
+
+  /// Debug method to check database structure
+  Future<void> debugDatabase() async {
+    try {
+      print('=== DEBUG DATABASE STRUCTURE ===');
+
+      // Check users table with different approaches
+      print('--- Method 1: Basic select ---');
+      final usersResponse = await _supabase.from('users').select('*');
+      print('Users table has ${usersResponse.length} records');
+
+      print('--- Method 2: Select specific columns ---');
+      final usersResponse2 =
+          await _supabase.from('users').select('id, name, email, role');
+      print(
+          'Users table (specific columns) has ${usersResponse2.length} records');
+
+      print('--- Method 3: Count only ---');
+      final countResponse = await _supabase.from('users').select('id');
+      print('Count response length: ${countResponse.length}');
+
+      print('--- Method 4: Check RLS ---');
+      try {
+        // Try to get all users with explicit service role
+        final allUsers = await _supabase
+            .from('users')
+            .select('*')
+            .order('created_at', ascending: false);
+        print('All users (ordered): ${allUsers.length} records');
+
+        if (allUsers.isNotEmpty) {
+          print('First user: ${allUsers.first}');
+          print('Last user: ${allUsers.last}');
+        }
+      } catch (e) {
+        print('Error with service role query: $e');
+      }
+
+      if (usersResponse.isNotEmpty) {
+        print('Sample user record: ${usersResponse.first}');
+        print(
+            'Available columns: ${(usersResponse.first as Map).keys.toList()}');
+
+        // Check specific column names
+        final firstUser = usersResponse.first as Map;
+        print('Column name check:');
+        print('  - id: ${firstUser.containsKey('id')}');
+        print('  - name: ${firstUser.containsKey('name')}');
+        print('  - email: ${firstUser.containsKey('email')}');
+        print('  - role: ${firstUser.containsKey('role')}');
+        print('  - avatar_url: ${firstUser.containsKey('avatar_url')}');
+        print('  - avatar_Url: ${firstUser.containsKey('avatar_Url')}');
+
+        // Show actual values
+        print('Sample values:');
+        print('  - ID: ${firstUser['id']}');
+        print('  - Name: ${firstUser['name']}');
+        print('  - Email: ${firstUser['email']}');
+        print('  - Role: ${firstUser['role']}');
+        print(
+            '  - Avatar URL: ${firstUser['avatar_Url'] ?? firstUser['avatar_url']}');
+      }
+
+      // Check if there are any users without roles
+      final usersWithoutRole = usersResponse
+          .where((u) =>
+              u['role'] == null || u['role'] == '' || u['role'] == 'null')
+          .toList();
+
+      if (usersWithoutRole.isNotEmpty) {
+        print('WARNING: Found ${usersWithoutRole.length} users without roles:');
+        for (final user in usersWithoutRole) {
+          print('  - ${user['name']} (ID: ${user['id']})');
+        }
+      }
+    } catch (e) {
+      print('Error debugging database: $e');
+    }
+  }
+
+  /// Creates a test user for demonstration purposes
+  Future<void> createTestUser({
+    required String name,
+    required String email,
+    required String role,
+  }) async {
+    try {
+      print('Creating test user: $name ($email) with role: $role');
+
+      final response = await _supabase.from('users').insert({
+        'name': name,
+        'email': email,
+        'role': role,
+      }).select();
+
+      print('Test user created successfully: $response');
+    } catch (e) {
+      print('Error creating test user: $e');
+      throw 'Failed to create test user: $e';
     }
   }
 
@@ -353,6 +610,37 @@ class ApiService {
     }
   }
 
+  /// Fixes users without roles by setting them to 'user' role
+  Future<void> fixUsersWithoutRoles() async {
+    try {
+      print('Fixing users without roles...');
+
+      // Find users without roles
+      final usersWithoutRole = await _supabase
+          .from('users')
+          .select('id, name, role')
+          .or('role.is.null,role.eq.,role.eq.null');
+
+      print('Found ${usersWithoutRole.length} users without roles');
+
+      for (final user in usersWithoutRole) {
+        if (user['role'] == null ||
+            user['role'] == '' ||
+            user['role'] == 'null') {
+          print('Fixing user: ${user['name']} (ID: ${user['id']})');
+          await _supabase
+              .from('users')
+              .update({'role': 'user'}).eq('id', user['id']);
+        }
+      }
+
+      print('Finished fixing users without roles');
+    } catch (e) {
+      print('Error fixing users without roles: $e');
+      throw 'Failed to fix users without roles: $e';
+    }
+  }
+
   Future<String> createRazorpayOrder(double amount) async {
     final response = await http.post(
       Uri.parse('$baseUrl/create-razorpay-order'),
@@ -363,6 +651,137 @@ class ApiService {
       return jsonDecode(response.body)['order_id'];
     } else {
       throw Exception('Failed to create Razorpay order.');
+    }
+  }
+
+  // Menu item management methods
+  Future<void> createMenuItem({
+    required String name,
+    required String description,
+    required double price,
+    required String imageUrl,
+    required bool isAvailable,
+    required bool isVegan,
+    required bool isGlutenFree,
+    required bool containsNuts,
+    required int categoryId,
+  }) async {
+    try {
+      final response = await _supabase.from('menu_items').insert({
+        'name': name,
+        'description': description,
+        'price': price,
+        'image_url': imageUrl,
+        'is_available': isAvailable,
+        'is_vegan': isVegan,
+        'is_gluten_free': isGlutenFree,
+        'contains_nuts': containsNuts,
+        'category_id': categoryId,
+      }).select();
+
+      if (response.isEmpty) {
+        throw 'Failed to create menu item.';
+      }
+    } catch (e) {
+      print('Error creating menu item: $e');
+      throw 'Failed to create menu item.';
+    }
+  }
+
+  Future<void> updateMenuItem({
+    required int id,
+    required String name,
+    required String description,
+    required double price,
+    required String imageUrl,
+    required bool isAvailable,
+    required bool isVegan,
+    required bool isGlutenFree,
+    required bool containsNuts,
+    required int categoryId,
+  }) async {
+    try {
+      await _supabase.from('menu_items').update({
+        'name': name,
+        'description': description,
+        'price': price,
+        'image_url': imageUrl,
+        'is_available': isAvailable,
+        'is_vegan': isVegan,
+        'is_gluten_free': isGlutenFree,
+        'contains_nuts': containsNuts,
+        'category_id': categoryId,
+      }).eq('id', id);
+    } catch (e) {
+      print('Error updating menu item: $e');
+      throw 'Failed to update menu item.';
+    }
+  }
+
+  Future<void> updateMenuItemAvailability(int id, bool isAvailable) async {
+    try {
+      print('Updating menu item availability for ID: $id to: $isAvailable');
+
+      // Use the Flask backend to update availability
+      final response = await http.patch(
+        Uri.parse('$baseUrl/menu/$id/availability'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'is_available': isAvailable}),
+      );
+
+      print('Availability update response status: ${response.statusCode}');
+      print('Availability update response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('Availability updated successfully through Flask backend');
+      } else if (response.statusCode == 404) {
+        throw 'Menu item not found';
+      } else {
+        throw 'Failed to update availability: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('Error updating menu item availability for ID $id: $e');
+      throw 'Failed to update item availability: $e';
+    }
+  }
+
+  Future<void> deleteMenuItem(int id) async {
+    try {
+      print('Attempting to delete menu item with ID: $id');
+
+      // Use the Flask backend to delete the menu item
+      final response = await http.delete(
+        Uri.parse('$baseUrl/menu/$id'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('Delete response status: ${response.statusCode}');
+      print('Delete response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('Delete operation completed successfully through Flask backend');
+      } else if (response.statusCode == 404) {
+        throw 'Menu item not found';
+      } else {
+        throw 'Failed to delete menu item: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('Error deleting menu item with ID $id: $e');
+      throw 'Failed to delete menu item: $e';
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    try {
+      final response = await _supabase
+          .from('categories')
+          .select('id, name')
+          .order('name', ascending: true);
+
+      return (response as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      print('Error getting categories: $e');
+      throw 'Failed to load categories.';
     }
   }
 }

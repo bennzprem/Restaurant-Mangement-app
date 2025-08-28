@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'auth_provider.dart';
 import 'confirmation_page.dart'; // Make sure this is imported
-import 'models.dart' as app_models;
 import 'theme.dart';
 
 class BookTablePage extends StatefulWidget {

@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
 import 'theme.dart';
+import 'manage_users_page.dart';
+import 'manage_menu_page.dart';
+import 'api_service.dart';
+import 'user_models.dart';
+import 'models.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -13,8 +18,115 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _selectedIndex = 0;
+  final ApiService _apiService = ApiService();
+  List<AppUser> _users = [];
+  List<Order> _orders = [];
+  List<MenuItem> _menuItems = [];
+  bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final users = await _apiService.getAllUsers();
+      final orders = await _apiService.getAllOrders();
+      final menuItems = await _apiService.getAllMenuItems();
+      setState(() {
+        _users = users;
+        _orders = orders;
+        _menuItems = menuItems;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // Handle error silently for now
+    }
+  }
+
+  Map<String, int> _getUserStats() {
+    final totalUsers = _users.length;
+    final adminUsers = _users.where((user) => user.role == 'admin').length;
+    final regularUsers = _users.where((user) => user.role == 'user').length;
+    final employeeUsers =
+        _users.where((user) => user.role == 'employee').length;
+    final deliveryUsers =
+        _users.where((user) => user.role == 'delivery').length;
+    final kitchenUsers = _users.where((user) => user.role == 'kitchen').length;
+
+    return {
+      'total': totalUsers,
+      'admin': adminUsers,
+      'user': regularUsers,
+      'employee': employeeUsers,
+      'delivery': deliveryUsers,
+      'kitchen': kitchenUsers,
+    };
+  }
+
+  Map<String, dynamic> _getOrderStats() {
+    final totalOrders = _orders.length;
+    final completedOrders =
+        _orders.where((order) => order.status == 'Completed').length;
+    final pendingOrders =
+        _orders.where((order) => order.status == 'Preparing').length;
+    final deliveredOrders =
+        _orders.where((order) => order.status == 'Delivered').length;
+    final cancelledOrders =
+        _orders.where((order) => order.status == 'Cancelled').length;
+
+    final totalRevenue =
+        _orders.fold<double>(0, (sum, order) => sum + order.totalAmount);
+    final completedRevenue = _orders
+        .where((order) => order.status == 'Completed')
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+
+    return {
+      'total': totalOrders,
+      'completed': completedOrders,
+      'pending': pendingOrders,
+      'delivered': deliveredOrders,
+      'cancelled': cancelledOrders,
+      'totalRevenue': totalRevenue,
+      'completedRevenue': completedRevenue,
+    };
+  }
+
+  Map<String, dynamic> _getMenuStats() {
+    final totalItems = _menuItems.length;
+    final availableItems = _menuItems.where((item) => item.isAvailable).length;
+    final unavailableItems =
+        _menuItems.where((item) => !item.isAvailable).length;
+    final veganItems = _menuItems.where((item) => item.isVegan).length;
+    final glutenFreeItems =
+        _menuItems.where((item) => item.isGlutenFree).length;
+    final nutFreeItems = _menuItems.where((item) => !item.containsNuts).length;
+
+    final totalValue =
+        _menuItems.fold<double>(0, (sum, item) => sum + item.price);
+    final averagePrice = totalItems > 0 ? totalValue / totalItems : 0;
+
+    return {
+      'total': totalItems,
+      'available': availableItems,
+      'unavailable': unavailableItems,
+      'vegan': veganItems,
+      'glutenFree': glutenFreeItems,
+      'nutFree': nutFreeItems,
+      'totalValue': totalValue,
+      'averagePrice': averagePrice,
+    };
+  }
+
   Widget build(BuildContext context) {
     // Check if user is logged in and is admin, if not redirect to home
     final authProvider = context.watch<AuthProvider>();
@@ -269,13 +381,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Dashboard Overview',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Dashboard Overview',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _loadDashboardData,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(_isLoading ? 'Loading...' : 'Refresh'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -290,34 +427,39 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             children: [
               _buildStatCard(
                 title: 'Total Users',
-                value: '1,234',
+                value: _isLoading ? '...' : _users.length.toString(),
                 icon: Icons.people,
                 color: Colors.blue,
-                change: '+12%',
+                change: _isLoading ? '' : '${_users.length} users',
                 isPositive: true,
               ),
               _buildStatCard(
                 title: 'Total Orders',
-                value: '856',
+                value:
+                    _isLoading ? '...' : _getOrderStats()['total'].toString(),
                 icon: Icons.shopping_cart,
                 color: Colors.green,
-                change: '+8%',
+                change: _isLoading ? '' : '${_getOrderStats()['total']} orders',
                 isPositive: true,
               ),
               _buildStatCard(
                 title: 'Revenue',
-                value: '₹45,678',
+                value: _isLoading
+                    ? '...'
+                    : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)}',
                 icon: Icons.attach_money,
                 color: Colors.orange,
-                change: '+15%',
+                change: _isLoading
+                    ? ''
+                    : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)} total',
                 isPositive: true,
               ),
               _buildStatCard(
                 title: 'Menu Items',
-                value: '89',
+                value: _isLoading ? '...' : _getMenuStats()['total'].toString(),
                 icon: Icons.restaurant_menu,
                 color: Colors.purple,
-                change: '+3',
+                change: _isLoading ? '' : '${_getMenuStats()['total']} items',
                 isPositive: true,
               ),
             ],
@@ -351,27 +493,127 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                _buildActivityItem(
-                  icon: Icons.person_add,
-                  title: 'New user registered',
-                  subtitle: 'John Doe joined the platform',
-                  time: '2 minutes ago',
-                  color: Colors.green,
-                ),
-                _buildActivityItem(
-                  icon: Icons.shopping_cart,
-                  title: 'New order received',
-                  subtitle: 'Order #1234 for ₹450',
-                  time: '5 minutes ago',
-                  color: Colors.blue,
-                ),
-                _buildActivityItem(
-                  icon: Icons.restaurant_menu,
-                  title: 'Menu item updated',
-                  subtitle: 'Pizza Margherita price changed',
-                  time: '10 minutes ago',
-                  color: Colors.orange,
-                ),
+                if (_users.isNotEmpty ||
+                    _orders.isNotEmpty ||
+                    _menuItems.isNotEmpty) ...[
+                  if (_users.isNotEmpty) ...[
+                    _buildActivityItem(
+                      icon: Icons.people,
+                      title: 'Total users in system',
+                      subtitle: '${_users.length} registered users',
+                      time: 'Current',
+                      color: Colors.blue,
+                    ),
+                    if (_users.length > 1) ...[
+                      _buildActivityItem(
+                        icon: Icons.person,
+                        title: 'Latest user',
+                        subtitle: '${_users.last.name} joined the platform',
+                        time: 'Recently',
+                        color: Colors.green,
+                      ),
+                    ],
+                    _buildActivityItem(
+                      icon: Icons.admin_panel_settings,
+                      title: 'Admin users',
+                      subtitle:
+                          '${_getUserStats()['admin'] ?? 0} admin accounts',
+                      time: 'Current',
+                      color: Colors.red,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.person_outline,
+                      title: 'Regular users',
+                      subtitle:
+                          '${_getUserStats()['user'] ?? 0} customer accounts',
+                      time: 'Current',
+                      color: Colors.green,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.work,
+                      title: 'Staff members',
+                      subtitle:
+                          '${(_getUserStats()['employee'] ?? 0) + (_getUserStats()['delivery'] ?? 0) + (_getUserStats()['kitchen'] ?? 0)} total staff',
+                      time: 'Current',
+                      color: Colors.orange,
+                    ),
+                  ],
+                  if (_orders.isNotEmpty) ...[
+                    _buildActivityItem(
+                      icon: Icons.shopping_cart,
+                      title: 'Total orders',
+                      subtitle: '${_getOrderStats()['total']} orders placed',
+                      time: 'Current',
+                      color: Colors.green,
+                    ),
+                    if (_orders.isNotEmpty) ...[
+                      _buildActivityItem(
+                        icon: Icons.check_circle,
+                        title: 'Latest order',
+                        subtitle:
+                            'Order #${_orders.first.id} - ₹${_orders.first.totalAmount.toStringAsFixed(2)}',
+                        time: 'Recently',
+                        color: Colors.blue,
+                      ),
+                    ],
+                    _buildActivityItem(
+                      icon: Icons.pending,
+                      title: 'Pending orders',
+                      subtitle:
+                          '${_getOrderStats()['pending']} orders preparing',
+                      time: 'Current',
+                      color: Colors.orange,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.done_all,
+                      title: 'Completed orders',
+                      subtitle:
+                          '${_getOrderStats()['completed']} orders completed',
+                      time: 'Current',
+                      color: Colors.green,
+                    ),
+                  ],
+                  if (_menuItems.isNotEmpty) ...[
+                    _buildActivityItem(
+                      icon: Icons.restaurant_menu,
+                      title: 'Total menu items',
+                      subtitle: '${_getMenuStats()['total']} items in menu',
+                      time: 'Current',
+                      color: Colors.purple,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.check_circle_outline,
+                      title: 'Available items',
+                      subtitle:
+                          '${_getMenuStats()['available']} items available',
+                      time: 'Current',
+                      color: Colors.green,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.eco,
+                      title: 'Vegan options',
+                      subtitle: '${_getMenuStats()['vegan']} vegan items',
+                      time: 'Current',
+                      color: Colors.lightGreen,
+                    ),
+                    _buildActivityItem(
+                      icon: Icons.restaurant,
+                      title: 'Dietary options',
+                      subtitle:
+                          '${_getMenuStats()['glutenFree']} gluten-free, ${_getMenuStats()['nutFree']} nut-free',
+                      time: 'Current',
+                      color: Colors.orange,
+                    ),
+                  ],
+                ] else ...[
+                  _buildActivityItem(
+                    icon: Icons.people_outline,
+                    title: 'No data yet',
+                    subtitle: 'No users or orders have been created yet',
+                    time: 'Current',
+                    color: Colors.grey,
+                  ),
+                ],
               ],
             ),
           ),
@@ -511,20 +753,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildUserManagement() {
-    return const Center(
-      child: Text(
-        'User Management - Coming Soon',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
-      ),
+    return ManageUsersPage(
+      onUserUpdated: _loadDashboardData,
     );
   }
 
   Widget _buildMenuManagement() {
-    return const Center(
-      child: Text(
-        'Menu Management - Coming Soon',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
-      ),
+    return ManageMenuPage(
+      onMenuUpdated: _loadDashboardData,
     );
   }
 

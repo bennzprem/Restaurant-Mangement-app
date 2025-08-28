@@ -56,6 +56,10 @@ import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'menu_screen.dart';
 import 'admin_dashboard_page.dart';
+import 'manager_dashboard_page.dart';
+import 'employee_dashboard_page.dart';
+import 'delivery_dashboard_page.dart';
+import 'kitchen_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,6 +115,10 @@ class MyApp extends StatelessWidget {
               '/booking-history': (context) => const BookingHistoryPage(),
               '/menu': (context) => const MenuScreen(),
               '/admin_dashboard': (context) => const AdminDashboardPage(),
+              '/manager_dashboard': (context) => const ManagerDashboardPage(),
+              '/employee_dashboard': (context) => const EmployeeDashboardPage(),
+              '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
+              '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
             },
           );
         },

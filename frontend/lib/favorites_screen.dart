@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
 import 'cart_provider.dart';
-import 'auth_provider.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -135,9 +134,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: 4),
-                  
+
                   // Description
                   Text(
                     item.description,
@@ -149,9 +148,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Price and action
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -165,13 +164,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           color: Color(0xFFDAE952),
                         ),
                       ),
-                      
+
                       // Action button
                       Consumer<CartProvider>(
                         builder: (context, cart, child) {
                           if (!item.isAvailable) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade200,
                                 borderRadius: BorderRadius.circular(8),
@@ -197,7 +197,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     elevation: 0,
                                   ),
                                   child: const Text(

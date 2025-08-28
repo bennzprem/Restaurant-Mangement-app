@@ -7,7 +7,6 @@ import 'package:razorpay_flutter/razorpay_flutter.dart'; // 1. Added Razorpay im
 import 'api_service.dart';
 import 'cart_provider.dart';
 import 'auth_provider.dart';
-import 'models.dart';
 
 // 2. Added the main StatefulWidget class definition
 class CartScreen extends StatefulWidget {

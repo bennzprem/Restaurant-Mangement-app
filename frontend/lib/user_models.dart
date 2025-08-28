@@ -21,9 +21,11 @@ class AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
       id: json['id'],
+      email: json['email'], // Add email field
       name: json['name'] ?? 'No Name',
       role: json['role'] ?? 'user',
-      avatarUrl: json['avatar_url'],
+      avatarUrl: json['avatar_Url'] ??
+          json['avatar_url'], // Fix: match your database column name
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
-import 'storage_service.dart';
 import 'theme.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';

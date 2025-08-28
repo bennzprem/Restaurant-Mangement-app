@@ -52,7 +52,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.user;
+    // Simple suggestion banner to go to role dashboard
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -66,6 +66,7 @@ class _HomePageState extends State<HomePage> {
                   onExplore: () => _handleNavigation(context, 'Dine-In'),
                   onPickup: () => _handleNavigation(context, 'Takeaway'),
                 ),
+                if (authProvider.isLoggedIn) _RoleQuickAccess(),
 
                 // Continuing the home_screen.dart sections
                 _MenuCategoryCarousel(),
@@ -88,6 +89,37 @@ class _HomePageState extends State<HomePage> {
           // Positioned login/profile button can be added if needed here,
           // but the original home_page used AppBar for this - we can optionally add a floating or header widget for that separately if needed
         ],
+      ),
+    );
+  }
+}
+
+class _RoleQuickAccess extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    String? route;
+    if (auth.isAdmin)
+      route = '/admin_dashboard';
+    else if (auth.isManager)
+      route = '/manager_dashboard';
+    else if (auth.isKitchen)
+      route = '/kitchen_dashboard';
+    else if (auth.isDelivery)
+      route = '/delivery_dashboard';
+    else if (auth.isEmployee) route = '/employee_dashboard';
+
+    if (route == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ElevatedButton.icon(
+          onPressed: () => Navigator.pushNamed(context, route!),
+          icon: const Icon(Icons.dashboard_customize),
+          label: const Text('Go to your dashboard'),
+        ),
       ),
     );
   }
@@ -151,9 +183,7 @@ class _ServiceSelectionCard extends StatelessWidget {
 }
 
 class _MenuCategoryCarousel extends StatefulWidget {
-  final String searchQuery;
-
-  const _MenuCategoryCarousel({this.searchQuery = ''});
+  const _MenuCategoryCarousel();
 
   @override
   State<_MenuCategoryCarousel> createState() => _MenuCategoryCarouselState();
@@ -176,14 +206,14 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   final Map<String, IconData> categoryIcons = {
     'Appetizers': Icons.fastfood,
-    'Soup & Salad': Icons.ramen_dining,
-    'Pizza': Icons.local_pizza,
+    'Soups & Salads': Icons.ramen_dining,
+    'Pizzas (11-inch)': Icons.local_pizza,
     'Pasta': Icons.restaurant_menu,
-    'Sandwich & Wrap': Icons.lunch_dining,
-    'Maincourse - Indian': Icons.dinner_dining,
-    'Maincourse - Global': Icons.public,
-    'Dessert': Icons.icecream,
-    'Beverage': Icons.local_cafe,
+    'Sandwiches & Wraps': Icons.lunch_dining,
+    'Main Course - Indian': Icons.dinner_dining,
+    'Main Course - Global': Icons.public,
+    'Desserts': Icons.icecream,
+    'Beverages': Icons.local_cafe,
   };
 
   void scrollLeft() {
