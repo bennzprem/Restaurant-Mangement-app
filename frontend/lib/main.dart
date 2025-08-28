@@ -56,6 +56,7 @@ import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'menu_screen.dart';
 import 'admin_dashboard_page.dart';
+import 'ch/user_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,7 +100,7 @@ class MyApp extends StatelessWidget {
               '/': (context) => const HomePage(),
               '/login': (context) => const LoginPage(),
               '/signup': (context) => const SignUpPage(),
-              '/profile': (context) => const MyProfilePage(),
+              '/profile': (context) => const UserDashboardPage(),
               '/forget_password_page': (context) => const ForgotPasswordPage(),
               '/phone_login': (context) => const PhoneLoginPage(),
               '/phone_signup': (context) => const PhoneSignUpPage(),

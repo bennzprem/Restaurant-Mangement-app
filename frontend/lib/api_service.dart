@@ -182,35 +182,39 @@ class ApiService {
     }
   }
 
-  Future<void> uploadProfilePicture(String userId, XFile imageFile) async {
-    final accessToken =
-        Supabase.instance.client.auth.currentSession?.accessToken;
-    if (accessToken == null) throw Exception('User not logged in');
+  Future<String?> uploadProfilePicture(String userId, XFile imageFile) async {
+  try {
+    final fileExt = imageFile.name.split('.').last;
+    final fileName = '$userId.$fileExt';
+    final filePath = '$userId/$fileName';
 
-    final uri = Uri.parse('$baseUrl/users/$userId/profile-picture');
-    final request = http.MultipartRequest('POST', uri);
+    // Upload to Supabase storage bucket
+    await Supabase.instance.client.storage
+        .from('profile-pictures')
+        .uploadBinary(
+          filePath,
+          await imageFile.readAsBytes(),
+          fileOptions: const FileOptions(upsert: true),
+        );
 
-    request.headers['Authorization'] = 'Bearer $accessToken';
+    // Get public URL
+    final publicUrl = Supabase.instance.client.storage
+        .from('profile-pictures')
+        .getPublicUrl(filePath);
+    
+    // Save publicUrl to the `users` table (so you can fetch it later)
+    await Supabase.instance.client
+        .from('users')
+        .update({'avatar_Url': publicUrl})
+        .eq('id', userId);
 
-    // --- THIS IS THE KEY FIX ---
-    // The key has been changed from 'profile_picture' to 'avatar'
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'avatar', // <-- THE CORRECT KEY
-        await imageFile.readAsBytes(),
-        filename: imageFile.name,
-        contentType: MediaType('image', imageFile.name.split('.').last),
-      ),
-    );
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode != 200) {
-      print('Upload failed with response: ${response.body}');
-      throw Exception('Failed to upload image');
-    }
+    return publicUrl;
+  } catch (e) {
+    print('❌ Upload failed: $e');
+    return null;
   }
+}
+
 
   // Add this new method inside your ApiService class
   Future<List<app_models.Table>> fetchAvailableTables({

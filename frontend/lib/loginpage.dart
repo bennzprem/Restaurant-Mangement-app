@@ -109,7 +109,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _passwordController.dispose();
     super.dispose();
   }
-
+/*
   // Core Authentication Logic (Unchanged)
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
@@ -157,7 +157,53 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       }
     }
   }
+*/
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        final response = await http.post(
+          Uri.parse('http://localhost:5000/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': _emailController.text.trim(),
+            'password': _passwordController.text.trim(),
+          }),
+        );
 
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          await Supabase.instance.client.auth.setSession(data['refresh_token']);
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/');
+          }
+        } else {
+          final errorData = json.decode(response.body);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorData['error'] ?? 'Invalid Credentials'),
+                backgroundColor: Colors.red.withOpacity(0.8),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
   Future<void> _signInWithGoogle() async {
     try {
       final redirectUrl =

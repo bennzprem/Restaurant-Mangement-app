@@ -21,9 +21,38 @@ class MyProfilePage extends StatefulWidget {
 class _MyProfilePageState extends State<MyProfilePage> {
   final ImagePicker _picker = ImagePicker();
 
+  final ApiService _apiService = ApiService(); // Add ApiService instance
+  late Future<List<dynamic>> _statsFuture; // Future to hold our data
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data when the page loads
+    _loadUserStats();
+  }
+
+  void _loadUserStats() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.accessToken;
+    final userId = authProvider.user?.id;
+
+    if (token != null && userId != null) {
+      setState(() {
+        // Use Future.wait to fetch both sets of data simultaneously
+        _statsFuture = Future.wait([
+          _apiService.fetchOrderHistory(userId),
+          _apiService.getReservations(token),
+        ]);
+      });
+    } else {
+      // Handle case where user is not logged in
+      _statsFuture = Future.value([[], []]);
+    }
+  }
+
   // In lib/my_profile_page.dart
 
-// This is the function to handle picking and uploading the image
+  // This is the function to handle picking and uploading the image
   Future<void> _pickAndUploadImage() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user; // Get the user object
@@ -129,7 +158,62 @@ class _MyProfilePageState extends State<MyProfilePage> {
               ],
             ),
           ),
+// --- ch start - christo
           const SizedBox(height: 24),
+
+          // --- NEW: USER DASHBOARD SECTION ---
+          _buildSectionHeader(context, 'My Dashboard'),
+          FutureBuilder<List<dynamic>>(
+            future: _statsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                // Show a simple loading indicator while fetching data
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(child: Text('Could not load stats.'));
+              }
+              if (!snapshot.hasData) {
+                return const Center(child: Text('No stats available.'));
+              }
+
+              // snapshot.data contains a list: [orderList, reservationList]
+              final orderCount = snapshot.data![0].length.toString();
+              final reservationCount = snapshot.data![1].length.toString();
+
+              // This is the Row you already built, but now with real data
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.history,
+                      label: 'Total Orders',
+                      value: orderCount, // Use real data
+                      color: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.calendar_today,
+                      label: 'Reservations',
+                      value: reservationCount, // Use real data
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+// ------------------------------------
+          // --- ch end - christo
+
+          // // --- Settings Section ---
+          // _buildSectionHeader(context, 'Account Settings'),
+          // const SizedBox(height: 24),
 
           // --- Settings Section (Logic is unchanged) ---
           _buildSectionHeader(context, 'Account Settings'),
@@ -229,6 +313,45 @@ class _MyProfilePageState extends State<MyProfilePage> {
         title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
+      ),
+    );
+  }
+
+// Helper widget for a dashboard statistic card
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color,
+                ),
+          ),
+        ],
       ),
     );
   }

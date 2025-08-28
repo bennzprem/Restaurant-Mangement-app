@@ -131,30 +131,44 @@ class HeaderWidget extends StatelessWidget {
                         // User is logged in - show profile/logout
                         return Row(
                           children: [
-                            Container(
-                              margin: const EdgeInsets.only(right: 16),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDAE952),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.black,
-                                size: 20,
-                              ),
-                            ),
-                            Text(
-                              authProvider.user?.name ?? 'User',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: themeProvider.isDarkMode
-                                    ? Colors.white
-                                    : Colors.black,
+                            // Wrap the icon and name in an InkWell to make them clickable
+                            InkWell(
+                              onTap: () {
+                                // This navigates to the MyProfilePage
+                                Navigator.pushNamed(context, '/profile');
+                              },
+                              borderRadius: BorderRadius.circular(24), // Makes the splash effect look nice
+                              child: Row(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 16),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDAE952),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  Text(
+                                    authProvider.user?.name ?? 'User',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 16),
+                            
+                            // The existing Logout button remains here, untouched
                             ElevatedButton(
                               onPressed: () {
                                 authProvider.signOut();
@@ -177,6 +191,56 @@ class HeaderWidget extends StatelessWidget {
                             ),
                           ],
                         );
+                        
+                        // // User is logged in - show profile/logout
+                        // return Row(
+                        //   children: [
+                        //     Container(
+                        //       margin: const EdgeInsets.only(right: 16),
+                        //       padding: const EdgeInsets.all(8),
+                        //       decoration: BoxDecoration(
+                        //         color: const Color(0xFFDAE952),
+                        //         borderRadius: BorderRadius.circular(20),
+                        //       ),
+                        //       child: Icon(
+                        //         Icons.person,
+                        //         color: Colors.black,
+                        //         size: 20,
+                        //       ),
+                        //     ),
+                        //     Text(
+                        //       authProvider.user?.name ?? 'User',
+                        //       style: TextStyle(
+                        //         fontWeight: FontWeight.w600,
+                        //         fontSize: 16,
+                        //         color: themeProvider.isDarkMode
+                        //             ? Colors.white
+                        //             : Colors.black,
+                        //       ),
+                        //     ),
+                        //     const SizedBox(width: 16),
+                        //     ElevatedButton(
+                        //       onPressed: () {
+                        //         authProvider.signOut();
+                        //       },
+                        //       style: ElevatedButton.styleFrom(
+                        //         backgroundColor: Colors.grey[300],
+                        //         foregroundColor: Colors.black87,
+                        //         padding: const EdgeInsets.symmetric(
+                        //             horizontal: 20, vertical: 12),
+                        //         shape: RoundedRectangleBorder(
+                        //           borderRadius: BorderRadius.circular(24),
+                        //         ),
+                        //         elevation: 0,
+                        //       ),
+                        //       child: const Text(
+                        //         'Logout',
+                        //         style: TextStyle(
+                        //             fontWeight: FontWeight.w600, fontSize: 15),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // );
                       } else {
                         // User is not logged in - show login and sign up buttons
                         return Row(
