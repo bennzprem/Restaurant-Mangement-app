@@ -66,7 +66,8 @@ class ThemeProvider extends ChangeNotifier {
     return ThemeData(
       brightness: Brightness.dark,
       primaryColor: const Color(0xFFDAE952),
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      // Use pure black background to match the requested dark mode look
+      scaffoldBackgroundColor: const Color(0xFF000000),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1E1E1E),
         elevation: 1,

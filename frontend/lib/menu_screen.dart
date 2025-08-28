@@ -1,5 +1,6 @@
 // lib/menu_screen.dart
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
@@ -10,6 +11,7 @@ import 'models.dart';
 import 'auth_provider.dart';
 import 'package:restaurant_app/widgets/header_widget.dart';
 import 'package:restaurant_app/widgets/navbar_widget.dart';
+import 'package:restaurant_app/widgets/footer_widget.dart';
 
 class MenuScreen extends StatefulWidget {
   final String? tableSessionId;
@@ -161,7 +163,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: null,
       drawer: !isWide ? _buildDrawer() : null,
       body: Stack(
@@ -334,92 +336,77 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSidebar(List<MenuCategory> menuCategories) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(left: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: 280,
+          margin: const EdgeInsets.only(left: 16, top: 24),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white10 : Colors.white.withOpacity(0.6)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: Colors.white.withOpacity(isDark ? 0.12 : 0.25)),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Sidebar header
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin:
-                const EdgeInsets.only(top: 24), // Add top margin to move down
-            decoration: BoxDecoration(
-              color: const Color(0xFFDAE952),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.category,
-                    color: Color(0xFFDAE952),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                const Text(
-                  'Categories',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Categories list
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: menuCategories.length,
-              itemBuilder: (context, index) {
-                final category = menuCategories[index];
-                return AnimatedBuilder(
-                  animation: _slideController,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(
-                          0, 20 * (1 - _slideAnimation.value) * (index + 1)),
-                      child: Opacity(
-                        opacity: _slideAnimation.value,
-                        child: _buildCategoryItem(
-                          category,
-                          index,
-                          isSelected: index == _selectedCategoryIndex,
-                          onTap: () =>
-                              setState(() => _selectedCategoryIndex = index),
+          child: Column(
+            children: [
+              // Heading that mirrors the selected category name
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.category, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Categories',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                          letterSpacing: 0.5,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              // Categories list (header removed per request)
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: menuCategories.length,
+                  itemBuilder: (context, index) {
+                    final category = menuCategories[index];
+                    return AnimatedBuilder(
+                      animation: _slideController,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0,
+                              20 * (1 - _slideAnimation.value) * (index + 1)),
+                          child: Opacity(
+                            opacity: _slideAnimation.value,
+                            child: _buildCategoryItem(
+                              category,
+                              index,
+                              isSelected: index == _selectedCategoryIndex,
+                              onTap: () => setState(
+                                  () => _selectedCategoryIndex = index),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -430,6 +417,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -466,27 +454,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.white : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Text(
-                    categoryIcons[category.name] ?? '🍴',
-                    style: TextStyle(
-                      fontSize: isSelected ? 22 : 20,
-                    ),
+                Text(
+                  categoryIcons[category.name] ?? '🍴',
+                  style: TextStyle(
+                    fontSize: isSelected ? 22 : 20,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -500,7 +471,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           fontSize: isSelected ? 16 : 14,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected ? Colors.white : Colors.black87,
+                          color: isSelected
+                              ? Colors.black
+                              : (isDark ? Colors.white : Colors.black87),
                         ),
                         child: Text(category.name),
                       ),
@@ -509,8 +482,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         style: TextStyle(
                           fontSize: isSelected ? 11 : 10,
                           color: isSelected
-                              ? Colors.white70
-                              : Colors.grey.shade600,
+                              ? Colors.black87
+                              : (isDark
+                                  ? Colors.white70
+                                  : Colors.grey.shade600),
                         ),
                         child: Text('${category.items.length} items'),
                       ),
@@ -522,7 +497,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     duration: const Duration(milliseconds: 300),
                     child: const Icon(
                       Icons.check_circle,
-                      color: Colors.white,
+                      color: Colors.black,
                       size: 20,
                     ),
                   ),
@@ -535,155 +510,126 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMenuContent(MenuCategory selectedCategory) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Category header
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.all(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFDAE952),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFDAE952).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: (isDark ? Colors.white10 : Colors.white.withOpacity(0.6)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: Colors.white.withOpacity(isDark ? 0.12 : 0.25)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                // Category header removed (no solid top container)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        categoryIcons[selectedCategory.name] ?? '🍴',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedCategory.name,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${selectedCategory.items.length} delicious items',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  child: Text(
-                    categoryIcons[selectedCategory.name] ?? '🍴',
-                    style: const TextStyle(fontSize: 18),
                   ),
                 ),
-                const SizedBox(width: 14),
+
+                // Menu items grid
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 400),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const double cardWidth = 300;
+                      final int crossAxisCount =
+                          (constraints.maxWidth / cardWidth)
+                              .floor()
+                              .clamp(1, 4);
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(20),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          mainAxisExtent: 300,
                         ),
-                        child: Text(selectedCategory.name),
-                      ),
-                      const SizedBox(height: 4),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 400),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                          letterSpacing: 0.3,
-                        ),
-                        child: Text(
-                            '${selectedCategory.items.length} delicious items'),
-                      ),
-                    ],
+                        itemCount: selectedCategory.items.length,
+                        itemBuilder: (context, index) {
+                          return AnimatedBuilder(
+                            animation: _fadeController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _fadeAnimation.value,
+                                child: Opacity(
+                                  opacity: _fadeAnimation.value,
+                                  child: _buildMenuItemCard(
+                                      selectedCategory.items[index]),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
-
-          // Menu items grid
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                const double cardWidth = 300;
-                final int crossAxisCount =
-                    (constraints.maxWidth / cardWidth).floor().clamp(1, 4);
-
-                return GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    mainAxisExtent: 300,
-                  ),
-                  itemCount: selectedCategory.items.length,
-                  itemBuilder: (context, index) {
-                    return AnimatedBuilder(
-                      animation: _fadeController,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _fadeAnimation.value,
-                          child: Opacity(
-                            opacity: _fadeAnimation.value,
-                            child: _buildMenuItemCard(
-                                selectedCategory.items[index]),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildMenuItemCard(MenuItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(isDark ? 0.12 : 0.25),
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image section
-          Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Image section
               ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
@@ -699,196 +645,182 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 160,
-                      color: const Color(0xFFF3F8C5),
-                      child: const Icon(
-                        Icons.restaurant,
-                        size: 50,
-                        color: Color(0xFFDAE952),
-                      ),
-                    ),
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 160,
+                        color: const Color(0xFFF3F8C5),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.restaurant,
+                          size: 50,
+                          color: Color(0xFFDAE952),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
 
-              // Favorite button
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Consumer<FavoritesProvider>(
-                  builder: (context, favoritesProvider, child) {
-                    final isFavorited = favoritesProvider.isFavorite(item.id);
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+              // Content section
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title row with favorite button
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Consumer<FavoritesProvider>(
+                            builder: (context, favoritesProvider, child) {
+                              final isFavorited =
+                                  favoritesProvider.isFavorite(item.id);
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  padding: const EdgeInsets.all(8),
+                                  iconSize: 18,
+                                  icon: Icon(
+                                    isFavorited
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: isFavorited
+                                        ? Colors.red
+                                        : Colors.grey.shade600,
+                                  ),
+                                  onPressed: () {
+                                    final authProvider =
+                                        Provider.of<AuthProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                    if (authProvider.isLoggedIn) {
+                                      Provider.of<FavoritesProvider>(
+                                        context,
+                                        listen: false,
+                                      ).toggleFavorite(item);
+                                    } else {
+                                      showLoginPrompt(context);
+                                    }
+                                  },
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
-                      child: IconButton(
-                        padding: const EdgeInsets.all(8),
-                        iconSize: 18,
-                        icon: Icon(
-                          isFavorited ? Icons.favorite : Icons.favorite_border,
-                          color:
-                              isFavorited ? Colors.red : Colors.grey.shade600,
-                        ),
-                        onPressed: () {
-                          final authProvider = Provider.of<AuthProvider>(
-                            context,
-                            listen: false,
-                          );
-                          if (authProvider.isLoggedIn) {
-                            Provider.of<FavoritesProvider>(
-                              context,
-                              listen: false,
-                            ).toggleFavorite(item);
-                          } else {
-                            showLoginPrompt(context);
-                          }
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
 
-              // Availability badge
-              if (!item.isAvailable)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Unavailable',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+                      const SizedBox(height: 4),
 
-          // Content section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // Description
-                  Expanded(
-                    child: Text(
-                      item.description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Price and action
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Price
-                      Text(
-                        '₹${item.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFDAE952),
+                      // Description
+                      Expanded(
+                        child: Text(
+                          item.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                isDark ? Colors.white70 : Colors.grey.shade600,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
 
-                      // Action button
-                      Consumer<CartProvider>(
-                        builder: (context, cart, child) {
-                          if (!item.isAvailable) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'Unavailable',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            );
-                          }
+                      const SizedBox(height: 12),
 
-                          final quantity = cart.getItemQuantity(item.id);
-                          return quantity == 0
-                              ? ElevatedButton(
-                                  onPressed: () => cart.addItem(item),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFDAE952),
-                                    foregroundColor: Colors.black,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    elevation: 0,
+                      // Price and action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '₹${item.price.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFDAE952),
+                            ),
+                          ),
+                          Consumer<CartProvider>(
+                            builder: (context, cart, child) {
+                              if (!item.isAvailable) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Text(
-                                    'Add',
+                                    'Unavailable',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                )
-                              : _buildQuantityCounter(item);
-                        },
+                                );
+                              }
+
+                              final quantity = cart.getItemQuantity(item.id);
+                              return quantity == 0
+                                  ? ElevatedButton(
+                                      onPressed: () => cart.addItem(item),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFFDAE952),
+                                        foregroundColor: Colors.black,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                  : _buildQuantityCounter(item);
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
