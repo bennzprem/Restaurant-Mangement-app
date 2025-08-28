@@ -127,6 +127,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     };
   }
 
+  @override
   Widget build(BuildContext context) {
     // Check if user is logged in and is admin, if not redirect to home
     final authProvider = context.watch<AuthProvider>();

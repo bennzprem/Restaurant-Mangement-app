@@ -382,7 +382,7 @@ class _ProfileContentState extends State<ProfileContent> {
                 fontWeight: FontWeight.w600, color: Colors.black54)),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           items: items
               .map((item) => DropdownMenuItem(value: item, child: Text(item)))
               .toList(),

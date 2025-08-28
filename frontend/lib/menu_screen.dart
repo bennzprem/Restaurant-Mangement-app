@@ -1138,7 +1138,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFFDAE952),
+        activeThumbColor: const Color(0xFFDAE952),
         activeTrackColor: const Color(0xFFDAE952).withOpacity(0.5),
         thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {

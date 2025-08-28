@@ -8,7 +8,7 @@ import '../services/chat_service.dart';
 import '../../auth_provider.dart';
 
 class EnhancedChatBotWidget extends StatefulWidget {
-  const EnhancedChatBotWidget({Key? key}) : super(key: key);
+  const EnhancedChatBotWidget({super.key});
 
   @override
   State<EnhancedChatBotWidget> createState() => _EnhancedChatBotWidgetState();

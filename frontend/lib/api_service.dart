@@ -409,15 +409,13 @@ class ApiService {
       print('Response type: ${response.runtimeType}');
       print('Response length: ${response.length}');
 
-      if (response is List) {
-        print('Response is a List with ${response.length} items');
+      print('Response is a List with ${response.length} items');
 
-        // Print first few items for debugging
-        for (int i = 0; i < response.length && i < 3; i++) {
-          print('Item $i: ${response[i]}');
-        }
+      // Print first few items for debugging
+      for (int i = 0; i < response.length && i < 3; i++) {
+        print('Item $i: ${response[i]}');
       }
-
+    
       final users = (response as List)
           .map((userData) {
             print('Processing user data: $userData');
@@ -448,7 +446,7 @@ class ApiService {
             } catch (parseError) {
               print('Error parsing user data: $parseError');
               print('Problematic data: $userData');
-              print('Available fields: ${(userData as Map).keys.toList()}');
+              print('Available fields: ${(userData).keys.toList()}');
 
               // Try to create a minimal user object
               try {
