@@ -515,7 +515,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
                                       value: item.isAvailable,
                                       onChanged: (value) =>
                                           _toggleItemAvailability(item),
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                     ),
                                     const SizedBox(width: 8),
                                     PopupMenuButton<String>(

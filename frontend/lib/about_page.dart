@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'widgets/header_widget.dart';
-import 'widgets/about_section.dart';
 import 'widgets/navbar_widget.dart';
 import 'widgets/footer_widget.dart';
 

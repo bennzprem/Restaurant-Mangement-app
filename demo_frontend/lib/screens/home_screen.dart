@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/hero_section.dart';
-import '../widgets/menu_section.dart';
 import '../widgets/about_section.dart';
 import '../widgets/testimonials_section.dart';
 import '../widgets/newsletter_section.dart';

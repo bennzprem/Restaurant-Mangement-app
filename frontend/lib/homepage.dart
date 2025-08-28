@@ -99,9 +99,9 @@ class _RoleQuickAccess extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     String? route;
-    if (auth.isAdmin)
+    if (auth.isAdmin) {
       route = '/admin_dashboard';
-    else if (auth.isManager)
+    } else if (auth.isManager)
       route = '/manager_dashboard';
     else if (auth.isKitchen)
       route = '/kitchen_dashboard';

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class ChatBotWidget extends StatefulWidget {
-  const ChatBotWidget({Key? key}) : super(key: key);
+  const ChatBotWidget({super.key});
 
   @override
   State<ChatBotWidget> createState() => _ChatBotWidgetState();
