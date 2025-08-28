@@ -628,8 +628,13 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                                   _isAvailable = value;
                                 });
                               },
-                              activeColor: Colors.green,
-                              activeTrackColor: Colors.green.withOpacity(0.3),
+                              thumbColor: MaterialStateProperty.resolveWith(
+                                  (states) => Colors.white),
+                              trackColor: MaterialStateProperty.resolveWith(
+                                  (states) =>
+                                      states.contains(MaterialState.selected)
+                                          ? Colors.green.withOpacity(0.5)
+                                          : Colors.grey.shade300),
                             ),
                           ],
                         ),

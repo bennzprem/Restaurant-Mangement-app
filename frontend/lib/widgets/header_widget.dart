@@ -178,27 +178,36 @@ class HeaderWidget extends StatelessWidget {
                             // User is logged in - show profile/logout
                             return Row(
                               children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 16),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFDAE952),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.black,
-                                    size: 20,
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () =>
+                                      Navigator.pushNamed(context, '/profile'),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 16),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDAE952),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  authProvider.user?.name ?? 'User',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                    color: themeProvider.isDarkMode
-                                        ? Colors.white
-                                        : Colors.black,
+                                GestureDetector(
+                                  onTap: () =>
+                                      Navigator.pushNamed(context, '/profile'),
+                                  child: Text(
+                                    authProvider.user?.name ?? 'User',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -219,7 +228,8 @@ class HeaderWidget extends StatelessWidget {
                                   child: const Text(
                                     'Logout',
                                     style: TextStyle(
-                                        fontWeight: FontWeight.w600, fontSize: 15),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15),
                                   ),
                                 ),
                               ],

@@ -416,6 +416,52 @@ def delete_menu_item(item_id):
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
 
+# ----------------- ORDERS -----------------
+@app.route('/order', methods=['POST'])
+def create_order():
+    try:
+        data = request.get_json() or {}
+        total = data.get('total')
+        user_id = data.get('user_id')
+        address = data.get('address')
+        items = data.get('items', [])
+
+        if total is None or not user_id or not isinstance(items, list) or len(items) == 0:
+            return jsonify({'error': 'total, user_id and items are required'}), 400
+
+        # Insert order
+        order_payload = {
+            'user_id': user_id,
+            'total_amount': total,
+            'address': address,
+            'status': 'Completed',
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }
+        order_res = supabase.table('orders').insert(order_payload).execute()
+        if not order_res.data:
+            return jsonify({'error': 'Failed to create order'}), 500
+
+        order = order_res.data[0]
+        order_id = order['id']
+
+        # Prepare order_items rows
+        order_items_rows = []
+        for it in items:
+            order_items_rows.append({
+                'order_id': order_id,
+                'menu_item_id': it.get('menu_item_id'),
+                'quantity': it.get('quantity', 1),
+                'price_at_order': it.get('price_at_order', 0.0),
+            })
+
+        if order_items_rows:
+            supabase.table('order_items').insert(order_items_rows).execute()
+
+        return jsonify({'order_id': order_id, 'message': 'Order created'}), 201
+    except Exception as e:
+        print(f"Error creating order: {e}")
+        return jsonify({'error': 'Failed to create order'}), 500
+
 @app.route('/menu/<int:item_id>/availability', methods=['PATCH'])
 def update_menu_item_availability(item_id):
     """Updates the availability of a specific menu item."""

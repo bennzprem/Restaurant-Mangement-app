@@ -109,38 +109,37 @@ class _ProfileContentState extends State<ProfileContent> {
   }
 
   Future<void> _pickAndUploadImage() async {
-  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-  final user = authProvider.user;
-  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-  if (image == null || user == null) return;
+    if (image == null || user == null) return;
 
-  try {
-    // Upload and get the new avatar URL
-    final newUrl = await ApiService().uploadProfilePicture(user.id, image);
+    try {
+      // Upload and get the new avatar URL
+      final newUrl = await ApiService().uploadProfilePicture(user.id, image);
 
-    if (newUrl != null) {
-      // Update provider state immediately
-      await authProvider.refreshUserProfile();
+      if (newUrl != null) {
+        // Update provider state immediately
+        await authProvider.refreshUserProfile();
 
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Profile picture updated!')),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Failed to upload profile picture.')),
+        );
+      }
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Profile picture updated!')),
-      );
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Failed to upload profile picture.')),
+        SnackBar(content: Text('⚠️ Failed to upload image: $e')),
       );
     }
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('⚠️ Failed to upload image: $e')),
-    );
   }
-}
-
 
   // --- UI BUILD METHODS ---
 
@@ -196,12 +195,12 @@ class _ProfileContentState extends State<ProfileContent> {
         child: Column(
           children: [
             CircleAvatar(
-  radius: 50,
-  backgroundImage: user?.avatarUrl != null
-      ? NetworkImage(user!.avatarUrl!)
-      : const AssetImage('assets/default_avatar.png') as ImageProvider,
-      
-),
+              radius: 50,
+              backgroundImage: user?.avatarUrl != null
+                  ? NetworkImage(user!.avatarUrl!)
+                  : const AssetImage('assets/default_avatar.png')
+                      as ImageProvider,
+            ),
 
             const SizedBox(height: 16),
             Text(user?.name ?? 'User Name',
@@ -275,14 +274,17 @@ class _ProfileContentState extends State<ProfileContent> {
             ),
             const SizedBox(height: 24),
             _buildTextField(
-                label: 'Email', controller: _emailController, readOnly: true, isEditing: _isEditing,),
+              label: 'Email',
+              controller: _emailController,
+              readOnly: true,
+              isEditing: _isEditing,
+            ),
             const SizedBox(height: 24),
             _buildDropdownField(
                 label: 'Gender',
                 items: ['Male', 'Female', 'Prefer not to say'],
                 value: 'Male',
-                isEditing: _isEditing
-            ),
+                isEditing: _isEditing),
           ],
         ),
       ),

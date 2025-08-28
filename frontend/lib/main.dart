@@ -49,7 +49,6 @@ import 'signuppage.dart';
 import 'forget_password_page.dart';
 import 'phone-login_page.dart';
 import 'phone_signup-page.dart';
-import 'my_profile_page.dart';
 import 'order_history_page.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
