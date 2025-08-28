@@ -678,9 +678,16 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             prefixIcon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
-              if (value == null || value.isEmpty || !value.contains('@')) {
-                return 'Please enter a valid email address';
-              }
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return 'Please enter an email address';
+              // Allow common providers or any well-formed email
+              final emailRegex = RegExp(r'^[\w\.-]+@([\w\-]+\.)+[A-Za-z]{2,}$');
+              final allowedProviders = RegExp(
+                  r'@(gmail\.com|yahoo\.com|hotmail\.com)$',
+                  caseSensitive: false);
+              if (!emailRegex.hasMatch(v)) return 'Enter a valid email address';
+              if (!allowedProviders.hasMatch(v))
+                return 'Use a common provider (gmail, yahoo, hotmail)';
               return null;
             },
           ),
@@ -692,9 +699,14 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             prefixIcon: Icons.lock_outline,
             isPassword: true,
             validator: (value) {
-              if (value == null || value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
+              final v = value ?? '';
+              if (v.length < 8) return 'At least 8 characters required';
+              if (!RegExp(r'[A-Z]').hasMatch(v))
+                return 'Include at least one uppercase letter';
+              if (!RegExp(r'[0-9]').hasMatch(v))
+                return 'Include at least one number';
+              if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v))
+                return 'Include at least one special character';
               return null;
             },
           ),
