@@ -152,7 +152,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    initialValue: _specialOccasion,
+                    value: _specialOccasion,
                     items:
                         ['None', 'Birthday', 'Anniversary', 'Business Meeting']
                             .map(
