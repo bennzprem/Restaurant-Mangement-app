@@ -17,7 +17,9 @@ class HeaderWidget extends StatelessWidget {
           builder: (context, themeProvider, child) {
             return Stack(
               children: [
-                Positioned.fill(child: _ModernAnimatedBackdrop(isDark: themeProvider.isDarkMode)),
+                Positioned.fill(
+                    child: _ModernAnimatedBackdrop(
+                        isDark: themeProvider.isDarkMode)),
                 Container(
                   decoration: BoxDecoration(
                     gradient: themeProvider.isDarkMode
@@ -49,7 +51,8 @@ class HeaderWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
                   child: Row(
                     children: [
                       // Logo
@@ -77,7 +80,8 @@ class HeaderWidget extends StatelessWidget {
                               margin: const EdgeInsets.only(right: 16),
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/admin_dashboard');
+                                  Navigator.pushNamed(
+                                      context, '/admin_dashboard');
                                 },
                                 icon: const Icon(Icons.admin_panel_settings,
                                     size: 18),
@@ -136,117 +140,122 @@ class HeaderWidget extends StatelessWidget {
                         },
                       ),
 
-                  // Authentication Buttons
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, child) {
-                      if (authProvider.isLoggedIn) {
-                        // User is logged in - show profile/logout
-                        return Row(
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(right: 16),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDAE952),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.black,
-                                size: 20,
-                              ),
-                            ),
-                            Text(
-                              authProvider.user?.name ?? 'User',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: themeProvider.isDarkMode
-                                    ? Colors.white
-                                    : Colors.black,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                authProvider.signOut();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey[300],
-                                foregroundColor: Colors.black87,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
+                      // Authentication Buttons
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          if (authProvider.isLoggedIn) {
+                            // User is logged in - show profile/logout
+                            return Row(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 16),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDAE952),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.black,
+                                    size: 20,
+                                  ),
                                 ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Logout',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 15),
-                              ),
-                            ),
-                          ],
-                        );
-                      } else {
-                        // User is not logged in - show login and sign up buttons
-                        return Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/login');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: themeProvider.isDarkMode
-                                    ? Colors.white
-                                    : Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
+                                Text(
+                                  authProvider.user?.name ?? 'User',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
                                 ),
-                                elevation: 0,
-                                side: BorderSide(
-                                  color: const Color(0xFFDAE952),
-                                  width: 2,
+                                const SizedBox(width: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    authProvider.signOut();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey[300],
+                                    foregroundColor: Colors.black87,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text(
+                                    'Logout',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15),
+                                  ),
                                 ),
-                              ),
-                              child: const Text(
-                                'Login',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 15),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/signup');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFDAE952),
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
+                              ],
+                            );
+                          } else {
+                            // User is not logged in - show login and sign up buttons
+                            return Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/login');
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: themeProvider.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 0,
+                                    side: BorderSide(
+                                      color: const Color(0xFFDAE952),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Login',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15),
+                                  ),
                                 ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 15),
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/signup');
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDAE952),
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                )
+              ],
             );
           },
         ),
@@ -260,7 +269,8 @@ class _ModernAnimatedBackdrop extends StatefulWidget {
   const _ModernAnimatedBackdrop({required this.isDark});
 
   @override
-  State<_ModernAnimatedBackdrop> createState() => _ModernAnimatedBackdropState();
+  State<_ModernAnimatedBackdrop> createState() =>
+      _ModernAnimatedBackdropState();
 }
 
 class _ModernAnimatedBackdropState extends State<_ModernAnimatedBackdrop>
@@ -277,17 +287,17 @@ class _ModernAnimatedBackdropState extends State<_ModernAnimatedBackdrop>
       vsync: this,
       duration: const Duration(seconds: 8),
     )..repeat();
-    
+
     _particleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
-    
+
     _sweepController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
-    
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -346,20 +356,22 @@ class _ModernHeaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Color accent = const Color(0xFFDAE952);
     final Color accent2 = const Color(0xFF4CAF50);
-    final Color subtle = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06);
-    
+    final Color subtle = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.06);
+
     // Dynamic wave patterns
     _drawWaves(canvas, size, accent, accent2);
-    
+
     // Floating particles
     _drawParticles(canvas, size, accent);
-    
+
     // Diagonal sweep effect
     _drawDiagonalSweep(canvas, size, accent, accent2);
-    
+
     // Pulsing radial glow
     _drawPulsingGlow(canvas, size, accent, subtle);
-    
+
     // Geometric accent lines
     _drawGeometricAccents(canvas, size, accent, accent2);
   }
@@ -373,37 +385,45 @@ class _ModernHeaderPainter extends CustomPainter {
     // Primary wave
     final Path wave1 = Path();
     wave1.moveTo(0, size.height * 0.7);
-    
+
     for (double x = 0; x <= size.width; x += 5) {
-      final double y = size.height * 0.7 + 
+      final double y = size.height * 0.7 +
           sin((x / size.width * 4 * pi) + (waveProgress * 2 * pi)) * 15 +
           sin((x / size.width * 8 * pi) + (waveProgress * 4 * pi)) * 8;
       wave1.lineTo(x, y);
     }
-    
+
     wavePaint.shader = LinearGradient(
-      colors: [accent.withOpacity(0.6), accent2.withOpacity(0.4), accent.withOpacity(0.6)],
+      colors: [
+        accent.withOpacity(0.6),
+        accent2.withOpacity(0.4),
+        accent.withOpacity(0.6)
+      ],
       stops: [0.0, 0.5, 1.0],
     ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    
+
     canvas.drawPath(wave1, wavePaint);
 
     // Secondary wave
     final Path wave2 = Path();
     wave2.moveTo(0, size.height * 0.8);
-    
+
     for (double x = 0; x <= size.width; x += 5) {
-      final double y = size.height * 0.8 + 
+      final double y = size.height * 0.8 +
           sin((x / size.width * 3 * pi) - (waveProgress * 3 * pi)) * 12 +
           cos((x / size.width * 6 * pi) + (waveProgress * 2 * pi)) * 6;
       wave2.lineTo(x, y);
     }
-    
+
     wavePaint.shader = LinearGradient(
-      colors: [accent2.withOpacity(0.4), accent.withOpacity(0.3), accent2.withOpacity(0.4)],
+      colors: [
+        accent2.withOpacity(0.4),
+        accent.withOpacity(0.3),
+        accent2.withOpacity(0.4)
+      ],
       stops: [0.0, 0.5, 1.0],
     ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    
+
     canvas.drawPath(wave2, wavePaint);
   }
 
@@ -417,39 +437,41 @@ class _ModernHeaderPainter extends CustomPainter {
       final double radius = 20 + sin(particleProgress * 4 * pi + i) * 10;
       final double x = size.width * 0.5 + cos(angle) * radius;
       final double y = size.height * 0.5 + sin(angle) * radius;
-      
+
       final double opacity = 0.3 + 0.4 * sin(particleProgress * 3 * pi + i);
       particlePaint.color = accent.withOpacity(opacity);
-      
+
       canvas.drawCircle(Offset(x, y), 2 + opacity * 3, particlePaint);
     }
   }
 
-  void _drawDiagonalSweep(Canvas canvas, Size size, Color accent, Color accent2) {
+  void _drawDiagonalSweep(
+      Canvas canvas, Size size, Color accent, Color accent2) {
     final Paint sweepPaint = Paint()
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
 
     final double sweepWidth = size.width * 0.3;
     final double sweepHeight = size.height * 0.8;
-    
+
     final Path sweepPath = Path();
     sweepPath.moveTo(
-      size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8,
-      size.height * 0.1
-    );
+        size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8,
+        size.height * 0.1);
     sweepPath.lineTo(
-      size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8 + sweepWidth,
-      size.height * 0.1
-    );
+        size.width * 0.5 +
+            (sweepProgress - 0.5) * size.width * 0.8 +
+            sweepWidth,
+        size.height * 0.1);
     sweepPath.lineTo(
-      size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8 + sweepWidth + 50,
-      size.height * 0.9
-    );
+        size.width * 0.5 +
+            (sweepProgress - 0.5) * size.width * 0.8 +
+            sweepWidth +
+            50,
+        size.height * 0.9);
     sweepPath.lineTo(
-      size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8 + 50,
-      size.height * 0.9
-    );
+        size.width * 0.5 + (sweepProgress - 0.5) * size.width * 0.8 + 50,
+        size.height * 0.9);
     sweepPath.close();
 
     sweepPaint.shader = LinearGradient(
@@ -501,7 +523,8 @@ class _ModernHeaderPainter extends CustomPainter {
     );
   }
 
-  void _drawGeometricAccents(Canvas canvas, Size size, Color accent, Color accent2) {
+  void _drawGeometricAccents(
+      Canvas canvas, Size size, Color accent, Color accent2) {
     final Paint accentPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5
@@ -536,7 +559,7 @@ class _ModernHeaderPainter extends CustomPainter {
     // Floating accent dots
     accentPaint.style = PaintingStyle.fill;
     accentPaint.color = accent.withOpacity(0.3);
-    
+
     final List<Offset> accentDots = [
       Offset(size.width * 0.15, size.height * 0.6),
       Offset(size.width * 0.85, size.height * 0.4),
@@ -553,9 +576,9 @@ class _ModernHeaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ModernHeaderPainter oldDelegate) {
     return oldDelegate.waveProgress != waveProgress ||
-           oldDelegate.particleProgress != particleProgress ||
-           oldDelegate.sweepProgress != sweepProgress ||
-           oldDelegate.pulseProgress != pulseProgress ||
-           oldDelegate.isDark != isDark;
+        oldDelegate.particleProgress != particleProgress ||
+        oldDelegate.sweepProgress != sweepProgress ||
+        oldDelegate.pulseProgress != pulseProgress ||
+        oldDelegate.isDark != isDark;
   }
 }
