@@ -5,36 +5,48 @@ class AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final bool isDesktop = width >= 1024;
+    final bool isTablet = width >= 700 && width < 1024;
+    final double verticalPad = isDesktop ? 80 : (isTablet ? 64 : 40);
+    final double horizontalPad = isDesktop ? 32 : (isTablet ? 24 : 16);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 16),
+      padding:
+          EdgeInsets.symmetric(vertical: verticalPad, horizontal: horizontalPad),
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
           // Main about content
-          LayoutBuilder(
-            builder: (context, constraints) {
-              bool isDesktop = constraints.maxWidth > 1024;
+          LayoutBuilder(builder: (context, constraints) {
+            final double maxW = constraints.maxWidth;
+            final bool wide = maxW >= 1024;
+            final double gap = wide ? 64 : 32;
+            final double imageHeight = wide
+                ? 520
+                : (isTablet
+                    ? 380
+                    : 240); // tune image height for smaller screens
 
-              if (isDesktop) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(child: _buildContent(context)),
-                    const SizedBox(width: 64),
-                    Expanded(child: _buildImage(context)),
-                  ],
-                );
-              } else {
-                return Column(
-                  children: [
-                    _buildContent(context),
-                    const SizedBox(height: 48),
-                    _buildImage(context),
-                  ],
-                );
-              }
-            },
-          ),
+            if (wide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: _buildContent(context, isDesktop: true)),
+                  SizedBox(width: gap),
+                  Expanded(child: _buildImage(context, height: imageHeight)),
+                ],
+              );
+            } else {
+              return Column(
+                children: [
+                  _buildContent(context, isDesktop: false),
+                  SizedBox(height: gap),
+                  _buildImage(context, height: imageHeight),
+                ],
+              );
+            }
+          }),
 
           const SizedBox(height: 80),
 
@@ -45,7 +57,7 @@ class AboutSection extends StatelessWidget {
                 textAlign: TextAlign.center,
                 text: TextSpan(
                   style: TextStyle(
-                    fontSize: 40,
+                    fontSize: isDesktop ? 40 : (isTablet ? 34 : 26),
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
                         : Colors.black,
@@ -68,7 +80,7 @@ class AboutSection extends StatelessWidget {
                   'Food, substance consisting essentially of protein, carbohydrate, fat, and other nutrients used in the body of an organism to sustain growth and vital processes and to furnish energy. The absorption and utilization of food by the body is fundamental to nutrition and is facilitated by digestion.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: isDesktop ? 20 : (isTablet ? 18 : 15),
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white70
                         : Colors.black87,
@@ -83,14 +95,14 @@ class AboutSection extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, {required bool isDesktop}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
             style: TextStyle(
-              fontSize: 40,
+              fontSize: isDesktop ? 40 : 28,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
                   : Colors.black,
@@ -106,18 +118,18 @@ class AboutSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isDesktop ? 32 : 20),
         Text(
           'Food, substance consisting essentially of protein, carbohydrate, fat, and other nutrients used in the body of an organism to sustain growth and vital processes and to furnish energy. The absorption and utilization of food by the body is fundamental to nutrition and is facilitated by digestion.',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: isDesktop ? 20 : 16,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white70
                 : Colors.black87,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isDesktop ? 32 : 20),
         ElevatedButton(
           onPressed: () {
             Navigator.pushNamed(context, '/about');
@@ -129,14 +141,14 @@ class AboutSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(25),
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: 40,
-              vertical: 20,
+              horizontal: 32,
+              vertical: 16,
             ),
           ),
           child: const Text(
             'Find More',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -145,11 +157,11 @@ class AboutSection extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(BuildContext context) {
+  Widget _buildImage(BuildContext context, {required double height}) {
     return Stack(
       children: [
         Container(
-          height: 600,
+          height: height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
@@ -166,7 +178,7 @@ class AboutSection extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Image.network(
-              'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f',
+              'https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg',
               fit: BoxFit.cover,
               width: double.infinity,
             ),

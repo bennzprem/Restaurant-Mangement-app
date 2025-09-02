@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'dart:math';
+import 'package:video_player/video_player.dart';
 import '../theme_provider.dart';
 import '../auth_provider.dart';
 
@@ -61,8 +62,10 @@ class HeaderWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                  padding: EdgeInsets.symmetric(
+                      horizontal:
+                          MediaQuery.of(context).size.width < 700 ? 16 : 36,
+                      vertical: 14),
                   child: Row(
                     children: [
                       if (showBack)
@@ -86,14 +89,15 @@ class HeaderWidget extends StatelessWidget {
                             ),
                           ),
                         ),
-                      // Logo
-                      Icon(Icons.restaurant_menu_rounded,
-                          color: Color(0xFFDAE952), size: 28),
+                      // Logo (MP4 animation)
+                      //const _LogoVideo(width: 39, height: 27, scale: 1.0),
+                      const _LogoVideo(width: 62, height: 50, scale: 1.6),
                       const SizedBox(width: 14),
                       Text(
-                        'Byte Eat',
+                        'ByteEat',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize:
+                              MediaQuery.of(context).size.width < 700 ? 20 : 24,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.85,
                           color: themeProvider.isDarkMode
@@ -625,6 +629,65 @@ class _AuthButton extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      ),
+    );
+  }
+}
+
+class _LogoVideo extends StatefulWidget {
+  final double width;
+  final double height;
+  final double scale; // zoom-in to crop any letterboxing
+  const _LogoVideo({required this.width, required this.height, this.scale = 1.8});
+
+  @override
+  State<_LogoVideo> createState() => _LogoVideoState();
+}
+
+class _LogoVideoState extends State<_LogoVideo> {
+  late final VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset('assets/logo/logoLV.mp4')
+      ..setLooping(true)
+      ..setVolume(0.0)
+      ..initialize().then((_) {
+        if (mounted) {
+          _controller.play();
+          setState(() {});
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_controller.value.isInitialized) {
+      return SizedBox(width: widget.width, height: widget.height);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: Transform.scale(
+            scale: widget.scale,
+            child: SizedBox(
+              width: _controller.value.size.width,
+              height: _controller.value.size.height,
+              child: VideoPlayer(_controller),
+            ),
+          ),
+        ),
       ),
     );
   }

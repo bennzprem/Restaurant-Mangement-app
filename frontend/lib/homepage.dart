@@ -58,25 +58,33 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                HeroSection(
-                  onOrderNow: () => _handleNavigation(context, 'Delivery'),
-                  onExplore: () => _handleNavigation(context, 'Dine-In'),
-                  onPickup: () => _handleNavigation(context, 'Takeaway'),
+          LayoutBuilder(builder: (context, constraints) {
+            final double horizontalPadding = constraints.maxWidth < 720
+                ? 12
+                : constraints.maxWidth < 1100
+                    ? 20
+                    : 0;
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Column(
+                  children: [
+                    HeroSection(
+                      onOrderNow: () => _handleNavigation(context, 'Delivery'),
+                      onExplore: () => _handleNavigation(context, 'Dine-In'),
+                      onPickup: () => _handleNavigation(context, 'Takeaway'),
+                    ),
+                    if (authProvider.isLoggedIn) _RoleQuickAccess(),
+                    _MenuCategoryCarousel(),
+                    AboutSection(),
+                    TestimonialsSection(),
+                    NewsletterSection(),
+                    FooterWidget(),
+                  ],
                 ),
-                if (authProvider.isLoggedIn) _RoleQuickAccess(),
-
-                // Continuing the home_screen.dart sections
-                _MenuCategoryCarousel(),
-                AboutSection(),
-                TestimonialsSection(),
-                NewsletterSection(),
-                FooterWidget(),
-              ],
-            ),
-          ),
+              ),
+            );
+          }),
 
           // Fixed header always visible
           Positioned(
@@ -203,6 +211,9 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
   ];
 
   final ScrollController _scrollController = ScrollController();
+  Timer? _autoScrollTimer;
+  int _currentScrollIndex = 0;
+  int _hoveredIndex = -1;
 
   final Map<String, IconData> categoryIcons = {
     'Appetizers': Icons.fastfood,
@@ -216,20 +227,117 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
     'Beverages': Icons.local_cafe,
   };
 
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+    
+    // Add scroll listener to track position and ensure smooth looping
+    _scrollController.addListener(() {
+      if (_scrollController.hasClients) {
+        final currentOffset = _scrollController.offset;
+        final maxScrollExtent = _scrollController.position.maxScrollExtent;
+        
+        // Update current index based on scroll position
+        _currentScrollIndex = (currentOffset / 160.0).round();
+        if (_currentScrollIndex >= categories.length) {
+          _currentScrollIndex = categories.length - 1;
+        }
+        
+        // Ensure we stay within bounds
+        if (_currentScrollIndex < 0) {
+          _currentScrollIndex = 0;
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted) {
+        _autoScrollToNext();
+      }
+    });
+  }
+
+  void _resetAutoScrollTimer() {
+    _autoScrollTimer?.cancel();
+    _startAutoScroll();
+  }
+
+  void _autoScrollToNext() {
+    if (_scrollController.hasClients) {
+      // Move to the next category in circular motion
+      _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
+      
+      // Calculate the target offset for smooth scrolling
+      double targetOffset;
+      
+      if (_currentScrollIndex == 0) {
+        // When we reach the end, smoothly scroll back to the beginning
+        targetOffset = 0;
+      } else {
+        targetOffset = _currentScrollIndex * 160.0; // 140 (width) + 20 (separator)
+      }
+      
+      // Ensure smooth circular scrolling
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 1500),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
   void scrollLeft() {
-    _scrollController.animateTo(
-      _scrollController.offset - 300,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.ease,
-    );
+    if (_scrollController.hasClients) {
+      _currentScrollIndex = (_currentScrollIndex - 1 + categories.length) % categories.length;
+      
+      // Calculate the target offset for smooth circular scrolling
+      double targetOffset;
+      if (_currentScrollIndex == categories.length - 1) {
+        // When going left from first item, smoothly scroll to the end
+        targetOffset = (categories.length - 1) * 160.0;
+      } else {
+        targetOffset = _currentScrollIndex * 160.0;
+      }
+      
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+    _resetAutoScrollTimer();
   }
 
   void scrollRight() {
-    _scrollController.animateTo(
-      _scrollController.offset + 300,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.ease,
-    );
+    if (_scrollController.hasClients) {
+      _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
+      
+      // Calculate the target offset for smooth circular scrolling
+      double targetOffset;
+      if (_currentScrollIndex == 0) {
+        // When we reach the end, smoothly scroll back to the beginning
+        targetOffset = 0;
+      } else {
+        targetOffset = _currentScrollIndex * 160.0;
+      }
+      
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+    _resetAutoScrollTimer();
   }
 
   @override
@@ -272,19 +380,32 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             ),
                           );
                         },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white.withOpacity(isDark ? 0.12 : 0.2)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.5 : 0.06),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
+                                                 child: MouseRegion(
+                           onEnter: (_) => setState(() => _hoveredIndex = index),
+                           onExit: (_) => setState(() => _hoveredIndex = -1),
+                           child: AnimatedContainer(
+                             duration: const Duration(milliseconds: 400),
+                             decoration: BoxDecoration(
+                               color: _hoveredIndex == index 
+                                   ? const Color(0xFFDAE952).withOpacity(0.2)
+                                   : (isDark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.7)),
+                               borderRadius: BorderRadius.circular(24),
+                               border: Border.all(
+                                 color: _hoveredIndex == index 
+                                     ? const Color(0xFFDAE952)
+                                     : Colors.white.withOpacity(isDark ? 0.12 : 0.2),
+                                 width: _hoveredIndex == index ? 2 : 1,
+                               ),
+                               boxShadow: [
+                                 BoxShadow(
+                                   color: _hoveredIndex == index
+                                       ? const Color(0xFFDAE952).withOpacity(0.3)
+                                       : Colors.black.withOpacity(isDark ? 0.5 : 0.06),
+                                   blurRadius: 18,
+                                   offset: const Offset(0, 8),
+                                 ),
+                               ],
+                             ),
                           child: Container(
                             width: 140,
                             padding: const EdgeInsets.all(8),
@@ -292,17 +413,25 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(icon, size: 36, color: isDark ? Colors.white : Colors.black),
-                                const SizedBox(height: 16),
-                                Text(
-                                  name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  ),
-                                ),
+                                                                                                  Icon(
+                                   icon, 
+                                   size: 36, 
+                                   color: _hoveredIndex == index 
+                                       ? Colors.black
+                                       : (isDark ? Colors.white : Colors.black),
+                                 ),
+                                 const SizedBox(height: 16),
+                                 Text(
+                                   name,
+                                   textAlign: TextAlign.center,
+                                   style: TextStyle(
+                                     fontSize: 16,
+                                     fontWeight: FontWeight.w600,
+                                     color: _hoveredIndex == index 
+                                         ? Colors.black
+                                         : (isDark ? Colors.white : Colors.black),
+                                   ),
+                                 ),
                                 const SizedBox(height: 10),
                                 const Icon(Icons.arrow_forward,
                                     color: Color(0xFFDAE952), size: 20),
@@ -310,7 +439,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             ),
                           ),
                         ),
-                      );
+                      ),);
                     },
                   ),
                 ),

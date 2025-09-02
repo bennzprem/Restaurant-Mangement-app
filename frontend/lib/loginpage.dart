@@ -391,10 +391,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.restaurant,
-                    size: MediaQuery.of(context).size.width < 600 ? 30 : 40,
-                    color: Colors.white,
+                  child: Image.asset(
+                    'assets/logo/logo.gif',
+                    fit: BoxFit.contain,
                   ),
                 ),
                 SizedBox(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async'; // Added for Timer
 
 //updated
 class HeroSection extends StatefulWidget {
@@ -20,6 +21,7 @@ class HeroSection extends StatefulWidget {
 class _HeroSectionState extends State<HeroSection> {
   int selectedIndex = 0;
   int _hoverIndex = -1;
+  Timer? _autoScrollTimer;
 
   final List<Map<String, String>> modes = [
     {
@@ -48,16 +50,45 @@ class _HeroSectionState extends State<HeroSection> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+  }
+
+  @override
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted) {
+        setState(() {
+          selectedIndex = (selectedIndex + 1) % modes.length;
+        });
+      }
+    });
+  }
+
+  void _resetAutoScrollTimer() {
+    _autoScrollTimer?.cancel();
+    _startAutoScroll();
+  }
+
   void scrollLeft() {
     setState(() {
       selectedIndex = (selectedIndex - 1 + modes.length) % modes.length;
     });
+    _resetAutoScrollTimer();
   }
 
   void scrollRight() {
     setState(() {
       selectedIndex = (selectedIndex + 1) % modes.length;
     });
+    _resetAutoScrollTimer();
   }
 
   void _onButtonPressed() {
@@ -135,12 +166,13 @@ class _HeroSectionState extends State<HeroSection> {
   @override
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
-    final minHeight = 665.0;
+    final screenH = MediaQuery.of(context).size.height;
+    final minHeight = screenH; // Use full viewport height instead of fixed 665
     final selected = modes[selectedIndex];
 
     return SizedBox(
       width: double.infinity,
-      height: minHeight, // <-- FIX: constrain height
+      height: minHeight, // Now uses full viewport height
       child: Stack(
         children: [
 
@@ -154,7 +186,34 @@ class _HeroSectionState extends State<HeroSection> {
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Stack(
                 children: [
-                  // Navigation bar positioned on the left side
+                  // Logo positioned at the top left
+                  Positioned(
+                    top: 20,
+                    left: 36,
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/logo/logo.gif',
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Byte Eat',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.85,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Navigation bar positioned below the logo
                   Positioned(
                     top: 80,
                     left: 36,
@@ -211,7 +270,6 @@ class _HeroSectionState extends State<HeroSection> {
             top: 0,
             bottom: 0,
             right: screenW * 0.4,
-            //height: minHeight - 150,
             child: Stack(
               children: [
                 // Left arrow at absolute left
@@ -254,11 +312,12 @@ class _HeroSectionState extends State<HeroSection> {
                                     right: i < modes.length - 1 ? 22 : 0),
                                 child: MouseRegion(
                                   cursor: SystemMouseCursors.click,
-                                  child: GestureDetector(
+                                                                      child: GestureDetector(
                                     onTap: () {
                                       setState(() {
                                         selectedIndex = i;
                                       });
+                                      _resetAutoScrollTimer();
                                     },
                                     child: Text(
                                       modes[i]['title']!,

@@ -148,9 +148,9 @@ class FooterWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 40,
-          height: 40,
-          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+          width: 50,
+          height: 50,
+          child: Image.asset('assets/logo/logoLP.png', fit: BoxFit.contain),
         ),
         const SizedBox(width: 10),
         Text(
