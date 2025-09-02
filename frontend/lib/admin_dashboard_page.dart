@@ -1,5 +1,6 @@
 // lib/admin_dashboard_page.dart
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
 import 'theme.dart';
@@ -22,8 +23,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final ApiService _apiService = ApiService();
   List<AppUser> _users = [];
   List<Order> _orders = [];
+  int _ordersCount = 0;
   List<MenuItem> _menuItems = [];
   bool _isLoading = false;
+  RealtimeChannel? _ordersChannel;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -34,7 +38,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   void _subscribeToOrderChanges() {
     final supabase = Supabase.instance.client;
-    supabase
+    _ordersChannel = supabase
         .channel('orders-changes')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -45,6 +49,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           },
         )
         .subscribe();
+
+    // Fallback polling in case realtime is disabled/not propagating
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _loadDashboardData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ordersChannel?.unsubscribe();
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {
@@ -55,10 +72,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     try {
       final users = await _apiService.getAllUsers();
       final orders = await _apiService.getAllOrders();
+      final ordersCount = await _apiService.getOrdersCountAccurate();
       final menuItems = await _apiService.getAllMenuItems();
       setState(() {
         _users = users;
         _orders = orders;
+        _ordersCount = ordersCount;
         _menuItems = menuItems;
         _isLoading = false;
       });
@@ -91,7 +110,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Map<String, dynamic> _getOrderStats() {
-    final totalOrders = _orders.length;
+    final totalOrders = _ordersCount > 0 ? _ordersCount : _orders.length;
     final completedOrders =
         _orders.where((order) => order.status == 'Completed').length;
     final pendingOrders =

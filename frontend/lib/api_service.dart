@@ -6,7 +6,6 @@ import 'models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart'; // or file_picker
 import 'package:restaurant_app/models.dart' as app_models;
-import 'package:http_parser/http_parser.dart';
 
 import 'user_models.dart';
 
@@ -139,18 +138,29 @@ class ApiService {
 
   Future<List<Order>> getAllOrders() async {
     try {
-      final response = await _supabase
-          .from('orders')
-          .select()
-          .order('created_at', ascending: false);
-
-      final orders = (response as List)
-          .map((orderData) => Order.fromJson(orderData))
-          .toList();
-      return orders;
+      final response = await http.get(Uri.parse('$baseUrl/orders'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => Order.fromJson(e)).toList();
+      }
+      throw 'Failed to load orders: ${response.statusCode}';
     } catch (e) {
       print('Error getting all orders: $e');
       throw 'Failed to load orders.';
+    }
+  }
+
+  Future<int> getOrdersCountAccurate() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/orders/count'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['count'] ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print('Error counting orders: $e');
+      return 0;
     }
   }
 
@@ -221,38 +231,36 @@ class ApiService {
   }
 
   Future<String?> uploadProfilePicture(String userId, XFile imageFile) async {
-  try {
-    final fileExt = imageFile.name.split('.').last;
-    final fileName = '$userId.$fileExt';
-    final filePath = '$userId/$fileName';
+    try {
+      final fileExt = imageFile.name.split('.').last;
+      final fileName = '$userId.$fileExt';
+      final filePath = '$userId/$fileName';
 
-    // Upload to Supabase storage bucket
-    await Supabase.instance.client.storage
-        .from('profile-pictures')
-        .uploadBinary(
-          filePath,
-          await imageFile.readAsBytes(),
-          fileOptions: const FileOptions(upsert: true),
-        );
+      // Upload to Supabase storage bucket
+      await Supabase.instance.client.storage
+          .from('profile-pictures')
+          .uploadBinary(
+            filePath,
+            await imageFile.readAsBytes(),
+            fileOptions: const FileOptions(upsert: true),
+          );
 
-    // Get public URL
-    final publicUrl = Supabase.instance.client.storage
-        .from('profile-pictures')
-        .getPublicUrl(filePath);
-    
-    // Save publicUrl to the `users` table (so you can fetch it later)
-    await Supabase.instance.client
-        .from('users')
-        .update({'avatar_Url': publicUrl})
-        .eq('id', userId);
+      // Get public URL
+      final publicUrl = Supabase.instance.client.storage
+          .from('profile-pictures')
+          .getPublicUrl(filePath);
 
-    return publicUrl;
-  } catch (e) {
-    print('❌ Upload failed: $e');
-    return null;
+      // Save publicUrl to the `users` table (so you can fetch it later)
+      await Supabase.instance.client
+          .from('users')
+          .update({'avatar_Url': publicUrl}).eq('id', userId);
+
+      return publicUrl;
+    } catch (e) {
+      print('❌ Upload failed: $e');
+      return null;
+    }
   }
-}
-
 
   // Add this new method inside your ApiService class
   Future<List<app_models.Table>> fetchAvailableTables({
@@ -415,7 +423,7 @@ class ApiService {
       for (int i = 0; i < response.length && i < 3; i++) {
         print('Item $i: ${response[i]}');
       }
-    
+
       final users = (response as List)
           .map((userData) {
             print('Processing user data: $userData');
@@ -669,20 +677,26 @@ class ApiService {
     required int categoryId,
   }) async {
     try {
-      final response = await _supabase.from('menu_items').insert({
-        'name': name,
-        'description': description,
-        'price': price,
-        'image_url': imageUrl,
-        'is_available': isAvailable,
-        'is_vegan': isVegan,
-        'is_gluten_free': isGlutenFree,
-        'contains_nuts': containsNuts,
-        'category_id': categoryId,
-      }).select();
+      final response = await http.post(
+        Uri.parse('$baseUrl/menu'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'price': price,
+          'image_url': imageUrl,
+          'is_available': isAvailable,
+          'is_vegan': isVegan,
+          'is_gluten_free': isGlutenFree,
+          'contains_nuts': containsNuts,
+          'category_id': categoryId,
+        }),
+      );
 
-      if (response.isEmpty) {
-        throw 'Failed to create menu item.';
+      if (response.statusCode == 201) {
+        print('Menu item created successfully through backend');
+      } else {
+        throw 'Failed to create menu item: ${response.statusCode}';
       }
     } catch (e) {
       print('Error creating menu item: $e');
@@ -703,17 +717,29 @@ class ApiService {
     required int categoryId,
   }) async {
     try {
-      await _supabase.from('menu_items').update({
-        'name': name,
-        'description': description,
-        'price': price,
-        'image_url': imageUrl,
-        'is_available': isAvailable,
-        'is_vegan': isVegan,
-        'is_gluten_free': isGlutenFree,
-        'contains_nuts': containsNuts,
-        'category_id': categoryId,
-      }).eq('id', id);
+      final response = await http.put(
+        Uri.parse('$baseUrl/menu/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'price': price,
+          'image_url': imageUrl,
+          'is_available': isAvailable,
+          'is_vegan': isVegan,
+          'is_gluten_free': isGlutenFree,
+          'contains_nuts': containsNuts,
+          'category_id': categoryId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Menu item updated successfully through backend');
+      } else if (response.statusCode == 404) {
+        throw 'Menu item not found';
+      } else {
+        throw 'Failed to update menu item: ${response.statusCode}';
+      }
     } catch (e) {
       print('Error updating menu item: $e');
       throw 'Failed to update menu item.';
@@ -775,12 +801,14 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getCategories() async {
     try {
-      final response = await _supabase
-          .from('categories')
-          .select('id, name')
-          .order('name', ascending: true);
+      final response = await http.get(Uri.parse('$baseUrl/categories'));
 
-      return (response as List).cast<Map<String, dynamic>>();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw 'Failed to load categories: ${response.statusCode}';
+      }
     } catch (e) {
       print('Error getting categories: $e');
       throw 'Failed to load categories.';
