@@ -554,6 +554,49 @@ def get_all_orders():
     except Exception as e:
         print(f"Error fetching all orders: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/orders/<int:order_id>/items', methods=['GET'])
+def get_order_items(order_id):
+    """Returns all items for a specific order."""
+    try:
+        api_url = f"{SUPABASE_URL}/rest/v1/order_items?order_id=eq.{order_id}"
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        
+        response_data = jsonify(response.json())
+        response_data.headers.add('Access-Control-Allow-Origin', '*')
+        return response_data, 200
+    except Exception as e:
+        print(f"Error fetching order items: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/orders/<int:order_id>/status', methods=['PATCH'])
+def update_order_status(order_id):
+    """Updates the status of a specific order."""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status:
+            return jsonify({"error": "Status is required"}), 400
+        
+        # Update the order status
+        api_url = f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}"
+        update_data = {"status": new_status}
+        
+        response = requests.patch(api_url, json=update_data, headers=headers)
+        response.raise_for_status()
+        
+        response_data = jsonify({"message": "Order status updated successfully"})
+        response_data.headers.add('Access-Control-Allow-Origin', '*')
+        return response_data, 200
+    except Exception as e:
+        print(f"Error updating order status: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
     
 @app.route('/users/<string:user_id>/favorites', methods=['GET'])
 def get_favorites(user_id):
@@ -991,24 +1034,98 @@ def update_menu_item(item_id):
 def get_categories():
     """Returns all available menu categories."""
     try:
-        # Define the categories that match the frontend menu screen
-        categories = [
-            {"id": 1, "name": "Appetizers"},
-            {"id": 2, "name": "Soups & Salads"},
-            {"id": 3, "name": "Pizzas (11-inch)"},
-            {"id": 4, "name": "Pasta"},
-            {"id": 5, "name": "Sandwiches & Wraps"},
-            {"id": 6, "name": "Main Course - Indian"},
-            {"id": 7, "name": "Main Course - Global"},
-            {"id": 8, "name": "Desserts"},
-            {"id": 9, "name": "Beverages"},
-        ]
+        # Get categories from Supabase instead of hardcoded list
+        api_url = f"{SUPABASE_URL}/rest/v1/categories"
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        categories = response.json()
         
         response = jsonify(categories)
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 200
     except Exception as e:
         print(f"Error fetching categories: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/categories', methods=['POST'])
+def create_category():
+    """Creates a new menu category."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if 'name' not in data or not data['name'].strip():
+            return jsonify({"error": "Category name is required"}), 400
+        
+        # Check if category name already exists
+        existing_response = requests.get(
+            f"{SUPABASE_URL}/rest/v1/categories?name=eq.{data['name'].strip()}",
+            headers=headers
+        )
+        existing_response.raise_for_status()
+        
+        if existing_response.json():
+            return jsonify({"error": "Category with this name already exists"}), 409
+        
+        # Create the category
+        category_data = {
+            'name': data['name'].strip(),
+        }
+        
+        api_url = f"{SUPABASE_URL}/rest/v1/categories"
+        post_headers = headers.copy()
+        post_headers['Prefer'] = 'return=representation'
+        response = requests.post(api_url, json=category_data, headers=post_headers)
+        
+        if response.status_code == 201:
+            created_category = response.json()[0]
+            response = jsonify({
+                "message": "Category created successfully",
+                "category": created_category
+            })
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 201
+        else:
+            print(f"Supabase response: {response.status_code} - {response.text}")
+            return jsonify({"error": "Failed to create category"}), 500
+            
+    except Exception as e:
+        print(f"Error creating category: {e}")
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": f"Failed to create category: {str(e)}"})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/categories/<int:category_id>', methods=['DELETE'])
+def delete_category(category_id):
+    """Deletes a category if it has no menu items."""
+    try:
+        # Check if category has any menu items
+        menu_items_response = requests.get(
+            f"{SUPABASE_URL}/rest/v1/menu_items?category_id=eq.{category_id}",
+            headers=headers
+        )
+        menu_items_response.raise_for_status()
+        
+        if menu_items_response.json():
+            return jsonify({"error": "Cannot delete category that has menu items"}), 400
+        
+        # Delete the category
+        api_url = f"{SUPABASE_URL}/rest/v1/categories?id=eq.{category_id}"
+        response = requests.delete(api_url, headers=headers)
+        
+        if response.status_code == 204:
+            response = jsonify({"message": "Category deleted successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+        else:
+            return jsonify({"error": "Failed to delete category"}), 500
+            
+    except Exception as e:
+        print(f"Error deleting category: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
