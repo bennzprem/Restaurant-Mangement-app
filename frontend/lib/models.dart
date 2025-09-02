@@ -11,6 +11,7 @@ class MenuItem {
   final bool isVegan; // <-- ADD THIS
   final bool isGlutenFree; // <-- ADD THIS
   final bool containsNuts; // <-- ADD THIS
+  final int? categoryId; // <-- ADD THIS
 
   MenuItem({
     required this.id,
@@ -22,6 +23,7 @@ class MenuItem {
     required this.isVegan, // <-- ADD THIS
     required this.isGlutenFree, // <-- ADD THIS
     required this.containsNuts, // <-- ADD THIS
+    this.categoryId, // <-- ADD THIS
   });
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class MenuItem {
       isVegan: json['is_vegan'] ?? false, // <-- ADD THIS
       isGlutenFree: json['is_gluten_free'] ?? false, // <-- ADD THIS
       containsNuts: json['contains_nuts'] ?? false, // <-- ADD THIS
+      categoryId: json['category_id'], // <-- ADD THIS
     );
   }
 }
@@ -48,9 +51,8 @@ class MenuCategory {
 
   factory MenuCategory.fromJson(Map<String, dynamic> json) {
     var itemsList = json['items'] as List;
-    List<MenuItem> menuItems = itemsList
-        .map((i) => MenuItem.fromJson(i))
-        .toList();
+    List<MenuItem> menuItems =
+        itemsList.map((i) => MenuItem.fromJson(i)).toList();
 
     return MenuCategory(
       id: json['category_id'],
@@ -89,7 +91,8 @@ class Order {
       totalAmount: (json['total_amount'] as num).toDouble(),
       status: json['status'] ?? 'Unknown',
       createdAt: DateTime.parse(json['created_at']),
-      deliveryAddress: json['delivery_address'] ?? 'No address provided',
+      deliveryAddress:
+          json['delivery_address'] ?? json['address'] ?? 'No address provided',
     );
   }
 }

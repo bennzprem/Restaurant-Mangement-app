@@ -82,9 +82,12 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
       // Set the selected category for editing
       if (widget.menuItem != null && _categories.isNotEmpty) {
         // Find the category ID for the current menu item
-        // This would need to be added to the MenuItem model or fetched separately
-        // For now, we'll set it to the first category
-        _selectedCategoryId = _categories.first['id'];
+        if (widget.menuItem!.categoryId != null) {
+          _selectedCategoryId = widget.menuItem!.categoryId;
+        } else {
+          // Fallback to first category if no category is set
+          _selectedCategoryId = _categories.first['id'];
+        }
       } else if (_categories.isNotEmpty) {
         _selectedCategoryId = _categories.first['id'];
       }

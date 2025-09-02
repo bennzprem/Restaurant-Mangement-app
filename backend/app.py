@@ -416,51 +416,6 @@ def delete_menu_item(item_id):
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
 
-# ----------------- ORDERS -----------------
-@app.route('/order', methods=['POST'])
-def create_order():
-    try:
-        data = request.get_json() or {}
-        total = data.get('total')
-        user_id = data.get('user_id')
-        address = data.get('address')
-        items = data.get('items', [])
-
-        if total is None or not user_id or not isinstance(items, list) or len(items) == 0:
-            return jsonify({'error': 'total, user_id and items are required'}), 400
-
-        # Insert order
-        order_payload = {
-            'user_id': user_id,
-            'total_amount': total,
-            'address': address,
-            'status': 'Completed',
-            'created_at': datetime.now(timezone.utc).isoformat(),
-        }
-        order_res = supabase.table('orders').insert(order_payload).execute()
-        if not order_res.data:
-            return jsonify({'error': 'Failed to create order'}), 500
-
-        order = order_res.data[0]
-        order_id = order['id']
-
-        # Prepare order_items rows
-        order_items_rows = []
-        for it in items:
-            order_items_rows.append({
-                'order_id': order_id,
-                'menu_item_id': it.get('menu_item_id'),
-                'quantity': it.get('quantity', 1),
-                'price_at_order': it.get('price_at_order', 0.0),
-            })
-
-        if order_items_rows:
-            supabase.table('order_items').insert(order_items_rows).execute()
-
-        return jsonify({'order_id': order_id, 'message': 'Order created'}), 201
-    except Exception as e:
-        print(f"Error creating order: {e}")
-        return jsonify({'error': 'Failed to create order'}), 500
 
 @app.route('/menu/<int:item_id>/availability', methods=['PATCH'])
 def update_menu_item_availability(item_id):
@@ -575,6 +530,29 @@ def get_order_status(order_id):
             return jsonify({"error": "Order not found"}), 404
     except Exception as e:
         print(f"An error occurred in get_order_status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/orders/count', methods=['GET'])
+def get_orders_count():
+    try:
+        api_url = f"{SUPABASE_URL}/rest/v1/orders?select=id"
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        return jsonify({"count": len(data)}), 200
+    except Exception as e:
+        print(f"Error fetching orders count: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/orders', methods=['GET'])
+def get_all_orders():
+    try:
+        api_url = f"{SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc"
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), 200
+    except Exception as e:
+        print(f"Error fetching all orders: {e}")
         return jsonify({"error": str(e)}), 500
     
 @app.route('/users/<string:user_id>/favorites', methods=['GET'])
@@ -900,6 +878,140 @@ def cancel_reservation(reservation_id):
 # In your app.py file
 
 # In your app.py
+
+@app.route('/menu', methods=['POST'])
+def create_menu_item():
+    """Creates a new menu item."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['name', 'description', 'price', 'image_url', 'category_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Validate category_id exists
+        category_id = data['category_id']
+        category_response = requests.get(
+            f"{SUPABASE_URL}/rest/v1/categories?id=eq.{category_id}",
+            headers=headers
+        )
+        if not category_response.json():
+            return jsonify({"error": "Invalid category_id"}), 400
+        
+        # Create the menu item
+        menu_item_data = {
+            'name': data['name'],
+            'description': data['description'],
+            'price': data['price'],
+            'image_url': data['image_url'],
+            'category_id': category_id,
+            'is_available': data.get('is_available', True),
+            'is_vegan': data.get('is_vegan', False),
+            'is_gluten_free': data.get('is_gluten_free', False),
+            'contains_nuts': data.get('contains_nuts', False),
+        }
+        
+        api_url = f"{SUPABASE_URL}/rest/v1/menu_items"
+        response = requests.post(api_url, json=menu_item_data, headers=headers)
+        
+        if response.status_code == 201:
+            created_item = response.json()[0]
+            response = jsonify({
+                "message": "Menu item created successfully",
+                "item": created_item
+            })
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 201
+        else:
+            return jsonify({"error": "Failed to create menu item"}), 500
+            
+    except Exception as e:
+        print(f"Error creating menu item: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/menu/<int:item_id>', methods=['PUT'])
+def update_menu_item(item_id):
+    """Updates an existing menu item."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['name', 'description', 'price', 'image_url', 'category_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Validate category_id exists
+        category_id = data['category_id']
+        category_response = requests.get(
+            f"{SUPABASE_URL}/rest/v1/categories?id=eq.{category_id}",
+            headers=headers
+        )
+        if not category_response.json():
+            return jsonify({"error": "Invalid category_id"}), 400
+        
+        # Update the menu item
+        menu_item_data = {
+            'name': data['name'],
+            'description': data['description'],
+            'price': data['price'],
+            'image_url': data['image_url'],
+            'category_id': category_id,
+            'is_available': data.get('is_available', True),
+            'is_vegan': data.get('is_vegan', False),
+            'is_gluten_free': data.get('is_gluten_free', False),
+            'contains_nuts': data.get('contains_nuts', False),
+        }
+        
+        api_url = f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}"
+        response = requests.patch(api_url, json=menu_item_data, headers=headers)
+        
+        if response.status_code == 204:
+            response = jsonify({"message": "Menu item updated successfully"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 200
+        elif response.status_code == 404:
+            response = jsonify({"error": "Menu item not found"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 404
+        else:
+            return jsonify({"error": "Failed to update menu item"}), 500
+            
+    except Exception as e:
+        print(f"Error updating menu item: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
+
+@app.route('/categories', methods=['GET'])
+def get_categories():
+    """Returns all available menu categories."""
+    try:
+        # Define the categories that match the frontend menu screen
+        categories = [
+            {"id": 1, "name": "Appetizers"},
+            {"id": 2, "name": "Soups & Salads"},
+            {"id": 3, "name": "Pizzas (11-inch)"},
+            {"id": 4, "name": "Pasta"},
+            {"id": 5, "name": "Sandwiches & Wraps"},
+            {"id": 6, "name": "Main Course - Indian"},
+            {"id": 7, "name": "Main Course - Global"},
+            {"id": 8, "name": "Desserts"},
+            {"id": 9, "name": "Beverages"},
+        ]
+        
+        response = jsonify(categories)
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 200
+    except Exception as e:
+        print(f"Error fetching categories: {e}")
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
 
 @app.route('/api/table-sessions/start', methods=['POST'])
 def start_table_session():
