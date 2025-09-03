@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class ChatBotWidget extends StatefulWidget {
@@ -22,7 +20,8 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
 
   // Initialize Gemini AI
   late final GenerativeModel _model;
-  static const String _apiKey = 'AIzaSyB_y6KC5Ybghk8el612HB7UmCBkQ1PvqN0'; // Replace with your API key
+  static const String _apiKey =
+      'AIzaSyB_y6KC5Ybghk8el612HB7UmCBkQ1PvqN0'; // Replace with your API key
 
   @override
   void initState() {
@@ -74,7 +73,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
       _messages.add(message);
     });
     _scrollToBottom();
-    
+
     // Save to Supabase (you can implement this later)
     // _saveMessageToSupabase(message);
   }
@@ -110,7 +109,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
     try {
       // Send to Gemini AI
       final response = await _sendToGeminiAI(message);
-      
+
       // Add AI response
       _addMessage(ChatMessage(
         text: response,
@@ -119,7 +118,8 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
       ));
     } catch (e) {
       _addMessage(ChatMessage(
-        text: "Sorry, I'm having trouble connecting right now. Please try again later.",
+        text:
+            "Sorry, I'm having trouble connecting right now. Please try again later.",
         isUser: false,
         timestamp: DateTime.now(),
       ));
@@ -148,7 +148,7 @@ Please provide a helpful, friendly response focused on restaurant services.
 
       final content = [Content.text(prompt)];
       final response = await _model.generateContent(content);
-      
+
       return response.text ?? "I'm sorry, I couldn't process that request.";
     } catch (e) {
       throw Exception('Failed to get AI response: $e');
@@ -270,7 +270,8 @@ Please provide a helpful, friendly response focused on restaurant services.
                             const CircleAvatar(
                               radius: 16,
                               backgroundColor: Colors.grey,
-                              child: Icon(Icons.smart_toy, size: 16, color: Colors.white),
+                              child: Icon(Icons.smart_toy,
+                                  size: 16, color: Colors.white),
                             ),
                             const SizedBox(width: 8),
                             Container(
@@ -285,7 +286,8 @@ Please provide a helpful, friendly response focused on restaurant services.
                                   SizedBox(
                                     width: 15,
                                     height: 15,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   ),
                                   SizedBox(width: 8),
                                   Text('Typing...'),
@@ -366,9 +368,8 @@ Please provide a helpful, friendly response focused on restaurant services.
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: message.isUser 
-            ? MainAxisAlignment.end 
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
@@ -385,11 +386,11 @@ Please provide a helpful, friendly response focused on restaurant services.
               decoration: BoxDecoration(
                 color: message.isUser ? Colors.blue : Colors.grey[200],
                 borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: message.isUser 
-                      ? const Radius.circular(20) 
+                  bottomLeft: message.isUser
+                      ? const Radius.circular(20)
                       : const Radius.circular(4),
-                  bottomRight: message.isUser 
-                      ? const Radius.circular(4) 
+                  bottomRight: message.isUser
+                      ? const Radius.circular(4)
                       : const Radius.circular(20),
                 ),
               ),

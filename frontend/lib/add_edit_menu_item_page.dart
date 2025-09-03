@@ -6,11 +6,13 @@ import 'models.dart';
 class AddEditMenuItemPage extends StatefulWidget {
   final MenuItem? menuItem; // null for adding, MenuItem for editing
   final VoidCallback? onItemSaved;
+  final VoidCallback? onCategoryUpdated;
 
   const AddEditMenuItemPage({
     super.key,
     this.menuItem,
     this.onItemSaved,
+    this.onCategoryUpdated,
   });
 
   @override
@@ -102,6 +104,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
         ),
       );
     }
+  }
+
+  Future<void> _refreshCategories() async {
+    await _loadCategories();
+    widget.onCategoryUpdated?.call();
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {
@@ -456,48 +463,67 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                       // Category Selection
                       _buildSectionTitle('Category', Icons.category),
                       const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int>(
-                            value: _selectedCategoryId,
-                            hint: Text(
-                              'Select a category',
-                              style: TextStyle(color: Colors.grey[500]),
-                            ),
-                            isExpanded: true,
-                            icon: Icon(Icons.keyboard_arrow_down,
-                                color: Colors.grey[600]),
-                            items: _categories.map((category) {
-                              return DropdownMenuItem<int>(
-                                value: category['id'],
-                                child: Text(
-                                  category['name'],
-                                  style: const TextStyle(fontSize: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<int>(
+                                  value: _selectedCategoryId,
+                                  hint: Text(
+                                    'Select a category',
+                                    style: TextStyle(color: Colors.grey[500]),
+                                  ),
+                                  isExpanded: true,
+                                  icon: Icon(Icons.keyboard_arrow_down,
+                                      color: Colors.grey[600]),
+                                  items: _categories.map((category) {
+                                    return DropdownMenuItem<int>(
+                                      value: category['id'],
+                                      child: Text(
+                                        category['name'],
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCategoryId = value;
+                                    });
+                                  },
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedCategoryId = value;
-                              });
-                            },
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: IconButton(
+                              onPressed: _refreshCategories,
+                              icon:
+                                  const Icon(Icons.refresh, color: Colors.blue),
+                              tooltip: 'Refresh categories',
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 32),
 
@@ -631,11 +657,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                                   _isAvailable = value;
                                 });
                               },
-                              thumbColor: MaterialStateProperty.resolveWith(
+                              thumbColor: WidgetStateProperty.resolveWith(
                                   (states) => Colors.white),
-                              trackColor: MaterialStateProperty.resolveWith(
+                              trackColor: WidgetStateProperty.resolveWith(
                                   (states) =>
-                                      states.contains(MaterialState.selected)
+                                      states.contains(WidgetState.selected)
                                           ? Colors.green.withOpacity(0.5)
                                           : Colors.grey.shade300),
                             ),

@@ -7,6 +7,7 @@ class AppUser {
   final String role;
   final String name;
   final String? avatarUrl;
+  final DateTime? createdAt; // Add timestamp field
 
   AppUser({
     required this.id,
@@ -14,6 +15,7 @@ class AppUser {
     required this.role,
     required this.name,
     this.avatarUrl,
+    this.createdAt, // Add timestamp parameter
   });
 
   // This factory constructor is essential for the getAllUsers function.
@@ -26,6 +28,9 @@ class AppUser {
       role: json['role'] ?? 'user',
       avatarUrl: json['avatar_Url'] ??
           json['avatar_url'], // Fix: match your database column name
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null, // Parse timestamp
     );
   }
 }

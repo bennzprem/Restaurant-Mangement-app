@@ -5,7 +5,6 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant_app/auth_provider.dart';
 import '../services/chat_service.dart';
-import '../../auth_provider.dart';
 
 class EnhancedChatBotWidget extends StatefulWidget {
   const EnhancedChatBotWidget({super.key});
@@ -30,7 +29,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
   final ChatService _chatService = ChatService();
   late final GenerativeModel _model;
   String? _currentSessionId;
-  
+
   // Replace with your actual Gemini API key
   static const String _apiKey = 'YOUR_GEMINI_API_KEY_HERE';
 
@@ -71,7 +70,8 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
 
   void _addWelcomeMessage() {
     _addMessage(ChatMessage(
-      text: "Hello! I'm your restaurant assistant. I can help you with menu items, reservations, orders, and any questions about our restaurant. How can I assist you today?",
+      text:
+          "Hello! I'm your restaurant assistant. I can help you with menu items, reservations, orders, and any questions about our restaurant. How can I assist you today?",
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -81,16 +81,16 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
     try {
       final authProvider = context.read<AuthProvider>();
       final userId = authProvider.user?.id;
-      
+
       if (userId != null) {
         final history = await _chatService.getChatHistory(userId: userId);
         setState(() {
           _messages.clear();
           _messages.addAll(history.map((msg) => ChatMessage(
-            text: msg['message'],
-            isUser: msg['is_user'],
-            timestamp: DateTime.parse(msg['created_at']),
-          )));
+                text: msg['message'],
+                isUser: msg['is_user'],
+                timestamp: DateTime.parse(msg['created_at']),
+              )));
         });
         _scrollToBottom();
       }
@@ -126,7 +126,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
       _messages.add(message);
     });
     _scrollToBottom();
-    
+
     // Save to Supabase
     _saveMessageToDatabase(message);
   }
@@ -147,10 +147,10 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
     try {
       final authProvider = context.read<AuthProvider>();
       final userId = authProvider.user?.id;
-      
+
       if (userId != null) {
         _currentSessionId ??= DateTime.now().millisecondsSinceEpoch.toString();
-        
+
         await _chatService.saveMessage(
           userId: userId,
           message: message.text,
@@ -182,7 +182,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
     try {
       // Send to Gemini AI
       final response = await _sendToGeminiAI(message);
-      
+
       // Add AI response
       _addMessage(ChatMessage(
         text: response,
@@ -191,7 +191,8 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
       ));
     } catch (e) {
       _addMessage(ChatMessage(
-        text: "I apologize, but I'm experiencing some technical difficulties. Please try again in a moment, or feel free to call our restaurant directly for immediate assistance.",
+        text:
+            "I apologize, but I'm experiencing some technical difficulties. Please try again in a moment, or feel free to call our restaurant directly for immediate assistance.",
         isUser: false,
         timestamp: DateTime.now(),
       ));
@@ -207,7 +208,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
       // Get user context
       final authProvider = context.read<AuthProvider>();
       final userName = authProvider.user?.name ?? 'Guest';
-      
+
       // Create restaurant-specific context
       final prompt = '''
 You are a friendly and helpful AI assistant for a restaurant. Your name is "Resto Assistant".
@@ -246,8 +247,9 @@ Provide a helpful response:
 
       final content = [Content.text(prompt)];
       final response = await _model.generateContent(content);
-      
-      return response.text ?? "I'm sorry, I couldn't process that request. Could you please rephrase your question?";
+
+      return response.text ??
+          "I'm sorry, I couldn't process that request. Could you please rephrase your question?";
     } catch (e) {
       throw Exception('Failed to get AI response: $e');
     }
@@ -317,7 +319,10 @@ Provide a helpful response:
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.8)],
+          colors: [
+            Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withOpacity(0.8)
+          ],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -417,7 +422,8 @@ Provide a helpful response:
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text('Typing...', style: TextStyle(fontStyle: FontStyle.italic)),
+                const Text('Typing...',
+                    style: TextStyle(fontStyle: FontStyle.italic)),
               ],
             ),
           ),
@@ -476,9 +482,8 @@ Provide a helpful response:
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: message.isUser 
-            ? MainAxisAlignment.end 
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
@@ -488,28 +493,30 @@ Provide a helpful response:
                 color: Theme.of(context).primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.restaurant, size: 16, color: Colors.white),
+              child:
+                  const Icon(Icons.restaurant, size: 16, color: Colors.white),
             ),
             const SizedBox(width: 12),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: message.isUser 
-                  ? CrossAxisAlignment.end 
+              crossAxisAlignment: message.isUser
+                  ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: message.isUser 
-                        ? Theme.of(context).primaryColor 
+                    color: message.isUser
+                        ? Theme.of(context).primaryColor
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(20).copyWith(
-                      bottomLeft: message.isUser 
-                          ? const Radius.circular(20) 
+                      bottomLeft: message.isUser
+                          ? const Radius.circular(20)
                           : const Radius.circular(4),
-                      bottomRight: message.isUser 
-                          ? const Radius.circular(4) 
+                      bottomRight: message.isUser
+                          ? const Radius.circular(4)
                           : const Radius.circular(20),
                     ),
                     boxShadow: [
@@ -560,7 +567,8 @@ Provide a helpful response:
                   backgroundImage: user?.avatarUrl != null
                       ? NetworkImage(user!.avatarUrl!)
                       : null,
-                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  backgroundColor:
+                      Theme.of(context).primaryColor.withOpacity(0.1),
                   child: user?.avatarUrl == null
                       ? Text(
                           initials,
@@ -583,7 +591,7 @@ Provide a helpful response:
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inHours < 1) {

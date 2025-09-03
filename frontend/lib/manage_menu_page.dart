@@ -6,8 +6,13 @@ import 'add_edit_menu_item_page.dart';
 
 class ManageMenuPage extends StatefulWidget {
   final VoidCallback? onMenuUpdated;
+  final VoidCallback? onCategoryUpdated;
 
-  const ManageMenuPage({super.key, this.onMenuUpdated});
+  const ManageMenuPage({
+    super.key,
+    this.onMenuUpdated,
+    this.onCategoryUpdated,
+  });
 
   @override
   State<ManageMenuPage> createState() => _ManageMenuPageState();
@@ -16,15 +21,16 @@ class ManageMenuPage extends StatefulWidget {
 class _ManageMenuPageState extends State<ManageMenuPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<MenuItem> _allMenuItems = [];
-  List<MenuItem> _filteredMenuItems = [];
+  List<MenuCategory> _allMenuCategories = [];
+  List<MenuCategory> _filteredMenuCategories = [];
+  Set<int> _expandedCategories = {}; // Track which categories are expanded
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadMenuItems();
-    _searchController.addListener(_filterMenuItems);
+    _loadMenuCategories();
+    _searchController.addListener(_filterMenuCategories);
   }
 
   @override
@@ -33,23 +39,29 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     super.dispose();
   }
 
-  void _loadMenuItems() async {
+  void _loadMenuCategories() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final menuItems = await _apiService.getAllMenuItems();
+      final menuCategories = await _apiService.fetchMenu(
+        vegOnly: false,
+        veganOnly: false,
+        glutenFreeOnly: false,
+        nutsFree: false,
+      );
       setState(() {
-        _allMenuItems = menuItems;
-        _filteredMenuItems = menuItems;
+        _allMenuCategories = menuCategories;
+        _filteredMenuCategories = menuCategories;
+        // Expand all categories by default
+        _expandedCategories = Set.from(menuCategories.map((cat) => cat.id));
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      // Show error to user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading menu items: $e'),
@@ -59,17 +71,56 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     }
   }
 
-  void _filterMenuItems() {
+  void _filterMenuCategories() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        _filteredMenuItems = _allMenuItems;
+        _filteredMenuCategories = _allMenuCategories;
+        // Expand all categories when search is cleared
+        _expandedCategories = Set.from(_allMenuCategories.map((cat) => cat.id));
       } else {
-        _filteredMenuItems = _allMenuItems.where((item) {
-          return item.name.toLowerCase().contains(query) ||
-              item.description.toLowerCase().contains(query);
-        }).toList();
+        _filteredMenuCategories = _allMenuCategories
+            .map((category) {
+              final filteredItems = category.items.where((item) {
+                return item.name.toLowerCase().contains(query) ||
+                    item.description.toLowerCase().contains(query);
+              }).toList();
+
+              return MenuCategory(
+                id: category.id,
+                name: category.name,
+                items: filteredItems,
+              );
+            })
+            .where((category) => category.items.isNotEmpty)
+            .toList();
+        // Expand all categories that have search results
+        _expandedCategories =
+            Set.from(_filteredMenuCategories.map((cat) => cat.id));
       }
+    });
+  }
+
+  void _toggleCategoryExpansion(int categoryId) {
+    setState(() {
+      if (_expandedCategories.contains(categoryId)) {
+        _expandedCategories.remove(categoryId);
+      } else {
+        _expandedCategories.add(categoryId);
+      }
+    });
+  }
+
+  void _expandAllCategories() {
+    setState(() {
+      _expandedCategories =
+          Set.from(_filteredMenuCategories.map((cat) => cat.id));
+    });
+  }
+
+  void _collapseAllCategories() {
+    setState(() {
+      _expandedCategories.clear();
     });
   }
 
@@ -77,7 +128,6 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     try {
       print('Toggling availability for item: ${item.name} (ID: ${item.id})');
 
-      // Call API to update availability first
       await _apiService.updateMenuItemAvailability(item.id, !item.isAvailable);
 
       print('Availability updated successfully, refreshing menu items...');
@@ -91,9 +141,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
         ),
       );
 
-      // Refresh the list to ensure data consistency
-      _loadMenuItems();
-      // Notify parent widget to refresh dashboard
+      _loadMenuCategories();
       widget.onMenuUpdated?.call();
     } catch (e) {
       print('Error updating availability: $e');
@@ -117,8 +165,12 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
       MaterialPageRoute(
         builder: (context) => AddEditMenuItemPage(
           onItemSaved: () {
-            _loadMenuItems();
+            _loadMenuCategories();
             widget.onMenuUpdated?.call();
+          },
+          onCategoryUpdated: () {
+            _loadMenuCategories();
+            widget.onCategoryUpdated?.call();
           },
         ),
       ),
@@ -131,8 +183,12 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
         builder: (context) => AddEditMenuItemPage(
           menuItem: item,
           onItemSaved: () {
-            _loadMenuItems();
+            _loadMenuCategories();
             widget.onMenuUpdated?.call();
+          },
+          onCategoryUpdated: () {
+            _loadMenuCategories();
+            widget.onCategoryUpdated?.call();
           },
         ),
       ),
@@ -171,8 +227,6 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     try {
       print('Starting delete process for item: ${item.name} (ID: ${item.id})');
 
-      // Call API to delete the item first
-      print('Calling API to delete item...');
       await _apiService.deleteMenuItem(item.id);
       print('API call completed successfully');
 
@@ -184,9 +238,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
         ),
       );
 
-      // Refresh the list to ensure data consistency
-      print('Refreshing menu items list...');
-      _loadMenuItems();
+      _loadMenuCategories();
       widget.onMenuUpdated?.call();
       print('Delete process completed successfully');
     } catch (e) {
@@ -207,8 +259,41 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     }
   }
 
+  String _getCategoryIcon(String categoryName) {
+    final categoryIcons = {
+      'Appetizers': '🍽️',
+      'Soups & Salads': '🥗',
+      'Pizzas (11-inch)': '🍕',
+      'Pasta': '🍝',
+      'Sandwiches & Wraps': '🥪',
+      'Main Course - Indian': '🥘',
+      'Main Course - Global': '🌍',
+      'Desserts': '🍰',
+      'Beverages': '🥤',
+    };
+    return categoryIcons[categoryName] ?? '🍽️';
+  }
+
+  Color _getCategoryColor(String categoryName) {
+    final categoryColors = {
+      'Appetizers': Colors.orange,
+      'Soups & Salads': Colors.lightGreen,
+      'Pizzas (11-inch)': Colors.red,
+      'Pasta': Colors.amber,
+      'Sandwiches & Wraps': Colors.brown,
+      'Main Course - Indian': Colors.deepOrange,
+      'Main Course - Global': Colors.indigo,
+      'Desserts': Colors.pink,
+      'Beverages': Colors.blue,
+    };
+    return categoryColors[categoryName] ?? Colors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final totalItems = _filteredMenuCategories.fold<int>(
+        0, (sum, category) => sum + category.items.length);
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -256,7 +341,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
               ),
               const SizedBox(width: 12),
               ElevatedButton.icon(
-                onPressed: _loadMenuItems,
+                onPressed: _loadMenuCategories,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh'),
                 style: ElevatedButton.styleFrom(
@@ -287,15 +372,41 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
-          // Menu items count
-          Text(
-            '${_filteredMenuItems.length} menu item${_filteredMenuItems.length == 1 ? '' : 's'} found',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+          // Expand/Collapse Controls
+          Row(
+            children: [
+              Text(
+                '$totalItems menu item${totalItems == 1 ? '' : 's'} found in ${_filteredMenuCategories.length} categor${_filteredMenuCategories.length == 1 ? 'y' : 'ies'}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _expandAllCategories,
+                icon: const Icon(Icons.expand_more, size: 16),
+                label: const Text('Expand All'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _collapseAllCategories,
+                icon: const Icon(Icons.expand_less, size: 16),
+                label: const Text('Collapse All'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 16),
@@ -312,7 +423,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
                       ],
                     ),
                   )
-                : _filteredMenuItems.isEmpty
+                : _filteredMenuCategories.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -337,240 +448,404 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
                           ],
                         ),
                       )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListView.builder(
-                          itemCount: _filteredMenuItems.length,
-                          itemBuilder: (context, index) {
-                            final item = _filteredMenuItems[index];
+                    : _buildCategorizedMenuItems(),
+          ),
+        ],
+      ),
+    );
+  }
 
-                            return Container(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey[200]!),
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                leading: Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: Colors.grey[300],
-                                  ),
-                                  child: item.imageUrl.isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: Image.network(
-                                            item.imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.restaurant,
-                                                color: Colors.grey[600],
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.restaurant,
-                                          color: Colors.grey[600],
-                                        ),
-                                ),
-                                title: Text(
-                                  item.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.description,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '₹${item.price.toStringAsFixed(2)}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: _getAvailabilityColor(
-                                                    item.isAvailable)
-                                                .withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            item.isAvailable
-                                                ? 'Available'
-                                                : 'Unavailable',
-                                            style: TextStyle(
-                                              color: _getAvailabilityColor(
-                                                  item.isAvailable),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        if (item.isVegan)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.lightGreen
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'Vegan',
-                                              style: TextStyle(
-                                                color: Colors.lightGreen,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        if (item.isGlutenFree)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.orange
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'Gluten-Free',
-                                              style: TextStyle(
-                                                color: Colors.orange,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        if (!item.containsNuts)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  Colors.blue.withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'Nut-Free',
-                                              style: TextStyle(
-                                                color: Colors.blue,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Switch(
-                                      value: item.isAvailable,
-                                      onChanged: (value) =>
-                                          _toggleItemAvailability(item),
-                                      thumbColor:
-                                          MaterialStateProperty.resolveWith(
-                                              (states) => Colors.white),
-                                      trackColor:
-                                          MaterialStateProperty.resolveWith(
-                                              (states) => states.contains(
-                                                      MaterialState.selected)
-                                                  ? Colors.green
-                                                  : Colors.grey.shade300),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    PopupMenuButton<String>(
-                                      onSelected: (value) {
-                                        switch (value) {
-                                          case 'edit':
-                                            _editItem(item);
-                                            break;
-                                          case 'delete':
-                                            _deleteItem(item);
-                                            break;
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(
-                                          value: 'edit',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.edit, size: 20),
-                                              SizedBox(width: 8),
-                                              Text('Edit'),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.delete,
-                                                  size: 20, color: Colors.red),
-                                              SizedBox(width: 8),
-                                              Text('Delete',
-                                                  style: TextStyle(
-                                                      color: Colors.red)),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                      child: const Icon(Icons.more_vert),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
+  Widget _buildCategorizedMenuItems() {
+    return ListView.builder(
+      itemCount: _filteredMenuCategories.length,
+      itemBuilder: (context, categoryIndex) {
+        final category = _filteredMenuCategories[categoryIndex];
+        return _buildCategoryCard(category);
+      },
+    );
+  }
+
+  Widget _buildCategoryCard(MenuCategory category) {
+    final categoryColor = _getCategoryColor(category.name);
+    final categoryIcon = _getCategoryIcon(category.name);
+    final isExpanded = _expandedCategories.contains(category.id);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category Header (Clickable)
+          InkWell(
+            onTap: () => _toggleCategoryExpansion(category.id),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: categoryColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: categoryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      categoryIcon,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: categoryColor,
+                          ),
+                        ),
+                        Text(
+                          '${category.items.length} item${category.items.length == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${category.items.where((item) => item.isAvailable).length} available',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: categoryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: categoryColor,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Menu Items Grid (Collapsible)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: isExpanded ? null : 0,
+            child: isExpanded
+                ? Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final crossAxisCount =
+                            _getCrossAxisCount(constraints.maxWidth);
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio:
+                                _getChildAspectRatio(constraints.maxWidth),
+                          ),
+                          itemCount: category.items.length,
+                          itemBuilder: (context, index) {
+                            return _buildMenuItemCard(category.items[index]);
                           },
+                        );
+                      },
+                    ),
+                  )
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _getCrossAxisCount(double width) {
+    if (width > 1200) return 4;
+    if (width > 900) return 3;
+    if (width > 600) return 2;
+    return 1;
+  }
+
+  double _getChildAspectRatio(double width) {
+    if (width > 1200) return 1.2;
+    if (width > 900) return 1.1;
+    if (width > 600) return 1.0;
+    return 0.9;
+  }
+
+  Widget _buildMenuItemCard(MenuItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Item Image
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                color: Colors.grey[300],
+              ),
+              child: item.imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                      child: Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.restaurant,
+                            color: Colors.grey[600],
+                            size: 40,
+                          );
+                        },
+                      ),
+                    )
+                  : Icon(
+                      Icons.restaurant,
+                      color: Colors.grey[600],
+                      size: 40,
+                    ),
+            ),
+          ),
+
+          // Item Details
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Item Name
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Item Description
+                  Text(
+                    item.description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Price and Availability
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '₹${item.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.green,
                         ),
                       ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getAvailabilityColor(item.isAvailable)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          item.isAvailable ? 'Available' : 'Unavailable',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: _getAvailabilityColor(item.isAvailable),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Dietary Tags
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      if (item.isVegan)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.lightGreen.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Vegan',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.lightGreen[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      if (item.isGlutenFree)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'GF',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      if (!item.containsNuts)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Nut-Free',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Switch(
+                          value: item.isAvailable,
+                          onChanged: (value) => _toggleItemAvailability(item),
+                          thumbColor: MaterialStateProperty.resolveWith(
+                              (states) => Colors.white),
+                          trackColor: MaterialStateProperty.resolveWith(
+                              (states) =>
+                                  states.contains(MaterialState.selected)
+                                      ? Colors.green
+                                      : Colors.grey.shade300),
+                        ),
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'edit':
+                              _editItem(item);
+                              break;
+                            case 'delete':
+                              _deleteItem(item);
+                              break;
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 16),
+                                SizedBox(width: 8),
+                                Text('Edit'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, size: 16, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete',
+                                    style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        child: const Icon(Icons.more_vert, size: 20),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

@@ -164,6 +164,40 @@ class ApiService {
     }
   }
 
+  // Order management methods
+  Future<List<Map<String, dynamic>>> getOrderItems(int orderId) async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/orders/$orderId/items'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw 'Failed to load order items: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('Error getting order items: $e');
+      throw 'Failed to load order items.';
+    }
+  }
+
+  Future<void> updateOrderStatus(int orderId, String newStatus) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/orders/$orderId/status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': newStatus}),
+      );
+
+      if (response.statusCode != 200) {
+        throw 'Failed to update order status: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('Error updating order status: $e');
+      throw 'Failed to update order status.';
+    }
+  }
+
   Future<List<MenuItem>> getAllMenuItems() async {
     try {
       // Use the existing fetchMenu method that we know works
@@ -812,6 +846,45 @@ class ApiService {
     } catch (e) {
       print('Error getting categories: $e');
       throw 'Failed to load categories.';
+    }
+  }
+
+  // Category management methods
+  Future<Map<String, dynamic>> createCategory(String name) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/categories'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name}),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data['category'];
+      } else {
+        final errorData = json.decode(response.body);
+        throw errorData['error'] ?? 'Failed to create category';
+      }
+    } catch (e) {
+      print('Error creating category: $e');
+      throw 'Failed to create category: $e';
+    }
+  }
+
+  Future<void> deleteCategory(int categoryId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/categories/$categoryId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = json.decode(response.body);
+        throw errorData['error'] ?? 'Failed to delete category';
+      }
+    } catch (e) {
+      print('Error deleting category: $e');
+      throw 'Failed to delete category: $e';
     }
   }
 }

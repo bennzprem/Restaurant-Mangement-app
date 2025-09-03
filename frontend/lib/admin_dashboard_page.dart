@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'auth_provider.dart';
 import 'theme.dart';
 import 'manage_users_page.dart';
 import 'manage_menu_page.dart';
+import 'manage_categories_page.dart';
+import 'manage_orders_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
 import 'models.dart';
@@ -52,7 +55,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     // Fallback polling in case realtime is disabled/not propagating
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) _loadDashboardData();
     });
   }
@@ -161,6 +164,76 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       'totalValue': totalValue,
       'averagePrice': averagePrice,
     };
+  }
+
+  // Helper method to format timestamp for display
+  String _formatTimestamp(DateTime? timestamp) {
+    if (timestamp == null) return 'Unknown';
+
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return DateFormat('MMM dd, yyyy').format(timestamp);
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  // Helper method to get the latest user
+  AppUser? _getLatestUser() {
+    if (_users.isEmpty) return null;
+
+    // Sort users by creation date (newest first)
+    final sortedUsers = List<AppUser>.from(_users);
+    sortedUsers.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime(1900);
+      final bTime = b.createdAt ?? DateTime(1900);
+      return bTime.compareTo(aTime);
+    });
+
+    return sortedUsers.first;
+  }
+
+  // Helper method to get the latest order
+  Order? _getLatestOrder() {
+    if (_orders.isEmpty) return null;
+
+    // Sort orders by creation date (newest first)
+    final sortedOrders = List<Order>.from(_orders);
+    sortedOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return sortedOrders.first;
+  }
+
+  // Helper method to get the first user (earliest joined)
+  AppUser? _getFirstUser() {
+    if (_users.isEmpty) return null;
+
+    // Sort users by creation date (oldest first)
+    final sortedUsers = List<AppUser>.from(_users);
+    sortedUsers.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime(1900);
+      final bTime = b.createdAt ?? DateTime(1900);
+      return aTime.compareTo(bTime);
+    });
+
+    return sortedUsers.first;
+  }
+
+  // Helper method to get the first order (earliest placed)
+  Order? _getFirstOrder() {
+    if (_orders.isEmpty) return null;
+
+    // Sort orders by creation date (oldest first)
+    final sortedOrders = List<Order>.from(_orders);
+    sortedOrders.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return sortedOrders.first;
   }
 
   @override
@@ -319,19 +392,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         index: 2,
                       ),
                       _buildNavItem(
+                        icon: Icons.category,
+                        title: 'Category Management',
+                        index: 3,
+                      ),
+                      _buildNavItem(
                         icon: Icons.shopping_cart,
                         title: 'Orders',
-                        index: 3,
+                        index: 4,
                       ),
                       _buildNavItem(
                         icon: Icons.analytics,
                         title: 'Analytics',
-                        index: 4,
+                        index: 5,
                       ),
                       _buildNavItem(
                         icon: Icons.settings,
                         title: 'Settings',
-                        index: 5,
+                        index: 6,
                       ),
                     ],
                   ),
@@ -402,10 +480,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       case 2:
         return _buildMenuManagement();
       case 3:
-        return _buildOrders();
+        return _buildCategoryManagement();
       case 4:
-        return _buildAnalytics();
+        return _buildOrders();
       case 5:
+        return _buildAnalytics();
+      case 6:
         return _buildSettings();
       default:
         return _buildDashboardOverview();
@@ -538,15 +618,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       icon: Icons.people,
                       title: 'Total users in system',
                       subtitle: '${_users.length} registered users',
-                      time: 'Current',
+                      time: _users.isNotEmpty
+                          ? 'Since ${DateFormat('MMM dd, yyyy').format(_getFirstUser()?.createdAt ?? DateTime.now())}'
+                          : 'No users',
                       color: Colors.blue,
                     ),
                     if (_users.length > 1) ...[
                       _buildActivityItem(
                         icon: Icons.person,
                         title: 'Latest user',
-                        subtitle: '${_users.last.name} joined the platform',
-                        time: 'Recently',
+                        subtitle:
+                            '${_getLatestUser()?.name ?? 'Unknown'} joined the platform',
+                        time: _formatTimestamp(_getLatestUser()?.createdAt),
                         color: Colors.green,
                       ),
                     ],
@@ -580,7 +663,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       icon: Icons.shopping_cart,
                       title: 'Total orders',
                       subtitle: '${_getOrderStats()['total']} orders placed',
-                      time: 'Current',
+                      time: _orders.isNotEmpty
+                          ? 'Since ${DateFormat('MMM dd, yyyy').format(_getFirstOrder()?.createdAt ?? DateTime.now())}'
+                          : 'No orders',
                       color: Colors.green,
                     ),
                     if (_orders.isNotEmpty) ...[
@@ -588,8 +673,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         icon: Icons.check_circle,
                         title: 'Latest order',
                         subtitle:
-                            'Order #${_orders.first.id} - ₹${_orders.first.totalAmount.toStringAsFixed(2)}',
-                        time: 'Recently',
+                            'Order #${_getLatestOrder()?.id ?? 0} - ₹${_getLatestOrder()?.totalAmount.toStringAsFixed(2) ?? '0.00'}',
+                        time: _formatTimestamp(_getLatestOrder()?.createdAt),
                         color: Colors.blue,
                       ),
                     ],
@@ -647,7 +732,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     icon: Icons.people_outline,
                     title: 'No data yet',
                     subtitle: 'No users or orders have been created yet',
-                    time: 'Current',
+                    time: 'System ready',
                     color: Colors.grey,
                   ),
                 ],
@@ -798,15 +883,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildMenuManagement() {
     return ManageMenuPage(
       onMenuUpdated: _loadDashboardData,
+      onCategoryUpdated: _loadDashboardData,
+    );
+  }
+
+  Widget _buildCategoryManagement() {
+    return ManageCategoriesPage(
+      onCategoryUpdated: _loadDashboardData,
     );
   }
 
   Widget _buildOrders() {
-    return const Center(
-      child: Text(
-        'Orders - Coming Soon',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
-      ),
+    return ManageOrdersPage(
+      onOrderUpdated: _loadDashboardData,
     );
   }
 

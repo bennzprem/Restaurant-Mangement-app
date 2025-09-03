@@ -76,6 +76,7 @@ class Order {
   final String status;
   final DateTime createdAt;
   final String deliveryAddress;
+  final String? userId;
 
   Order({
     required this.id,
@@ -83,6 +84,7 @@ class Order {
     required this.status,
     required this.createdAt,
     required this.deliveryAddress,
+    this.userId,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -93,6 +95,7 @@ class Order {
       createdAt: DateTime.parse(json['created_at']),
       deliveryAddress:
           json['delivery_address'] ?? json['address'] ?? 'No address provided',
+      userId: json['user_id'],
     );
   }
 }

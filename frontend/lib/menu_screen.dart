@@ -1138,13 +1138,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         ),
         value: value,
         onChanged: onChanged,
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
             return const Color(0xFF9EAD3A); // Darker green for the toggle dot
           }
           return Colors.grey.shade400; // Default grey for untoggled state
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
             return const Color(0xFFDAE952).withOpacity(0.5);
           }
