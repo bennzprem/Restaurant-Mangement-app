@@ -827,208 +827,105 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
     final isExpanded = _expandedCategories.contains(category.id);
     final availableCount = category.items.where((i) => i.isAvailable).length;
 
-    print(
-        'Building category card for: ${category.name} (ID: ${category.id}), isExpanded: $isExpanded');
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: isExpanded ? 14 : 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          setState(() {
-            _selectedCategoryId = category.id;
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: categoryColor,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      _getCategoryIcon(category.name),
-                      style: const TextStyle(fontSize: 28),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    category.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: categoryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${category.items.length} items',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 12),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$availableCount available',
-                          style: TextStyle(
-                            color: categoryColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 18,
-                          color: categoryColor,
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'delete':
-                          _deleteCategory(category);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, size: 16, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Delete Category',
-                                style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.more_vert,
-                        size: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _HoverableCategoryCard(
+      category: category,
+      categoryColor: categoryColor,
+      isExpanded: isExpanded,
+      availableCount: availableCount,
+      onTap: () {
+        setState(() {
+          _selectedCategoryId = category.id;
+        });
+      },
+      onDelete: () => _deleteCategory(category),
     );
   }
 
   Widget _buildAddCategoryCard() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.green.withOpacity(0.3),
-          width: 2,
-          style: BorderStyle.solid,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: _showAddCategoryDialog,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.green.withOpacity(0.3),
-                    width: 2,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isHovered = false;
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.green.withOpacity(isHovered ? 0.5 : 0.3),
+                width: 2,
+                style: BorderStyle.solid,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isHovered ? 0.15 : 0.08),
+                  blurRadius: isHovered ? 20 : 10,
+                  offset: const Offset(0, 2),
+                ),
+                if (isHovered)
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.green,
-                  size: 28,
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _showAddCategoryDialog,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.green,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Add Category',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Create new category',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Add Category',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Create new category',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 12,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1116,237 +1013,271 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
   }
 
   Widget _buildMenuItemCard(MenuItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Item Image
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                color: Colors.grey[300],
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isHovered = false;
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isHovered
+                    ? Colors.blue.withOpacity(0.3)
+                    : Colors.grey[200]!,
+                width: isHovered ? 2 : 1,
               ),
-              child: item.imageUrl.isNotEmpty
-                  ? ClipRRect(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isHovered ? 0.15 : 0.05),
+                  blurRadius: isHovered ? 15 : 5,
+                  offset: const Offset(0, 2),
+                ),
+                if (isHovered)
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Item Image
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
                       ),
-                      child: Image.network(
-                        item.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
+                      color: Colors.grey[300],
+                    ),
+                    child: item.imageUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                            ),
+                            child: Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.restaurant,
+                                  color: Colors.grey[600],
+                                  size: 40,
+                                );
+                              },
+                            ),
+                          )
+                        : Icon(
                             Icons.restaurant,
                             color: Colors.grey[600],
                             size: 40,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.restaurant,
-                      color: Colors.grey[600],
-                      size: 40,
-                    ),
-            ),
-          ),
-
-          // Item Details
-          Expanded(
-            flex: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Item Name
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                          ),
                   ),
-                  const SizedBox(height: 4),
+                ),
 
-                  // Item Description
-                  Text(
-                    item.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Price and Availability
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '₹${item.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.green,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getAvailabilityColor(item.isAvailable)
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          item.isAvailable ? 'Available' : 'Unavailable',
-                          style: TextStyle(
-                            fontSize: 10,
+                // Item Details
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Item Name
+                        Text(
+                          item.name,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: _getAvailabilityColor(item.isAvailable),
+                            fontSize: 14,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                        const SizedBox(height: 4),
 
-                  // Dietary Tags
-                  Wrap(
-                    spacing: 4,
-                    children: [
-                      if (item.isVegan)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.lightGreen.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                        // Item Description
+                        Text(
+                          item.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
                           ),
-                          child: Text(
-                            'Vegan',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.lightGreen[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      if (item.isGlutenFree)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'GF',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.orange[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      if (!item.containsNuts)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Nut-Free',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                        const SizedBox(height: 8),
 
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Switch(
-                          value: item.isAvailable,
-                          onChanged: (value) => _toggleItemAvailability(item),
-                          thumbColor: MaterialStateProperty.resolveWith(
-                              (states) => Colors.white),
-                          trackColor: MaterialStateProperty.resolveWith(
-                              (states) =>
-                                  states.contains(MaterialState.selected)
-                                      ? Colors.green
-                                      : Colors.grey.shade300),
+                        // Price and Availability
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '₹${item.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getAvailabilityColor(item.isAvailable)
+                                    .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                item.isAvailable ? 'Available' : 'Unavailable',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      _getAvailabilityColor(item.isAvailable),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'edit':
-                              _editItem(item);
-                              break;
-                            case 'delete':
-                              _deleteItem(item);
-                              break;
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, size: 16),
-                                SizedBox(width: 8),
-                                Text('Edit'),
-                              ],
+                        const SizedBox(height: 8),
+
+                        // Dietary Tags
+                        Wrap(
+                          spacing: 4,
+                          children: [
+                            if (item.isVegan)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.lightGreen.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Vegan',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.lightGreen[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            if (item.isGlutenFree)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'GF',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.orange[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            if (!item.containsNuts)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Nut-Free',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Switch(
+                                value: item.isAvailable,
+                                onChanged: (value) =>
+                                    _toggleItemAvailability(item),
+                                thumbColor: WidgetStateProperty.resolveWith(
+                                    (states) => Colors.white),
+                                trackColor: WidgetStateProperty.resolveWith(
+                                    (states) =>
+                                        states.contains(WidgetState.selected)
+                                            ? Colors.green
+                                            : Colors.grey.shade300),
+                              ),
                             ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 16, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Delete',
-                                    style: TextStyle(color: Colors.red)),
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'edit':
+                                    _editItem(item);
+                                    break;
+                                  case 'delete':
+                                    _deleteItem(item);
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete,
+                                          size: 16, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Delete',
+                                          style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
                               ],
+                              child: const Icon(Icons.more_vert, size: 20),
                             ),
-                          ),
-                        ],
-                        child: const Icon(Icons.more_vert, size: 20),
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1441,73 +1372,90 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
   }
 
   Widget _buildAddMenuItemCard(MenuCategory category) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
-          width: 2,
-          style: BorderStyle.solid,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _showAddMenuItemDialog(category),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.blue.withOpacity(0.3),
-                    width: 2,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isHovered = false;
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.blue.withOpacity(isHovered ? 0.5 : 0.3),
+                width: 2,
+                style: BorderStyle.solid,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isHovered ? 0.15 : 0.08),
+                  blurRadius: isHovered ? 20 : 10,
+                  offset: const Offset(0, 2),
+                ),
+                if (isHovered)
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.blue,
-                  size: 28,
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showAddMenuItemDialog(category),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.blue,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Add Menu Item',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Add to ${category.name}',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Add Menu Item',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Add to ${category.name}',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 12,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1523,6 +1471,186 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
             _loadMenuCategories();
             widget.onCategoryUpdated?.call();
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverableCategoryCard extends StatefulWidget {
+  final MenuCategory category;
+  final Color categoryColor;
+  final bool isExpanded;
+  final int availableCount;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _HoverableCategoryCard({
+    required this.category,
+    required this.categoryColor,
+    required this.isExpanded,
+    required this.availableCount,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  State<_HoverableCategoryCard> createState() => _HoverableCategoryCardState();
+}
+
+class _HoverableCategoryCardState extends State<_HoverableCategoryCard> {
+  bool isHovered = false;
+
+  String _getCategoryIcon(String categoryName) {
+    final categoryIcons = {
+      'Appetizers': '🍽️',
+      'Soups & Salads': '🥗',
+      'Pizzas (11-inch)': '🍕',
+      'Pasta': '🍝',
+      'Sandwiches & Wraps': '🥪',
+      'Main Course - Indian': '🥘',
+      'Main Course - Global': '🌍',
+      'Desserts': '🍰',
+      'Beverages': '🥤',
+    };
+    return categoryIcons[categoryName] ?? '🍽️';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isHovered ? 0.15 : 0.08),
+              blurRadius: isHovered ? 20 : (widget.isExpanded ? 14 : 10),
+              offset: const Offset(0, 2),
+            ),
+            if (isHovered)
+              BoxShadow(
+                color: widget.categoryColor.withOpacity(0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: widget.onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: widget.categoryColor,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        _getCategoryIcon(widget.category.name),
+                        style: const TextStyle(fontSize: 28),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      widget.category.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: widget.categoryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${widget.category.items.length} items',
+                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: widget.categoryColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${widget.availableCount} available',
+                            style: TextStyle(
+                              color: widget.categoryColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 18,
+                            color: widget.categoryColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'delete':
+                            widget.onDelete();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, size: 16, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete Category',
+                                  style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.more_vert,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
