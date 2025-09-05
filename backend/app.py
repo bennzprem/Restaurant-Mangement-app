@@ -1101,32 +1101,53 @@ def create_category():
 
 @app.route('/categories/<int:category_id>', methods=['DELETE'])
 def delete_category(category_id):
-    """Deletes a category if it has no menu items."""
+    """Deletes a category and all its menu items."""
     try:
-        # Check if category has any menu items
+        print(f"DELETE request received for category ID: {category_id}")
+        
+        # First, delete all menu items in this category
         menu_items_response = requests.get(
             f"{SUPABASE_URL}/rest/v1/menu_items?category_id=eq.{category_id}",
             headers=headers
         )
         menu_items_response.raise_for_status()
+        menu_items = menu_items_response.json()
         
-        if menu_items_response.json():
-            return jsonify({"error": "Cannot delete category that has menu items"}), 400
+        if menu_items:
+            print(f"Found {len(menu_items)} menu items to delete")
+            # Delete all menu items in this category
+            for item in menu_items:
+                item_id = item['id']
+                print(f"Deleting menu item ID: {item_id}")
+                delete_item_response = requests.delete(
+                    f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}",
+                    headers=headers
+                )
+                if delete_item_response.status_code not in [204, 200]:
+                    print(f"Warning: Failed to delete menu item {item_id}: {delete_item_response.status_code}")
         
-        # Delete the category
+        # Now delete the category
+        print(f"Deleting category ID: {category_id}")
         api_url = f"{SUPABASE_URL}/rest/v1/categories?id=eq.{category_id}"
         response = requests.delete(api_url, headers=headers)
         
-        if response.status_code == 204:
-            response = jsonify({"message": "Category deleted successfully"})
+        print(f"Category delete response: {response.status_code}")
+        print(f"Category delete response body: {response.text}")
+        
+        # Supabase can return 200 or 204 for successful deletes
+        if response.status_code in [200, 204]:
+            response = jsonify({"message": "Category and all its items deleted successfully"})
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 200
         else:
+            print(f"Unexpected response from Supabase: {response.status_code} - {response.text}")
             return jsonify({"error": "Failed to delete category"}), 500
             
     except Exception as e:
         print(f"Error deleting category: {e}")
-        response = jsonify({"error": str(e)})
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": f"Failed to delete category: {str(e)}"})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
 

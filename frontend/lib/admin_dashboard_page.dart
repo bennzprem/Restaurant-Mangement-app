@@ -7,7 +7,6 @@ import 'auth_provider.dart';
 import 'theme.dart';
 import 'manage_users_page.dart';
 import 'manage_menu_page.dart';
-import 'manage_categories_page.dart';
 import 'manage_orders_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
@@ -392,24 +391,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         index: 2,
                       ),
                       _buildNavItem(
-                        icon: Icons.category,
-                        title: 'Category Management',
-                        index: 3,
-                      ),
-                      _buildNavItem(
                         icon: Icons.shopping_cart,
                         title: 'Orders',
-                        index: 4,
+                        index: 3,
                       ),
                       _buildNavItem(
                         icon: Icons.analytics,
                         title: 'Analytics',
-                        index: 5,
+                        index: 4,
                       ),
                       _buildNavItem(
                         icon: Icons.settings,
                         title: 'Settings',
-                        index: 6,
+                        index: 5,
                       ),
                     ],
                   ),
@@ -480,12 +474,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       case 2:
         return _buildMenuManagement();
       case 3:
-        return _buildCategoryManagement();
-      case 4:
         return _buildOrders();
-      case 5:
+      case 4:
         return _buildAnalytics();
-      case 6:
+      case 5:
         return _buildSettings();
       default:
         return _buildDashboardOverview();
@@ -883,12 +875,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildMenuManagement() {
     return ManageMenuPage(
       onMenuUpdated: _loadDashboardData,
-      onCategoryUpdated: _loadDashboardData,
-    );
-  }
-
-  Widget _buildCategoryManagement() {
-    return ManageCategoriesPage(
       onCategoryUpdated: _loadDashboardData,
     );
   }
