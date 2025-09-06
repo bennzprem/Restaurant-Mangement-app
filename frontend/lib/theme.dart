@@ -70,7 +70,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   // Main Theme Palette - Remapped for a more colorful UI
   static const Color primaryColor = Color(
-    0xFFDAE952,
+    0xFFC4D14A,
   ); // Main Lime highlight for text and accents
   static const Color primaryLight = Color(
     0xFFF3F8C5,
