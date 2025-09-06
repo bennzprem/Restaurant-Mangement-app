@@ -91,6 +91,38 @@ class AppTheme {
       .white; // CHANGED: Cards and AppBar are white to create a clean layer on top of the lime background
   // ------------------------------
 
+  // Additional colors used throughout the application
+  static const Color white = Colors.white;
+  static const Color black = Colors.black;
+  static const Color transparent = Colors.transparent;
+  static const Color grey = Colors.grey;
+  
+  // Status colors
+  static const Color successColor = Colors.green;
+  static const Color errorColor = Colors.red;
+  static const Color warningColor = Colors.orange;
+  static const Color infoColor = Colors.blue;
+  static const Color purpleColor = Colors.purple;
+  static const Color lightGreenColor = Colors.lightGreen;
+  
+  // Specific color values used in the app
+  static const Color customBlack = Color(0xFF212121);
+  static const Color customGrey = Color(0xFF757575);
+  static const Color customLightGrey = Color(0xFFF5F5F5);
+  static const Color customDarkGrey = Color(0xFF2C3E50);
+  static const Color customLightTextGrey = Color(0xFF8F9DA9);
+  static const Color customDarkModeGrey = Color(0xFF1E1E1E);
+  static const Color customLightModeGrey = Color(0xFFF8F9FA);
+  static const Color customFormGrey = Color(0xFF495057);
+  static const Color customBackgroundGrey = Color(0xFFE9ECEF);
+  static const Color customDarkBackground = Color(0xFF0F0F10);
+  static const Color customCardBackground = Color(0xFF151515);
+  static const Color customYellow = Color(0xFFFFF59D);
+  static const Color customLimeGreen = Color(0xFFB8C96C);
+  static const Color customLightLime = Color(0xFFD4E49C);
+  static const Color customDarkerGreen = Color(0xFF9EAD3A);
+  static const Color customSuccessGreen = Color(0xFF4CAF50);
+
   static ThemeData get theme {
     return ThemeData(
       primaryColor: primaryColor,

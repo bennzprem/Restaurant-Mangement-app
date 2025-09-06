@@ -158,7 +158,7 @@ class _ServiceSelectionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: Color(0xFFDAE952)),
+              Icon(icon, size: 40, color: AppTheme.primaryColor),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -169,22 +169,22 @@ class _ServiceSelectionCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppTheme.customBlack,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
                       style:
-                          const TextStyle(fontSize: 16, color: Colors.black54),
+                          const TextStyle(fontSize: 16, color: AppTheme.customGrey),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Color(0xFFDAE952)),
+              const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryColor),
             ],
           ),
-        ),
+        ), 
       ),
     );
   }
@@ -352,12 +352,12 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
               style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black)),
+                  color: isDark ? AppTheme.white : AppTheme.black)),
           const SizedBox(height: 24),
           Row(
             children: [
               IconButton(
-                icon: Icon(Icons.arrow_left, size: 32, color: isDark ? Colors.white70 : Colors.black87),
+                icon: Icon(Icons.arrow_left, size: 32, color: isDark ? AppTheme.white.withOpacity(0.7) : AppTheme.customBlack),
                 onPressed: scrollLeft,
               ),
               Expanded(
@@ -387,20 +387,20 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                              duration: const Duration(milliseconds: 400),
                              decoration: BoxDecoration(
                                color: _hoveredIndex == index 
-                                   ? const Color(0xFFDAE952).withOpacity(0.2)
-                                   : (isDark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.7)),
+                                   ? AppTheme.primaryColor.withOpacity(0.2)
+                                   : (isDark ? AppTheme.white.withOpacity(0.06) : AppTheme.white.withOpacity(0.7)),
                                borderRadius: BorderRadius.circular(24),
                                border: Border.all(
                                  color: _hoveredIndex == index 
-                                     ? const Color(0xFFDAE952)
-                                     : Colors.white.withOpacity(isDark ? 0.12 : 0.2),
+                                     ? AppTheme.primaryColor
+                                     : AppTheme.white.withOpacity(isDark ? 0.12 : 0.2),
                                  width: _hoveredIndex == index ? 2 : 1,
                                ),
                                boxShadow: [
                                  BoxShadow(
                                    color: _hoveredIndex == index
-                                       ? const Color(0xFFDAE952).withOpacity(0.3)
-                                       : Colors.black.withOpacity(isDark ? 0.5 : 0.06),
+                                       ? AppTheme.primaryColor.withOpacity(0.3)
+                                       : AppTheme.black.withOpacity(isDark ? 0.5 : 0.06),
                                    blurRadius: 18,
                                    offset: const Offset(0, 8),
                                  ),
@@ -417,8 +417,8 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                    icon, 
                                    size: 36, 
                                    color: _hoveredIndex == index 
-                                       ? Colors.black
-                                       : (isDark ? Colors.white : Colors.black),
+                                       ? AppTheme.black
+                                       : (isDark ? AppTheme.white : AppTheme.black),
                                  ),
                                  const SizedBox(height: 16),
                                  Text(
@@ -428,13 +428,13 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                      fontSize: 16,
                                      fontWeight: FontWeight.w600,
                                      color: _hoveredIndex == index 
-                                         ? Colors.black
-                                         : (isDark ? Colors.white : Colors.black),
+                                         ? AppTheme.black
+                                         : (isDark ? AppTheme.white : AppTheme.black),
                                    ),
                                  ),
                                 const SizedBox(height: 10),
                                 const Icon(Icons.arrow_forward,
-                                    color: Color(0xFFDAE952), size: 20),
+                                    color: AppTheme.primaryColor, size: 20),
                               ],
                             ),
                           ),
@@ -445,7 +445,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.arrow_right, size: 32, color: isDark ? Colors.white70 : Colors.black87),
+                icon: Icon(Icons.arrow_right, size: 32, color: isDark ? AppTheme.white.withOpacity(0.7) : AppTheme.customBlack),
                 onPressed: scrollRight,
               ),
             ],

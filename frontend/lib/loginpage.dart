@@ -170,7 +170,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorData['error'] ?? 'Invalid Credentials'),
-                backgroundColor: Colors.red.withOpacity(0.8),
+                backgroundColor: AppTheme.errorColor.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -217,7 +217,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorData['error'] ?? 'Invalid Credentials'),
-                backgroundColor: Colors.red.withOpacity(0.8),
+                backgroundColor: AppTheme.errorColor.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -262,7 +262,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
+        appBar: AppBar(backgroundColor: AppTheme.transparent, elevation: 0, toolbarHeight: 0),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

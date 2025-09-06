@@ -7,6 +7,7 @@ import 'api_service.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
+import 'theme.dart';
 
 import 'auth_provider.dart';
 import 'package:restaurant_app/widgets/header_widget.dart';
@@ -253,7 +254,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFDAE952), Color(0xFFF3F8C5)],
+                colors: [AppTheme.primaryColor, AppTheme.primaryLight],
               ),
             ),
             child: Column(
@@ -266,7 +267,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -278,7 +279,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         ),
                         child: const Icon(
                           Icons.restaurant_menu,
-                          color: Color(0xFFDAE952),
+                          color: AppTheme.primaryColor,
                           size: 24,
                         ),
                       ),
@@ -288,7 +289,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.white,
                         ),
                       ),
                     ],
@@ -648,12 +649,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         height: 160,
-                        color: const Color(0xFFF3F8C5),
+                        color: AppTheme.primaryLight,
                         alignment: Alignment.center,
                         child: const Icon(
                           Icons.restaurant,
                           size: 50,
-                          color: Color(0xFFDAE952),
+                          color: AppTheme.primaryColor,
                         ),
                       );
                     },
@@ -761,7 +762,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFDAE952),
+                              color: AppTheme.primaryColor,
                             ),
                           ),
                           Consumer<CartProvider>(
@@ -791,7 +792,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       onPressed: () => cart.addItem(item),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xFFDAE952),
+                                            AppTheme.primaryColor,
                                         foregroundColor: Colors.black,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
@@ -831,15 +832,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFDAE952).withOpacity(0.1),
+        color: AppTheme.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFDAE952)),
+        border: Border.all(color: AppTheme.primaryColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.remove, size: 16, color: Color(0xFFDAE952)),
+            icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
             onPressed: () => cart.removeSingleItem(item.id),
             splashRadius: 16,
             constraints: const BoxConstraints(),
@@ -856,7 +857,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.add, size: 16, color: Color(0xFFDAE952)),
+            icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
             onPressed: () => cart.addItem(item),
             splashRadius: 16,
             constraints: const BoxConstraints(),
@@ -874,7 +875,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFFDAE952),
+              color: AppTheme.primaryColor,
               borderRadius: BorderRadius.circular(50),
             ),
             child: const CircularProgressIndicator(
