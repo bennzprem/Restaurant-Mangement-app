@@ -260,7 +260,10 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
+        appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            toolbarHeight: 0),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -281,7 +284,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                       HeaderWidget(
                         active: HeaderActive.signup,
                         showBack: true,
-                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                        onBack: () =>
+                            Navigator.pushReplacementNamed(context, '/'),
                       ),
                       Expanded(child: _buildDesktopLayout()),
                     ],
@@ -293,7 +297,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                       HeaderWidget(
                         active: HeaderActive.signup,
                         showBack: true,
-                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                        onBack: () =>
+                            Navigator.pushReplacementNamed(context, '/'),
                       ),
                       Expanded(child: _buildMobileLayout()),
                     ],
@@ -324,7 +329,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                 Expanded(
                   flex: 1,
                   child: Container(
-                    color: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF7F8F9),
+                    color: isDark
+                        ? const Color(0xFF0F0F10)
+                        : const Color(0xFFF7F8F9),
                     child: _buildFormSection(),
                   ),
                 ),
@@ -637,7 +644,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               style: TextStyle(
                 fontSize: titleSize,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.darkTextColor, // Using theme color
+                color: isDark
+                    ? Colors.white
+                    : AppTheme.darkTextColor, // Using theme color
                 letterSpacing: -0.5,
               ),
             ),
@@ -646,7 +655,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               'Sign up to get started with ByteEat',
               style: TextStyle(
                 fontSize: isMobile ? 14 : 16,
-                color: isDark ? Colors.grey[300] : AppTheme.lightTextColor, // Using theme color
+                color: isDark
+                    ? Colors.grey[300]
+                    : AppTheme.lightTextColor, // Using theme color
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -810,7 +821,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   )
                 : null,
             filled: true,
-            fillColor: isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
+            fillColor:
+                isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
             contentPadding: EdgeInsets.symmetric(
               vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,

@@ -8,6 +8,7 @@ import 'theme.dart';
 import 'manage_users_page.dart';
 import 'manage_menu_page.dart';
 import 'manage_orders_page.dart';
+import 'analytics_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
 import 'models.dart';
@@ -886,11 +887,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildAnalytics() {
-    return const Center(
-      child: Text(
-        'Analytics - Coming Soon',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
-      ),
+    return AnalyticsPage(
+      orders: _orders,
+      users: _users,
+      menuItems: _menuItems,
+      isLoading: _isLoading,
+      onRefresh: _loadDashboardData,
     );
   }
 
