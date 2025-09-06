@@ -160,7 +160,7 @@ class _ServiceSelectionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: Color(0xFFDAE952)),
+              Icon(icon, size: 40, color: AppTheme.primaryColor),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -171,19 +171,19 @@ class _ServiceSelectionCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppTheme.customBlack,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style:
-                          const TextStyle(fontSize: 16, color: Colors.black54),
+                      style: const TextStyle(
+                          fontSize: 16, color: AppTheme.customGrey),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Color(0xFFDAE952)),
+              const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryColor),
             ],
           ),
         ),
@@ -356,7 +356,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
               style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black)),
+                  color: isDark ? AppTheme.white : AppTheme.black)),
           const SizedBox(height: 24),
           Row(
             children: [

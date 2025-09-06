@@ -96,6 +96,7 @@ class HeaderWidget extends StatelessWidget {
                       Text(
                         'ByteEat',
                         style: TextStyle(
+                          fontFamily: 'StoryScript',
                           fontSize:
                               MediaQuery.of(context).size.width < 700 ? 20 : 24,
                           fontWeight: FontWeight.bold,
@@ -103,6 +104,10 @@ class HeaderWidget extends StatelessWidget {
                           color: themeProvider.isDarkMode
                               ? Colors.white
                               : Colors.black,
+                          fontVariations: const [
+                            FontVariation('ital', 0),
+                            FontVariation('wght', 700),
+                          ],
                         ),
                       ),
                       Spacer(),

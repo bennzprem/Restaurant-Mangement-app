@@ -246,7 +246,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please login to access admin dashboard.'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.warningColor,
           ),
         );
       });
@@ -263,7 +263,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Access denied. Admin privileges required.'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorColor,
           ),
         );
       });
@@ -275,24 +275,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.customLightGrey,
       appBar: AppBar(
         title: const Text(
           'Admin Dashboard',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppTheme.white,
           ),
         ),
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout, color: AppTheme.white),
             onPressed: () {
               context.read<AuthProvider>().signOut();
               Navigator.of(context).pushReplacementNamed('/');
@@ -306,10 +306,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: AppTheme.black.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -324,7 +324,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     color: AppTheme.primaryColor.withOpacity(0.1),
                     border: Border(
                       bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: AppTheme.grey.withOpacity(0.2),
                         width: 1,
                       ),
                     ),
@@ -339,7 +339,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ),
                         child: const Icon(
                           Icons.admin_panel_settings,
-                          color: Colors.white,
+                          color: AppTheme.white,
                           size: 24,
                         ),
                       ),
@@ -354,14 +354,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: AppTheme.customBlack,
                               ),
                             ),
                             Text(
                               'Administrator',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppTheme.customGrey,
                               ),
                             ),
                           ],
@@ -432,21 +432,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
-        color: Colors.transparent,
+        color: AppTheme.transparent,
         child: InkWell(
           onTap: () => setState(() => _selectedIndex = index),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+              color: isSelected ? AppTheme.primaryColor : AppTheme.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.grey[600],
+                  color: isSelected ? AppTheme.white : AppTheme.customGrey,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -455,7 +455,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.grey[700],
+                    color: isSelected ? AppTheme.white : AppTheme.customGrey,
                   ),
                 ),
               ],
@@ -499,7 +499,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppTheme.customBlack,
                 ),
               ),
               ElevatedButton.icon(
@@ -514,7 +514,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 label: Text(_isLoading ? 'Loading...' : 'Refresh'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppTheme.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -539,7 +539,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 title: 'Total Users',
                 value: _isLoading ? '...' : _users.length.toString(),
                 icon: Icons.people,
-                color: Colors.blue,
+                color: AppTheme.infoColor,
                 change: _isLoading ? '' : '${_users.length} users',
                 isPositive: true,
               ),
@@ -548,7 +548,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 value:
                     _isLoading ? '...' : _getOrderStats()['total'].toString(),
                 icon: Icons.shopping_cart,
-                color: Colors.green,
+                color: AppTheme.successColor,
                 change: _isLoading ? '' : '${_getOrderStats()['total']} orders',
                 isPositive: true,
               ),
@@ -558,7 +558,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ? '...'
                     : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)}',
                 icon: Icons.attach_money,
-                color: Colors.orange,
+                color: AppTheme.warningColor,
                 change: _isLoading
                     ? ''
                     : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)} total',
@@ -568,7 +568,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 title: 'Menu Items',
                 value: _isLoading ? '...' : _getMenuStats()['total'].toString(),
                 icon: Icons.restaurant_menu,
-                color: Colors.purple,
+                color: AppTheme.purpleColor,
                 change: _isLoading ? '' : '${_getMenuStats()['total']} items',
                 isPositive: true,
               ),
@@ -581,11 +581,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppTheme.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -599,7 +599,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppTheme.customBlack,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -614,7 +614,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       time: _users.isNotEmpty
                           ? 'Since ${DateFormat('MMM dd, yyyy').format(_getFirstUser()?.createdAt ?? DateTime.now())}'
                           : 'No users',
-                      color: Colors.blue,
+                      color: AppTheme.infoColor,
                     ),
                     if (_users.length > 1) ...[
                       _buildActivityItem(
@@ -623,7 +623,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         subtitle:
                             '${_getLatestUser()?.name ?? 'Unknown'} joined the platform',
                         time: _formatTimestamp(_getLatestUser()?.createdAt),
-                        color: Colors.green,
+                        color: AppTheme.successColor,
                       ),
                     ],
                     _buildActivityItem(
@@ -632,7 +632,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       subtitle:
                           '${_getUserStats()['admin'] ?? 0} admin accounts',
                       time: 'Current',
-                      color: Colors.red,
+                      color: AppTheme.errorColor,
                     ),
                     _buildActivityItem(
                       icon: Icons.person_outline,
@@ -694,7 +694,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       title: 'Total menu items',
                       subtitle: '${_getMenuStats()['total']} items in menu',
                       time: 'Current',
-                      color: Colors.purple,
+                      color: AppTheme.purpleColor,
                     ),
                     _buildActivityItem(
                       icon: Icons.check_circle_outline,
@@ -702,14 +702,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       subtitle:
                           '${_getMenuStats()['available']} items available',
                       time: 'Current',
-                      color: Colors.green,
+                      color: AppTheme.successColor,
                     ),
                     _buildActivityItem(
                       icon: Icons.eco,
                       title: 'Vegan options',
                       subtitle: '${_getMenuStats()['vegan']} vegan items',
                       time: 'Current',
-                      color: Colors.lightGreen,
+                      color: AppTheme.lightGreenColor,
                     ),
                     _buildActivityItem(
                       icon: Icons.restaurant,
@@ -717,7 +717,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       subtitle:
                           '${_getMenuStats()['glutenFree']} gluten-free, ${_getMenuStats()['nutFree']} nut-free',
                       time: 'Current',
-                      color: Colors.orange,
+                      color: AppTheme.warningColor,
                     ),
                   ],
                 ] else ...[
@@ -726,7 +726,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     title: 'No data yet',
                     subtitle: 'No users or orders have been created yet',
                     time: 'System ready',
-                    color: Colors.grey,
+                    color: AppTheme.grey,
                   ),
                 ],
               ],
@@ -748,11 +748,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppTheme.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -776,8 +776,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isPositive
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
+                      ? AppTheme.successColor.withOpacity(0.1)
+                      : AppTheme.errorColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -785,7 +785,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isPositive ? Colors.green : Colors.red,
+                    color: isPositive
+                        ? AppTheme.successColor
+                        : AppTheme.errorColor,
                   ),
                 ),
               ),
@@ -797,7 +799,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppTheme.customBlack,
             ),
           ),
           const SizedBox(height: 4),
@@ -805,7 +807,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             title,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppTheme.customGrey,
             ),
           ),
         ],
@@ -842,14 +844,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppTheme.customBlack,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: AppTheme.customGrey,
                   ),
                 ),
               ],
@@ -859,7 +861,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             time,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[500],
+              color: AppTheme.customGrey,
             ),
           ),
         ],
@@ -900,7 +902,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return const Center(
       child: Text(
         'Settings - Coming Soon',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
       ),
     );
   }
