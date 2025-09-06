@@ -8,10 +8,13 @@ import 'cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
 import 'theme.dart';
+import 'widgets/header_widget.dart';
+import 'widgets/navbar_widget.dart';
+import 'widgets/footer_widget.dart';
 
 import 'auth_provider.dart';
 import 'package:restaurant_app/widgets/header_widget.dart';
-import 'package:restaurant_app/widgets/navbar_widget.dart';
+import 'package:restaurant_app/widgets/menu_navbar_widget.dart';
 import 'package:restaurant_app/widgets/footer_widget.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -222,7 +225,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: Column(
               children: [
                 HeaderWidget(),
-                NavbarWidget(
+                MenuNavbarWidget(
                   searchController: _searchController,
                   onSearchExpansionChanged: (isExpanded) {
                     setState(() {

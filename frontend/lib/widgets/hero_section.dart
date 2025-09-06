@@ -91,62 +91,6 @@ class _HeroSectionState extends State<HeroSection> {
   }
 
 
-  Widget _buildNavItem(String title, int index, bool isActive) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hoverIndex = index),
-      onExit: (_) => setState(() => _hoverIndex = -1),
-      child: InkWell(
-        onTap: () {
-          if (index == 1) {
-            Navigator.pushNamed(context, '/menu');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/about');
-          } else if (index == 3) {
-            Navigator.pushNamed(context, '/contact');
-          }
-        },
-        hoverColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          margin: const EdgeInsets.symmetric(horizontal: 14),
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.w400,
-                  color: isActive
-                      ? const Color(0xFFDAE952)
-                      : _hoverIndex == index
-                          ? const Color(0xFFDAE952)
-                          : (Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white70
-                              : Colors.black87),
-                  letterSpacing: 1.3,
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 210),
-                height: 4,
-                margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(
-                  color: (isActive || _hoverIndex == index)
-                      ? const Color(0xFFDAE952)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                width: (isActive || _hoverIndex == index) ? 28 : 0,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,22 +139,6 @@ class _HeroSectionState extends State<HeroSection> {
                                 : Colors.black,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  // Navigation bar positioned below the logo
-                  Positioned(
-                    top: 80,
-                    left: 36,
-                    child: Row(
-                      children: [
-                        _buildNavItem('Home', 0, true),
-                        const SizedBox(width: 20),
-                        _buildNavItem('Menu', 1, false),
-                        const SizedBox(width: 20),
-                        _buildNavItem('About', 2, false),
-                        const SizedBox(width: 20),
-                        _buildNavItem('Contact', 3, false),
                       ],
                     ),
                   ),
@@ -401,9 +329,9 @@ Positioned(
                     splashRadius: 28,
                   ),
                 ),
-                // Main content positioned below header
+                // Main content positioned below header and navbar
                 Positioned(
-                  top: 200, // Position below the header with more space
+                  top: 200, // Position below the header and navbar
                   left: 56,
                   right: 56,
                     child: Column(

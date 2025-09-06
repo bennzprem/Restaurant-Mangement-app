@@ -91,7 +91,12 @@ class _HomePageState extends State<HomePage> {
             top: 0,
             left: 0,
             right: 0,
-            child: HeaderWidget(),
+            child: Column(
+              children: [
+                HeaderWidget(),
+                const NavbarWidget(),
+              ],
+            ),
           ),
 
           // Positioned login/profile button can be added if needed here,
