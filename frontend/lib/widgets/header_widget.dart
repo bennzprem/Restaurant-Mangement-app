@@ -5,7 +5,7 @@ import '../ch/user_dashboard_page.dart';
 import 'dart:ui';
 import 'dart:math';
 import 'package:video_player/video_player.dart';
-import '../theme_provider.dart';
+import '../theme.dart';
 import '../auth_provider.dart';
 
 enum HeaderActive { none, home, menu, about, contact, login, signup }
@@ -124,33 +124,8 @@ class HeaderWidget extends StatelessWidget {
 
                       // Center - Navigation Bar Overlay
                       Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFFDAE952), // Start with theme green
-                                Color(0xFFB8D43A), // Slightly darker green
-                                Color(0xFF9BC53D), // More saturated green
-                                Color(0xFF7FB139), // Darker green
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(0),      // Left top sharp
-                              bottomLeft: Radius.circular(50),  // Left bottom round (smaller)
-                              topRight: Radius.circular(50),    // Right top round (smaller)
-                              bottomRight: Radius.circular(0),  // Right bottom sharp
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFDAE952).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
+                        child: _AnimatedNavBackground(
+                          isDark: themeProvider.isDarkMode,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -196,42 +171,42 @@ class HeaderWidget extends StatelessWidget {
                           children: [
                             // Theme toggle
                             Container(
-                              decoration: BoxDecoration(
-                                color: themeProvider.isDarkMode
-                                    ? Colors.grey.shade800
-                                    : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: const Color(0xFFDAE952),
-                                  width: 2,
-                                ),
+                            decoration: BoxDecoration(
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFDAE952),
+                                width: 2,
                               ),
-                              child: IconButton(
-                                onPressed: () {
-                                  themeProvider.toggleTheme();
-                                },
-                                icon: Icon(
-                                  themeProvider.isDarkMode
-                                      ? Icons.light_mode
-                                      : Icons.dark_mode,
-                                  color: const Color(0xFFDAE952),
-                                  size: 20,
-                                ),
-                                style: IconButton.styleFrom(
-                                  padding: const EdgeInsets.all(8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                themeProvider.toggleTheme();
+                              },
+                              icon: Icon(
+                                themeProvider.isDarkMode
+                                    ? Icons.light_mode
+                                    : Icons.dark_mode,
+                                color: const Color(0xFFDAE952),
+                                size: 20,
+                              ),
+                              style: IconButton.styleFrom(
+                                padding: const EdgeInsets.all(8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
                             ),
+                      ),
                             const SizedBox(width: 8),
                             // Profile icon (only when logged in)
-                            Consumer<AuthProvider>(
+                      Consumer<AuthProvider>(
                               builder: (context, auth, child) {
                                 if (!auth.isLoggedIn) return const SizedBox.shrink();
                                 return Container(
-                                  decoration: BoxDecoration(
+                                    decoration: BoxDecoration(
                                     color: themeProvider.isDarkMode
                                         ? Colors.grey.shade800
                                         : Colors.grey.shade200,
@@ -242,7 +217,7 @@ class HeaderWidget extends StatelessWidget {
                                     ),
                                   ),
                                   child: IconButton(
-                                    onPressed: () {
+                                  onPressed: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) => const UserDashboardPage(),
@@ -255,14 +230,14 @@ class HeaderWidget extends StatelessWidget {
                                       size: 20,
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+            );
+          },
+        ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
+              ),
+            ],
+          ),
                 )
               ],
             );
@@ -589,6 +564,117 @@ class _ModernHeaderPainter extends CustomPainter {
         oldDelegate.sweepProgress != sweepProgress ||
         oldDelegate.pulseProgress != pulseProgress ||
         oldDelegate.isDark != isDark;
+  }
+}
+
+class _AnimatedNavBackground extends StatefulWidget {
+  final Widget child;
+  final bool isDark;
+  const _AnimatedNavBackground({required this.child, required this.isDark});
+
+  @override
+  State<_AnimatedNavBackground> createState() => _AnimatedNavBackgroundState();
+}
+
+class _AnimatedNavBackgroundState extends State<_AnimatedNavBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _tween;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+    _tween = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Keep original palette; only move their positions across the bar.
+    const List<Color> baseColors = [
+      Color(0xFFDAE952), // same lime
+      Color(0xFFB8D43A),
+      Color(0xFF9BC53D),
+      Color(0xFF7FB139),
+    ];
+
+    return AnimatedBuilder(
+      animation: _tween,
+      builder: (context, child) {
+        // Smooth gradient using many samples strictly between the four palette colors.
+        final double t = _tween.value; // 0..1..0 loop
+
+        // Order A: darkest -> lightest, Order B: lightest -> darkest
+        const List<Color> orderA = [
+          Color(0xFF7FB139),
+          Color(0xFF9BC53D),
+          Color(0xFFB8D43A),
+          Color(0xFFDAE952),
+        ];
+        const List<Color> orderB = [
+          Color(0xFFDAE952),
+          Color(0xFFB8D43A),
+          Color(0xFF9BC53D),
+          Color(0xFF7FB139),
+        ];
+
+        Color sampleColor(double u, List<Color> seq) {
+          final int segments = seq.length - 1;
+          final double pos = (u * segments).clamp(0.0, segments.toDouble());
+          final int i = pos.floor().clamp(0, segments - 1);
+          final double f = pos - i;
+          return Color.lerp(seq[i], seq[i + 1], f)!;
+        }
+
+        // Create many stops for a seamless blend
+        const int samples = 24;
+        final List<double> stops =
+            List<double>.generate(samples, (k) => k / (samples - 1));
+        final List<Color> animatedColors = stops
+            .map((u) => Color.lerp(
+                  sampleColor(u, orderA),
+                  sampleColor(u, orderB),
+                  t,
+                )!)
+            .toList();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: animatedColors,
+              stops: stops,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(0),
+              bottomLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
+              bottomRight: Radius.circular(0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFDAE952).withOpacity(0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
   }
 }
 
