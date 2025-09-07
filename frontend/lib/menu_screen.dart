@@ -610,41 +610,50 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 : const SizedBox.shrink(),
                           ),
                           // Search toggle icon
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _isSearching = !_isSearching;
-                                if (!_isSearching) {
-                                  _searchController.clear();
-                                  _searchQuery = '';
-                                }
-                              });
-                            },
-                            icon: Icon(
-                              _isSearching ? Icons.close : Icons.search,
-                              color: isDark ? Colors.white70 : Colors.black54,
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isSearching = !_isSearching;
+                                  if (!_isSearching) {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                  }
+                                });
+                              },
+                              icon: Icon(
+                                _isSearching ? Icons.close : Icons.search,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
                             ),
                           ),
                           // Filter icon
-                          IconButton(
-                            onPressed: () => _showFilterDialog(context),
-                            icon: Icon(
-                              Icons.filter_list,
-                              color: isDark ? Colors.white70 : Colors.black54,
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: IconButton(
+                              onPressed: () => _showFilterDialog(context),
+                              icon: Icon(
+                                Icons.filter_list,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
                             ),
                           ),
                           // Favorite icon (only when logged in)
                           Consumer<AuthProvider>(
                             builder: (context, authProvider, child) {
                               if (authProvider.isLoggedIn) {
-                                return IconButton(
-                                  onPressed: () {
-                                    // Navigate to favorites or show favorites
-                                    Navigator.pushNamed(context, '/favorites');
-                                  },
-                                  icon: Icon(
-                                    Icons.favorite_border,
-                                    color: isDark ? Colors.white70 : Colors.black54,
+                                return MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      // Navigate to favorites or show favorites
+                                      Navigator.pushNamed(context, '/favorites');
+                                    },
+                                    icon: Icon(
+                                      Icons.favorite_border,
+                                      color: isDark ? Colors.white70 : Colors.black54,
+                                    ),
                                   ),
                                 );
                               }
@@ -656,13 +665,16 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             builder: (context, cartProvider, child) {
                               return Stack(
                                 children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      Navigator.pushNamed(context, '/cart');
-                                    },
-                                    icon: Icon(
-                                      Icons.shopping_cart_outlined,
-                                      color: isDark ? Colors.white70 : Colors.black54,
+                                  MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: IconButton(
+                                      onPressed: () {
+                                        Navigator.pushNamed(context, '/cart');
+                                      },
+                                      icon: Icon(
+                                        Icons.shopping_cart_outlined,
+                                        color: isDark ? Colors.white70 : Colors.black54,
+                                      ),
                                     ),
                                   ),
                                   if (cartProvider.items.isNotEmpty)
@@ -844,32 +856,35 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                     ),
                                   ],
                                 ),
-                                child: IconButton(
-                                  padding: const EdgeInsets.all(8),
-                                  iconSize: 18,
-                                  icon: Icon(
-                                    isFavorited
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: isFavorited
-                                        ? Colors.red
-                                        : Colors.grey.shade600,
-                                  ),
-                                  onPressed: () {
-                                    final authProvider =
-                                        Provider.of<AuthProvider>(
-                                      context,
-                                      listen: false,
-                                    );
-                                    if (authProvider.isLoggedIn) {
-                                      Provider.of<FavoritesProvider>(
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: IconButton(
+                                    padding: const EdgeInsets.all(8),
+                                    iconSize: 18,
+                                    icon: Icon(
+                                      isFavorited
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isFavorited
+                                          ? Colors.red
+                                          : Colors.grey.shade600,
+                                    ),
+                                    onPressed: () {
+                                      final authProvider =
+                                          Provider.of<AuthProvider>(
                                         context,
                                         listen: false,
-                                      ).toggleFavorite(item);
-                                    } else {
-                                      showLoginPrompt(context);
-                                    }
-                                  },
+                                      );
+                                      if (authProvider.isLoggedIn) {
+                                        Provider.of<FavoritesProvider>(
+                                          context,
+                                          listen: false,
+                                        ).toggleFavorite(item);
+                                      } else {
+                                        showLoginPrompt(context);
+                                      }
+                                    },
+                                  ),
                                 ),
                               );
                             },
@@ -931,25 +946,28 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
                               final quantity = cart.getItemQuantity(item.id);
                               return quantity == 0
-                                  ? ElevatedButton(
-                                      onPressed: () => cart.addItem(item),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            AppTheme.primaryColor,
-                                        foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                  ? MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: ElevatedButton(
+                                        onPressed: () => cart.addItem(item),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              AppTheme.primaryColor,
+                                          foregroundColor: Colors.black,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
+                                          elevation: 0,
                                         ),
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 6),
-                                        elevation: 0,
-                                      ),
-                                      child: const Text(
-                                        'Add',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
+                                        child: const Text(
+                                          'Add',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ),
                                     )
@@ -982,11 +1000,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.removeSingleItem(item.id),
-            splashRadius: 16,
-            constraints: const BoxConstraints(),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
+              onPressed: () => cart.removeSingleItem(item.id),
+              splashRadius: 16,
+              constraints: const BoxConstraints(),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -999,11 +1020,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.addItem(item),
-            splashRadius: 16,
-            constraints: const BoxConstraints(),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+              onPressed: () => cart.addItem(item),
+              splashRadius: 16,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ],
       ),

@@ -10,6 +10,8 @@ import 'api_service.dart';
 import 'cart_provider.dart';
 import 'auth_provider.dart';
 import 'widgets/address_map_picker.dart';
+import 'widgets/header_widget.dart';
+import 'theme.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -369,55 +371,125 @@ class _CartScreenState extends State<CartScreen> {
     final cart = Provider.of<CartProvider>(context);
     final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '₹');
     final bool isTableMode = widget.tableSessionId != null;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Cart')),
+      backgroundColor: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
+      appBar: null,
       body: Column(
         children: [
+          // Fixed Header
+          HeaderWidget(
+            showBack: true,
+            onBack: () => Navigator.pop(context),
+          ),
+          // Main content
           Expanded(
             child: cart.items.isEmpty
-                ? const Center(child: Text('Your cart is empty.'))
+                ? Center(
+                    child: Text(
+                      'Your cart is empty.',
+                      style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: 16,
+                      ),
+                    ),
+                  )
                 : ListView.builder(
                     itemCount: cart.items.length,
                     itemBuilder: (ctx, i) {
                       final cartItem = cart.items.values.toList()[i];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(cartItem.menuItem.imageUrl),
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        title: Text(cartItem.menuItem.name),
-                        subtitle: Text(
-                            currencyFormat.format(cartItem.menuItem.price)),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(cartItem.menuItem.imageUrl),
+                          ),
+                          title: Text(
+                            cartItem.menuItem.name,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            currencyFormat.format(cartItem.menuItem.price),
+                            style: TextStyle(
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove),
-                              onPressed: () =>
-                                  cart.removeSingleItem(cartItem.menuItem.id),
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: () =>
+                                    cart.removeSingleItem(cartItem.menuItem.id),
+                              ),
                             ),
                             Text('${cartItem.quantity}'),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () => cart.addItem(cartItem.menuItem),
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => cart.addItem(cartItem.menuItem),
+                              ),
                             ),
                           ],
+                        ),
                         ),
                       );
                     },
                   ),
           ),
           if (cart.items.isNotEmpty)
-            Padding(
+            Container(
+              margin: const EdgeInsets.all(16.0),
               padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total:',
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  Text(currencyFormat.format(cart.totalAmount),
-                      style: Theme.of(context).textTheme.headlineSmall),
+                  Text(
+                    'Total:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  Text(
+                    currencyFormat.format(cart.totalAmount),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -425,9 +497,11 @@ class _CartScreenState extends State<CartScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                child: Text(isTableMode ? 'Send to Kitchen' : 'Proceed to Pay'),
-                onPressed: () {
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: ElevatedButton(
+                  child: Text(isTableMode ? 'Send to Kitchen' : 'Proceed to Pay'),
+                  onPressed: () {
                   if (isTableMode) {
                     // Table Mode Logic (Unchanged)
                     Provider.of<CartProvider>(context, listen: false)
@@ -442,6 +516,7 @@ class _CartScreenState extends State<CartScreen> {
                     _promptAddressThenPay();
                   }
                 },
+                ),
               ),
             ),
         ],

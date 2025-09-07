@@ -66,6 +66,8 @@ import 'kitchen_dashboard_page.dart';
 import 'waiter_dashboard_page.dart';
 import 'ch/user_dashboard_page.dart';
 import 'debug_user_role.dart';
+import 'cart_screen.dart';
+import 'favorites_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -129,6 +131,8 @@ class MyApp extends StatelessWidget {
               '/debug_user_role': (context) => const DebugUserRole(),
               '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
               '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
+              '/cart': (context) => const CartScreen(),
+              '/favorites': (context) => const FavoritesScreen(),
             },
           );
         },
