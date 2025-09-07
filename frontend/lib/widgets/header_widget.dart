@@ -80,21 +80,54 @@ class HeaderWidget extends StatelessWidget {
                       if (showBack)
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: IconButton(
-                            onPressed: onBack,
-                            icon: Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: themeProvider.isDarkMode
-                                  ? Colors.white
-                                  : Colors.black,
-                              size: 18,
-                            ),
-                            style: IconButton.styleFrom(
-                              padding: const EdgeInsets.all(10),
-                              shape: const CircleBorder(),
-                              backgroundColor: themeProvider.isDarkMode
-                                  ? Colors.grey.shade900
-                                  : Colors.grey.shade200,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () {
+                                print('🔙 Back button tapped!'); // Debug print
+                                try {
+                                  if (onBack != null) {
+                                    print('🔙 Using custom onBack callback');
+                                    onBack!();
+                                  } else {
+                                    print('🔙 Using default Navigator.pop');
+                                    Navigator.pop(context);
+                                  }
+                                } catch (e) {
+                                  print('❌ Back button error: $e');
+                                  // Fallback navigation
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(22),
+                                  border: Border.all(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.grey.shade700
+                                        : Colors.grey.shade300,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.white
+                                      : Colors.black,
+                                  size: 22,
+                                ),
+                              ),
                             ),
                           ),
                         ),

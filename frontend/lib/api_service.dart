@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart'; // or file_picker
@@ -302,22 +303,35 @@ class ApiService {
     required String time,
     required int partySize,
   }) async {
-    final response = await http.get(
-      Uri.parse(
-        '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize',
-      ),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final url = '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
+    print('🌐 API Call: $url');
+    
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-    if (response.statusCode == 200) {
-      // The json.decode creates a List<dynamic>
-      final List<dynamic> data = json.decode(response.body);
+      print('📡 Response Status: ${response.statusCode}');
+      print('📄 Response Body: ${response.body}');
 
-      // We map over the dynamic list, create a Table object for each item,
-      // and then call .toList() to convert the result into a List<app_models.Table>
-      return data.map((json) => app_models.Table.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch available tables: ${response.body}');
+      if (response.statusCode == 200) {
+        // The json.decode creates a List<dynamic>
+        final List<dynamic> data = json.decode(response.body);
+        print('📊 Parsed ${data.length} tables from API');
+
+        // We map over the dynamic list, create a Table object for each item,
+        // and then call .toList() to convert the result into a List<app_models.Table>
+        final tables = data.map((json) => app_models.Table.fromJson(json)).toList();
+        print('✅ Successfully created ${tables.length} Table objects');
+        return tables;
+      } else {
+        print('❌ API Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to fetch available tables: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Network/Parse Error: $e');
+      throw Exception('Network error: $e');
     }
   }
 
@@ -366,6 +380,38 @@ class ApiService {
       return data.map((json) => Reservation.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load reservations');
+    }
+  }
+
+  // Method to check if user has existing booking at the same time
+  Future<bool> hasExistingBooking({
+    required String date,
+    required String time,
+    required String authToken,
+  }) async {
+    try {
+      print('🔍 Checking for existing bookings...');
+      print('   Date: $date');
+      print('   Time: $time');
+      
+      final reservations = await getReservations(authToken);
+      
+      // Check if any reservation matches the same date and time
+      final hasConflict = reservations.any((reservation) {
+        final reservationDate = DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
+        final reservationTime = DateFormat('HH:mm').format(reservation.reservationTime);
+        
+        print('   Checking reservation: $reservationDate at $reservationTime');
+        
+        return reservationDate == date && reservationTime == time;
+      });
+      
+      print('✅ Existing booking check result: $hasConflict');
+      return hasConflict;
+    } catch (e) {
+      print('❌ Error checking existing bookings: $e');
+      // If we can't check, assume no conflict to avoid blocking legitimate bookings
+      return false;
     }
   }
 
