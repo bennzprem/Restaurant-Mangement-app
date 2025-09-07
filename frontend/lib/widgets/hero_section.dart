@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // Added for Timer
 import 'dart:ui'; // Added for ImageFilter
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../auth_provider.dart';
+import '../book_table_page.dart';
+import '../order_from_table_page.dart';
 
 //updated
 class HeroSection extends StatefulWidget {
@@ -62,7 +66,7 @@ class _HeroSectionState extends State<HeroSection> {
   }
 
   void _startAutoScroll() {
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
       if (mounted) {
         setState(() {
           selectedIndex = (selectedIndex + 1) % modes.length;
@@ -94,6 +98,7 @@ class _HeroSectionState extends State<HeroSection> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
     final minHeight = screenH; // Use full viewport height instead of fixed 665
@@ -115,33 +120,6 @@ class _HeroSectionState extends State<HeroSection> {
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Stack(
                 children: [
-                  // Logo positioned at the top left
-                  Positioned(
-                    top: 20,
-                    left: 36,
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          'assets/logo/logo.gif',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Byte Eat',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.85,
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -167,7 +145,10 @@ Positioned(
                   // Background Image with Blur
                   Positioned.fill(
                     child: ImageFiltered(
-                      imageFilter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
+                      imageFilter: ImageFilter.blur(
+                        sigmaX: authProvider.isLoggedIn ? 0.0 : 3.0,
+                        sigmaY: authProvider.isLoggedIn ? 0.0 : 3.0,
+                      ),
   child: Container(
                         decoration: BoxDecoration(
       image: DecorationImage(
@@ -178,25 +159,27 @@ Positioned(
   ),
 ),
                   ),
-                  // Dark Overlay for better text readability
-                  Positioned.fill(
-  child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.6),
-                            Colors.black.withOpacity(0.4),
-                          ],
+                  // Dark Overlay for better text readability (hidden if logged in)
+                  if (!authProvider.isLoggedIn)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.3),
+                              Colors.black.withOpacity(0.6),
+                              Colors.black.withOpacity(0.4),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ),
-                  // Caption Content
-                  Positioned.fill(
-    child: Center(
+                  // Caption Content (hidden if logged in)
+                  if (!authProvider.isLoggedIn)
+                    Positioned.fill(
+                      child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
@@ -223,12 +206,10 @@ Positioned(
                             // Title
                             Text(
                               'Join ByteEat Today!',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
-                              ),
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    fontSize: 28,
+                                    color: Colors.white,
+                                  ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 12),
@@ -358,16 +339,12 @@ Positioned(
                                     },
                                     child: Text(
                                       modes[i]['title']!,
-                                      style: TextStyle(
-                                        fontSize: 44,
-                                        fontWeight: i == selectedIndex
-                                            ? FontWeight.bold
-                                            : FontWeight.w400,
-                                        color: Theme.of(context).brightness == Brightness.dark
-                                            ? (i == selectedIndex ? Colors.white : Colors.white60)
-                                            : (i == selectedIndex ? Colors.black : Colors.black45),
-                                        letterSpacing: 1.4,
-                                      ),
+                                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                            fontSize: 44,
+                                            color: Theme.of(context).brightness == Brightness.dark
+                                                ? (i == selectedIndex ? Colors.white : Colors.white60)
+                                                : (i == selectedIndex ? Colors.black : Colors.black45),
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -503,13 +480,41 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
     List<Map<String, dynamic>> options = [];
     if (widget.mode == 'Dine-In') {
       options = [
-        {'label': 'Reserve a Table', 'icon': Icons.event_seat, 'onTap': () { /*todo*/ }},
-        {'label': 'Order from Table', 'icon': Icons.table_restaurant, 'onTap': () { /*todo*/ }},
-        {'label': 'Explore Menu', 'icon': Icons.menu_book, 'onTap': () { /*todo*/ }},
+        {
+          'label': 'Reserve a Table',
+          'icon': Icons.event_seat,
+          'onTap': () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BookTablePage()),
+            );
+          }
+        },
+        {
+          'label': 'Order from Table',
+          'icon': Icons.table_restaurant,
+          'onTap': () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrderFromTablePage()),
+            );
+          }
+        },
+        {
+          'label': 'Explore Menu',
+          'icon': Icons.menu_book,
+          'onTap': () {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
       ];
     } else if (widget.mode == 'Delivery') {
       options = [
-        {'label': 'Order Now', 'icon': Icons.delivery_dining, 'onTap': () { /*todo*/ }},
+        {
+          'label': 'Order Now',
+          'icon': Icons.delivery_dining,
+          'onTap': () {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
         {'label': 'Meal Subscription', 'icon': Icons.subscriptions, 'onTap': () { /*todo*/ }},
         {'label': 'Track Delivery', 'icon': Icons.location_on, 'onTap': () { /*todo*/ }},
       ];
@@ -640,36 +645,37 @@ class _CompactActionCardState extends State<_CompactActionCard>
                   borderRadius: BorderRadius.circular(16),
                   onTap: widget.onTap,
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        Expanded(
+                          child: Text(
+                            widget.label,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black87,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDAE952).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
+                            color: const Color(0xFFDAE952).withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             widget.icon,
                             color: const Color(0xFFDAE952),
-                            size: 18,
+                            size: 20,
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          widget.label,
-                          style: TextStyle(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black87,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -821,9 +827,9 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                     ),
                   ),
                 ),
-              ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

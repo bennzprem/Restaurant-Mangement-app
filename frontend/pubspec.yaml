@@ -86,6 +86,12 @@ flutter:
     - family: StoryScript
       fonts:
         - asset: assets/fonts/Story_Script/StoryScript-Regular.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito/static/Nunito-Italic.ttf
+          style: italic
+          weight: 400
+        - asset: assets/fonts/Nunito/static/Nunito-Regular.ttf
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -710,8 +710,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   r'@(gmail\.com|yahoo\.com|hotmail\.com)$',
                   caseSensitive: false);
               if (!emailRegex.hasMatch(v)) return 'Enter a valid email address';
-              if (!allowedProviders.hasMatch(v))
+              if (!allowedProviders.hasMatch(v)) {
                 return 'Use a common provider (gmail, yahoo, hotmail)';
+              }
               return null;
             },
           ),
@@ -725,12 +726,15 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             validator: (value) {
               final v = value ?? '';
               if (v.length < 8) return 'At least 8 characters required';
-              if (!RegExp(r'[A-Z]').hasMatch(v))
+              if (!RegExp(r'[A-Z]').hasMatch(v)) {
                 return 'Include at least one uppercase letter';
-              if (!RegExp(r'[0-9]').hasMatch(v))
+              }
+              if (!RegExp(r'[0-9]').hasMatch(v)) {
                 return 'Include at least one number';
-              if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v))
+              }
+              if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v)) {
                 return 'Include at least one special character';
+              }
               return null;
             },
           ),

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../auth_provider.dart';
+import '../ch/user_dashboard_page.dart';
 import 'dart:ui';
 import 'dart:math';
 import 'package:video_player/video_player.dart';
-import '../theme_provider.dart';
+import '../theme.dart';
 import '../auth_provider.dart';
 
-enum HeaderActive { none, login, signup }
+enum HeaderActive { none, home, menu, about, contact, login, signup }
 
 class HeaderWidget extends StatelessWidget {
   final HeaderActive active;
@@ -66,6 +68,13 @@ class HeaderWidget extends StatelessWidget {
                       horizontal:
                           MediaQuery.of(context).size.width < 700 ? 16 : 36,
                       vertical: 14),
+                  child: Stack(
+                    children: [
+                      // Left side - Logo and Brand
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
                   child: Row(
                     children: [
                       if (showBack)
@@ -90,17 +99,16 @@ class HeaderWidget extends StatelessWidget {
                           ),
                         ),
                       // Logo (MP4 animation)
-                      //const _LogoVideo(width: 39, height: 27, scale: 1.0),
-                      const _LogoVideo(width: 62, height: 50, scale: 1.6),
-                      const SizedBox(width: 14),
+                            const _LogoVideo(width: 62, height: 60, scale: 1.6),
+                            const SizedBox(width: 10),
                       Text(
                         'ByteEat',
                         style: TextStyle(
                           fontFamily: 'StoryScript',
                           fontSize:
-                              MediaQuery.of(context).size.width < 700 ? 20 : 24,
+                                    MediaQuery.of(context).size.width < 700 ? 20 : 30,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1.85,
+                                letterSpacing: 2,
                           color: themeProvider.isDarkMode
                               ? Colors.white
                               : Colors.black,
@@ -110,44 +118,59 @@ class HeaderWidget extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Spacer(),
-
-                      // Admin Button (only visible to admin users)
-                      Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          if (authProvider.isAdmin) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 16),
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                      context, '/admin_dashboard');
-                                },
-                                icon: const Icon(Icons.admin_panel_settings,
-                                    size: 18),
-                                label: const Text('Admin'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red[600],
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  elevation: 0,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
+                          ],
+                        ),
                       ),
 
-                      // Theme Toggle Button
-                      Consumer<ThemeProvider>(
-                        builder: (context, themeProvider, child) {
-                          return Container(
-                            margin: const EdgeInsets.only(right: 16),
+                      // Center - Navigation Bar Overlay
+                      Center(
+                        child: _AnimatedNavBackground(
+                          isDark: themeProvider.isDarkMode,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _NavButton(
+                                label: 'Home',
+                                isActive: active == HeaderActive.home,
+                                isDark: themeProvider.isDarkMode,
+                                onPressed: () => Navigator.pushNamed(context, '/'),
+                              ),
+                              const SizedBox(width: 24),
+                              _NavButton(
+                                label: 'Menu',
+                                isActive: active == HeaderActive.menu,
+                                isDark: themeProvider.isDarkMode,
+                                onPressed: () => Navigator.pushNamed(context, '/menu'),
+                              ),
+                              const SizedBox(width: 24),
+                              _NavButton(
+                                label: 'About',
+                                isActive: active == HeaderActive.about,
+                                isDark: themeProvider.isDarkMode,
+                                onPressed: () => Navigator.pushNamed(context, '/about'),
+                              ),
+                              const SizedBox(width: 24),
+                              _NavButton(
+                                label: 'Contact',
+                                isActive: active == HeaderActive.contact,
+                                isDark: themeProvider.isDarkMode,
+                                onPressed: () => Navigator.pushNamed(context, '/contact'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Right side - Theme Toggle + Profile
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Theme toggle
+                            Container(
                             decoration: BoxDecoration(
                               color: themeProvider.isDarkMode
                                   ? Colors.grey.shade800
@@ -176,99 +199,45 @@ class HeaderWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          );
-                        },
                       ),
-
-                      // Authentication Buttons
+                            const SizedBox(width: 8),
+                            // Profile icon (only when logged in)
                       Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          if (authProvider.isLoggedIn) {
-                            // User is logged in - show profile/logout
-                            return Row(
-                              children: [
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(20),
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, '/profile'),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 16),
-                                    padding: const EdgeInsets.all(8),
+                              builder: (context, auth, child) {
+                                if (!auth.isLoggedIn) return const SizedBox.shrink();
+                                return Container(
                                     decoration: BoxDecoration(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
                                       color: const Color(0xFFDAE952),
-                                      borderRadius: BorderRadius.circular(20),
+                                      width: 2,
                                     ),
-                                    child: Icon(
-                                      Icons.person,
-                                      color: Colors.black,
+                                  ),
+                                  child: IconButton(
+                                  onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const UserDashboardPage(),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.person_outline,
+                                      color: Color(0xFFDAE952),
                                       size: 20,
                                     ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, '/profile'),
-                                  child: Text(
-                                    authProvider.user?.name ?? 'User',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      color: themeProvider.isDarkMode
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    authProvider.signOut();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.grey[300],
-                                    foregroundColor: Colors.black87,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text(
-                                    'Logout',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15),
-                                  ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            // User is not logged in - show login and sign up buttons
-                            return Row(
-                              children: [
-                                _AuthButton(
-                                  label: 'Login',
-                                  isActive: active == HeaderActive.login,
-                                  isDark: themeProvider.isDarkMode,
-                                  onPressed: () => Navigator.pushNamed(
-                                      context, '/login'),
-                                ),
-                                const SizedBox(width: 12),
-                                _AuthButton(
-                                  label: 'Sign Up',
-                                  isActive: active == HeaderActive.signup,
-                                  isDark: themeProvider.isDarkMode,
-                                  onPressed: () =>
-                                      Navigator.pushNamed(context, '/signup'),
-                                ),
-                              ],
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+            );
+          },
+        ),
+                          ],
+                        ),
+              ),
+            ],
+          ),
                 )
               ],
             );
@@ -598,6 +567,232 @@ class _ModernHeaderPainter extends CustomPainter {
   }
 }
 
+class _AnimatedNavBackground extends StatefulWidget {
+  final Widget child;
+  final bool isDark;
+  const _AnimatedNavBackground({required this.child, required this.isDark});
+
+  @override
+  State<_AnimatedNavBackground> createState() => _AnimatedNavBackgroundState();
+}
+
+class _AnimatedNavBackgroundState extends State<_AnimatedNavBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _tween;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+    _tween = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Keep original palette; only move their positions across the bar.
+    const List<Color> baseColors = [
+      Color(0xFFDAE952), // same lime
+      Color(0xFFB8D43A),
+      Color(0xFF9BC53D),
+      Color(0xFF7FB139),
+    ];
+
+    return AnimatedBuilder(
+      animation: _tween,
+      builder: (context, child) {
+        // Smooth gradient using many samples strictly between the four palette colors.
+        final double t = _tween.value; // 0..1..0 loop
+
+        // Order A: darkest -> lightest, Order B: lightest -> darkest
+        const List<Color> orderA = [
+          Color(0xFF7FB139),
+          Color(0xFF9BC53D),
+          Color(0xFFB8D43A),
+          Color(0xFFDAE952),
+        ];
+        const List<Color> orderB = [
+          Color(0xFFDAE952),
+          Color(0xFFB8D43A),
+          Color(0xFF9BC53D),
+          Color(0xFF7FB139),
+        ];
+
+        Color sampleColor(double u, List<Color> seq) {
+          final int segments = seq.length - 1;
+          final double pos = (u * segments).clamp(0.0, segments.toDouble());
+          final int i = pos.floor().clamp(0, segments - 1);
+          final double f = pos - i;
+          return Color.lerp(seq[i], seq[i + 1], f)!;
+        }
+
+        // Create many stops for a seamless blend
+        const int samples = 24;
+        final List<double> stops =
+            List<double>.generate(samples, (k) => k / (samples - 1));
+        final List<Color> animatedColors = stops
+            .map((u) => Color.lerp(
+                  sampleColor(u, orderA),
+                  sampleColor(u, orderB),
+                  t,
+                )!)
+            .toList();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: animatedColors,
+              stops: stops,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(0),
+              bottomLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
+              bottomRight: Radius.circular(0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFDAE952).withOpacity(0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _NavButton extends StatefulWidget {
+  final String label;
+  final bool isActive;
+  final bool isDark;
+  final VoidCallback onPressed;
+
+  const _NavButton({
+    required this.label,
+    required this.isActive,
+    required this.isDark,
+    required this.onPressed,
+  });
+
+  @override
+  State<_NavButton> createState() => _NavButtonState();
+}
+
+class _NavButtonState extends State<_NavButton> with SingleTickerProviderStateMixin {
+  bool isHovered = false;
+  late AnimationController _animationController;
+  late Animation<double> _underlineAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _underlineAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    if (widget.isActive) {
+      _animationController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_NavButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _animationController.forward();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _animationController.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+                      color: themeProvider.isDarkMode
+                          ? (widget.isActive 
+                              ? Colors.white
+                              : isHovered 
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.7))
+                          : (widget.isActive 
+                              ? Colors.black
+                              : isHovered 
+                                  ? Colors.black
+                                  : Colors.black.withOpacity(0.7)),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 2),
+              AnimatedBuilder(
+                animation: _underlineAnimation,
+                builder: (context, child) {
+                  return Container(
+                    height: 2,
+                    width: widget.label.length * 8.0 * _underlineAnimation.value,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AuthButton extends StatelessWidget {
   final String label;
   final bool isActive;
@@ -697,4 +892,3 @@ class _LogoVideoState extends State<_LogoVideo> {
     );
   }
 }
-

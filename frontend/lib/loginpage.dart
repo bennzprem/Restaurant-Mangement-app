@@ -9,7 +9,7 @@ import 'dart:html' as html;
 import 'phone-login_page.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
-
+import 'login-bg.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -258,84 +258,75 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Define background colors based on theme - making animations more visible
+    final Color waveColor = isDark ? AppTheme.primaryColor.withOpacity(0.8) : AppTheme.primaryColor.withOpacity(0.6);
+    final Color backgroundColor = isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
+
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(backgroundColor: AppTheme.transparent, elevation: 0, toolbarHeight: 0),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? const [Color(0xFF000000), Color(0xFF0F0F10)]
-                  : const [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
+        body: Stack(
+          children: [
+            // Add the LoginAnimatedBackground widget here, behind the main content.
+            LoginAnimatedBackground(
+              waveColor: waveColor,
+              backgroundColor: backgroundColor,
             ),
-          ),
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth > 900) {
-                  // Desktop layout
-                  return Column(
-                    children: [
-                      HeaderWidget(
-                        active: HeaderActive.login,
-                        showBack: true,
-                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
-                      ),
-                      Expanded(child: _buildDesktopLayout()),
-                    ],
-                  );
-                } else {
-                  // Mobile layout
-                  return Column(
-                    children: [
-                      HeaderWidget(
-                        active: HeaderActive.login,
-                        showBack: true,
-                        onBack: () => Navigator.pushReplacementNamed(context, '/'),
-                      ),
-                      Expanded(child: _buildMobileLayout()),
-                    ],
-                  );
-                }
-              },
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 900) {
+                    // Desktop layout
+                    return Column(
+                      children: [
+                        HeaderWidget(
+                          active: HeaderActive.login,
+                          showBack: true,
+                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                        ),
+                        Expanded(child: _buildDesktopLayout()),
+                      ],
+                    );
+                  } else {
+                    // Mobile layout
+                    return Column(
+                      children: [
+                        HeaderWidget(
+                          active: HeaderActive.login,
+                          showBack: true,
+                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                        ),
+                        Expanded(child: _buildMobileLayout()),
+                      ],
+                    );
+                  }
+                },
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildDesktopLayout() {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 640),
+        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 550),
         child: Material(
-          elevation: 24,
-          shadowColor: Colors.black12,
+          elevation: 32,
+          shadowColor: Colors.black.withOpacity(0.15),
           borderRadius: BorderRadius.circular(24),
+          color: Colors.transparent, // Make Material widget transparent
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Row(
-              children: [
-                // Left side - Form on light background
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    color: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF7F8F9),
-                    child: _buildFormSection(),
-                  ),
-                ),
-                // Right side - Visual
-                Expanded(
-                  flex: 1,
-                  child: _buildVisualSection(),
-                ),
-              ],
+            child: Container(
+              // Use a more transparent color to see the background animation better.
+              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
+              child: _buildNoScrollFormSection(),
             ),
           ),
         ),
@@ -344,30 +335,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildMobileLayout() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height -
-              MediaQuery.of(context).padding.top -
-              MediaQuery.of(context).padding.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
-            _buildLogoSection(),
-            SizedBox(
-                height: MediaQuery.of(context).size.height < 700 ? 10 : 20),
-            _buildFormSection(),
-            SizedBox(height: MediaQuery.of(context).size.height < 700 ? 5 : 20),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height < 700 ? 8 : 16),
+          _buildCompactLogoSection(),
+          SizedBox(height: MediaQuery.of(context).size.height < 700 ? 12 : 20),
+          Expanded(child: _buildNoScrollFormSection()),
+          SizedBox(height: MediaQuery.of(context).size.height < 700 ? 8 : 16),
+        ],
       ),
     );
   }
 
-  Widget _buildLogoSection() {
+  Widget _buildCompactLogoSection() {
     return AnimatedBuilder(
       animation: _logoAnimationController,
       builder: (context, child) {
@@ -378,42 +360,40 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             child: Column(
               children: [
                 Container(
-                  width: MediaQuery.of(context).size.width < 600 ? 60 : 80,
-                  height: MediaQuery.of(context).size.width < 600 ? 60 : 80,
+                  width: MediaQuery.of(context).size.width < 600 ? 50 : 60,
+                  height: MediaQuery.of(context).size.width < 600 ? 50 : 60,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor, // Using mint lime theme color
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
                         color: AppTheme.primaryColor.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Image.asset(
-                    'assets/logo/logo.gif',
+                    'assets/logo/logoDP.png',
                     fit: BoxFit.contain,
                   ),
                 ),
-                SizedBox(
-                    height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
                 Text(
                   'ByteEat',
                   style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width < 600 ? 24 : 32,
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.darkTextColor, // Using theme color
+                    color: AppTheme.darkTextColor,
                     letterSpacing: -0.5,
                   ),
                 ),
-                SizedBox(
-                    height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 4 : 6),
                 Text(
                   'Welcome back to your food journey',
                   style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
-                    color: AppTheme.lightTextColor, // Using theme color
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    color: AppTheme.lightTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -425,255 +405,90 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFormSection() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(
-          MediaQuery.of(context).size.width < 600
-              ? (MediaQuery.of(context).size.height < 700 ? 12.0 : 16.0)
-              : 32.0,
-        ),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: _buildLoginFormCard(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVisualSection() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.accentColor
-          ], // Using mint lime theme colors
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Support text top-right
-          Positioned(
-            top: 24,
-            right: 24,
-            child: Row(
-              children: const [
-                Icon(Icons.headset_mic, color: Colors.white70, size: 18),
-                SizedBox(width: 8),
-                Text('Support',
-                    style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-          // Rising sun
-          AnimatedBuilder(
-            animation: _visualAnimationController,
-            builder: (context, _) {
-              return Positioned(
-                top: 80 + _sunRiseAnimation.value,
-                left: 80,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                        colors: [Color(0xFFFFF59D), Color(0x00FFF59D)]),
-                  ),
-                ),
-              );
-            },
-          ),
-          // Floating clouds
-          AnimatedBuilder(
-            animation: _visualAnimationController,
-            builder: (context, _) {
-              return Stack(children: [
-                _cloud(x: 120 + _cloudDriftAnimation.value, y: 140, scale: 1.0),
-                _cloud(x: 260 - _cloudDriftAnimation.value, y: 90, scale: 0.8),
-              ]);
-            },
-          ),
-          // Food card mock
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 40),
-              width: 420,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white24, width: 1.5),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    height: 160,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16)),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/food_background.jpg'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Reach food goals faster',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Order breakfast with no hassle. Save time and enjoy mouthwatering meals.',
-                          style:
-                              TextStyle(color: Colors.white.withOpacity(0.9)),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 36,
-                          child: OutlinedButton(
-                            onPressed: () {},
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white54),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24)),
-                            ),
-                            child: const Text('Learn more'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Section title bottom
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 40.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Introducing new features',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Discover smart ordering and faster checkouts to start your morning right.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoginFormCard() {
+  Widget _buildNoScrollFormSection() {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool compact = MediaQuery.of(context).size.height < 700;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    final double cardPadding =
-        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
-    final double titleSize = compact || isMobile ? 24.0 : 32.0;
-    final double gapLarge =
-        compact || isMobile ? (isMobile ? 16.0 : 20.0) : 40.0;
-    final double gapMed = compact || isMobile ? (isMobile ? 12.0 : 16.0) : 24.0;
-    final double gapSmall = compact || isMobile ? (isMobile ? 4.0 : 6.0) : 12.0;
-
-    return Container(
-      constraints: BoxConstraints(
-        maxWidth: isMobile ? double.infinity : 450,
-        maxHeight: isMobile
-            ? MediaQuery.of(context).size.height * 0.7
-            : double.infinity,
-      ),
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(24.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Welcome Back',
-              style: TextStyle(
-                fontSize: titleSize,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF212529),
-                letterSpacing: -0.5,
+    
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: Container(
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Text(
+                'Welcome Back',
+                style: TextStyle(
+                  fontSize: isMobile ? 22 : 28,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-            SizedBox(height: gapSmall),
-            Text(
-              'Sign in to continue to your account',
-              style: TextStyle(
-                fontSize: isMobile ? 14 : 16,
-                color: isDark ? Colors.grey[300] : Colors.grey[600],
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 6),
+              Text(
+                'Sign in to continue to your account',
+                style: TextStyle(
+                  fontSize: isMobile ? 13 : 15,
+                  color: isDark ? Colors.grey[300] : AppTheme.lightTextColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            SizedBox(height: gapLarge),
-            _buildFormFields(),
-            SizedBox(height: gapMed),
-            _buildLoginButton(),
-            SizedBox(height: gapMed),
-            _buildDivider(),
-            SizedBox(height: gapMed),
-            _buildSocialButtons(),
-            SizedBox(height: compact || isMobile ? 16 : 32),
-            _buildSignUpLink(),
-          ],
+              SizedBox(height: isMobile ? 16 : 20),
+              
+              // Form fields (no scroll, fixed layout)
+              Expanded(
+                child: Column(
+                  children: [
+                    // Form fields
+                    Expanded(
+                      flex: 3,
+                      child: _buildNoScrollFormFields(),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Remember me and forgot password
+                    _buildRememberMeRow(),
+                    const SizedBox(height: 12),
+                    
+                    // Login button
+                    _buildLoginButton(),
+                    const SizedBox(height: 8),
+                    
+                    // Divider
+                    _buildDivider(),
+                    const SizedBox(height: 8),
+                    
+                    // Social buttons
+                    Expanded(
+                      flex: 2,
+                      child: _buildCompactSocialButtons(),
+                    ),
+                    
+                    // Sign up link
+                    _buildSignUpLink(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFormFields() {
+
+
+
+  Widget _buildNoScrollFormFields() {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          _buildInputField(
+          _buildCompactInputField(
             controller: _emailController,
             labelText: 'Email Address',
             hintText: 'Enter your email',
@@ -686,8 +501,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 20 : 24),
-          _buildInputField(
+          const SizedBox(height: 12),
+          _buildCompactInputField(
             controller: _passwordController,
             labelText: 'Password',
             hintText: 'Enter your password',
@@ -700,33 +515,53 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               return null;
             },
           ),
-          SizedBox(height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
-          Row(
-            children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4)),
-              ),
-              const Text('Remember me',
-                  style: TextStyle(
-                      color: Color(0xFF495057), fontWeight: FontWeight.w600)),
-              const Spacer(),
-              TextButton(
-                onPressed: () =>
-                    Navigator.pushNamed(context, '/forget_password_page'),
-                child: const Text('Forgot Password?',
-                    style: TextStyle(color: Color(0xFF495057))),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildInputField({
+  Widget _buildRememberMeRow() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Checkbox(
+          value: _rememberMe,
+          onChanged: (v) => setState(() => _rememberMe = v ?? false),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          activeColor: AppTheme.primaryColor,
+          checkColor: Colors.white,
+          fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+            if (states.contains(MaterialState.selected)) {
+              return AppTheme.primaryColor;
+            }
+            return isDark ? Colors.grey[600]! : Colors.grey[300]!;
+          }),
+        ),
+        Text(
+          'Remember me',
+          style: TextStyle(
+            color: isDark ? Colors.grey[300] : AppTheme.darkTextColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, '/forget_password_page'),
+          child: Text(
+            'Forgot Password?',
+            style: TextStyle(
+              color: AppTheme.primaryColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactInputField({
     required TextEditingController controller,
     required String labelText,
     required String hintText,
@@ -741,20 +576,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       children: [
         Text(
           labelText,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF495057),
+            color: isDark ? Colors.grey[300] : AppTheme.darkTextColor,
           ),
         ),
-        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 6 : 8),
+        const SizedBox(height: 4),
         TextFormField(
           controller: controller,
           obscureText: isPassword && !_isPasswordVisible,
           keyboardType: keyboardType,
           style: TextStyle(
-            fontSize: 16,
-            color: isDark ? Colors.white : const Color(0xFF212529),
+            fontSize: 14,
+            color: isDark ? Colors.white : AppTheme.darkTextColor,
             fontWeight: FontWeight.w500,
           ),
           cursorColor: AppTheme.primaryColor,
@@ -763,11 +598,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             hintStyle: TextStyle(
               color: isDark ? Colors.grey[500] : Colors.grey[400],
               fontWeight: FontWeight.w400,
+              fontSize: 13,
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: isDark ? Colors.grey[400] : Colors.grey[500],
-              size: 22,
+              color: AppTheme.primaryColor,
+              size: 18,
             ),
             suffixIcon: isPassword
                 ? IconButton(
@@ -775,52 +611,37 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       _isPasswordVisible
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: isDark ? Colors.grey[400] : Colors.grey[500],
-                      size: 22,
+                      color: AppTheme.primaryColor,
+                      size: 18,
                     ),
                     onPressed: () => setState(
                         () => _isPasswordVisible = !_isPasswordVisible),
                   )
                 : null,
             filled: true,
-            fillColor: isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
-            contentPadding: EdgeInsets.symmetric(
-              vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
-              horizontal: 20.0,
-            ),
+            fillColor: isDark ? const Color(0xFF151515) : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide.none,
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide.none,
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(
-                color: AppTheme.primaryColor, // Using mint lime theme color
-                width: 2,
-              ),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(
-                color: Colors.red[300]!,
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.red[300]!, width: 1),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(
-                color: Colors.red[300]!,
-                width: 2,
-              ),
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.red[300]!, width: 2),
             ),
-            errorStyle: TextStyle(
-              color: Colors.red[400],
-              fontSize: 13,
-            ),
+            errorStyle: TextStyle(color: Colors.red[400], fontSize: 11),
           ),
           validator: validator,
         ),
@@ -829,33 +650,34 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildLoginButton() {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
     return SizedBox(
       width: double.infinity,
-      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
+      height: isMobile ? 36 : 40,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor, // Using mint lime theme color
+          backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
           shadowColor: AppTheme.primaryColor.withOpacity(0.3),
         ),
         child: _isLoading
             ? const SizedBox(
-                height: 24,
-                width: 24,
+                height: 18,
+                width: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
+            : Text(
                 'Sign In',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: isMobile ? 15 : 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -894,19 +716,22 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSocialButtons() {
+  Widget _buildCompactSocialButtons() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Column(
       children: [
-        _buildSocialButton(
+        _buildCompactSocialButton(
           onPressed: _isLoading ? null : _signInWithGoogle,
           icon: Icons.g_mobiledata_outlined,
           label: 'Sign in with Google',
-          backgroundColor: Colors.white,
-          textColor: const Color(0xFF212529),
-          borderColor: Colors.grey[300]!,
+          backgroundColor: isDark ? Colors.grey[800]! : Colors.white,
+          textColor: isDark ? Colors.white : AppTheme.darkTextColor,
+          borderColor: isDark ? Colors.grey[600]! : Colors.grey[300]!,
         ),
-        SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
-        _buildSocialButton(
+        const SizedBox(height: 6),
+        _buildCompactSocialButton(
           onPressed: () {
             Navigator.push(
               context,
@@ -915,15 +740,15 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           },
           icon: Icons.phone_android_outlined,
           label: 'Login with Phone',
-          backgroundColor: const Color(0xFFF8F9FA),
-          textColor: const Color(0xFF212529),
-          borderColor: Colors.grey[300]!,
+          backgroundColor: isDark ? Colors.grey[800]! : Colors.grey[50]!,
+          textColor: isDark ? Colors.white : AppTheme.darkTextColor,
+          borderColor: isDark ? Colors.grey[600]! : Colors.grey[300]!,
         ),
       ],
     );
   }
 
-  Widget _buildSocialButton({
+  Widget _buildCompactSocialButton({
     required VoidCallback? onPressed,
     required IconData icon,
     required String label,
@@ -931,25 +756,26 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     required Color textColor,
     required Color borderColor,
   }) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
     return SizedBox(
       width: double.infinity,
-      height: MediaQuery.of(context).size.width < 600 ? 48 : 56,
+      height: isMobile ? 32 : 36,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
           side: BorderSide(color: borderColor, width: 1.2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
         ),
-        icon: Icon(icon, color: textColor, size: 24),
+        icon: Icon(icon, color: textColor, size: isMobile ? 18 : 20),
         label: Text(
           label,
           style: TextStyle(
             color: textColor,
-            fontSize: 16,
+            fontSize: isMobile ? 13 : 14,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -957,48 +783,18 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  // Simple cloud painter
-  Widget _cloud({required double x, required double y, required double scale}) {
-    return Positioned(
-      left: x,
-      top: y,
-      child: Transform.scale(
-        scale: scale,
-        child: Opacity(
-          opacity: 0.85,
-          child: Row(
-            children: [
-              _cloudCircle(34),
-              const SizedBox(width: 6),
-              _cloudCircle(26),
-              const SizedBox(width: 6),
-              _cloudCircle(20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _cloudCircle(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.white24,
-        borderRadius: BorderRadius.circular(100),
-      ),
-    );
-  }
 
   Widget _buildSignUpLink() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Center(
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
           style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 15,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+            fontSize: isMobile ? 13 : 14,
             fontWeight: FontWeight.w500,
           ),
           children: <TextSpan>[
@@ -1006,7 +802,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             TextSpan(
               text: 'Sign Up',
               style: TextStyle(
-                color: AppTheme.primaryColor, // Using mint lime theme color
+                color: AppTheme.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
               recognizer: TapGestureRecognizer()
