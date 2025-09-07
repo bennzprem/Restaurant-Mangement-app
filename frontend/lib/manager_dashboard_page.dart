@@ -1,13 +1,917 @@
+// lib/manager_dashboard_page.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
+import 'auth_provider.dart';
+import 'theme.dart';
+import 'api_service.dart';
+import 'user_models.dart';
+import 'models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'widgets/staff_management_section.dart';
 
-class ManagerDashboardPage extends StatelessWidget {
+class ManagerDashboardPage extends StatefulWidget {
   const ManagerDashboardPage({super.key});
 
   @override
+  State<ManagerDashboardPage> createState() => _ManagerDashboardPageState();
+}
+
+class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
+  int _selectedIndex = 0;
+  final ApiService _apiService = ApiService();
+  List<AppUser> _staff = [];
+  List<Order> _orders = [];
+  int _ordersCount = 0;
+  List<MenuItem> _menuItems = [];
+  bool _isLoading = false;
+  RealtimeChannel? _ordersChannel;
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+    _subscribeToOrderChanges();
+  }
+
+  void _subscribeToOrderChanges() {
+    final supabase = Supabase.instance.client;
+    _ordersChannel = supabase
+        .channel('orders-changes')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'orders',
+          callback: (payload) {
+            _loadDashboardData();
+          },
+        )
+        .subscribe();
+
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadDashboardData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ordersChannel?.unsubscribe();
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final users = await _apiService.getAllUsers();
+      final orders = await _apiService.getAllOrders();
+      final ordersCount = await _apiService.getOrdersCountAccurate();
+      final menuItems = await _apiService.getAllMenuItems();
+
+      // Filter staff (exclude customers)
+      final staff = users
+          .where((user) =>
+              user.role == 'employee' ||
+              user.role == 'delivery' ||
+              user.role == 'kitchen' ||
+              user.role == 'admin' ||
+              user.role == 'manager')
+          .toList();
+
+      setState(() {
+        _staff = staff;
+        _orders = orders;
+        _ordersCount = ordersCount;
+        _menuItems = menuItems;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error loading dashboard data: $e');
+    }
+  }
+
+  Map<String, int> _getStaffStats() {
+    final totalStaff = _staff.length;
+    final managers = _staff.where((user) => user.role == 'manager').length;
+    final employees = _staff.where((user) => user.role == 'employee').length;
+    final deliveryStaff =
+        _staff.where((user) => user.role == 'delivery').length;
+    final kitchenStaff = _staff.where((user) => user.role == 'kitchen').length;
+    final admins = _staff.where((user) => user.role == 'admin').length;
+
+    return {
+      'total': totalStaff,
+      'managers': managers,
+      'employees': employees,
+      'delivery': deliveryStaff,
+      'kitchen': kitchenStaff,
+      'admins': admins,
+    };
+  }
+
+  Map<String, dynamic> _getOrderStats() {
+    final totalOrders = _ordersCount > 0 ? _ordersCount : _orders.length;
+    final completedOrders =
+        _orders.where((order) => order.status == 'Completed').length;
+    final pendingOrders =
+        _orders.where((order) => order.status == 'Preparing').length;
+    final deliveredOrders =
+        _orders.where((order) => order.status == 'Delivered').length;
+    final cancelledOrders =
+        _orders.where((order) => order.status == 'Cancelled').length;
+
+    final totalRevenue =
+        _orders.fold<double>(0, (sum, order) => sum + order.totalAmount);
+    final completedRevenue = _orders
+        .where((order) => order.status == 'Completed')
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+
+    return {
+      'total': totalOrders,
+      'completed': completedOrders,
+      'pending': pendingOrders,
+      'delivered': deliveredOrders,
+      'cancelled': cancelledOrders,
+      'totalRevenue': totalRevenue,
+      'completedRevenue': completedRevenue,
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Check if user is logged in and is manager, if not redirect to home
+    final authProvider = context.watch<AuthProvider>();
+    if (!authProvider.isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to access manager dashboard.'),
+            backgroundColor: AppTheme.warningColor,
+          ),
+        );
+      });
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!authProvider.isManager && !authProvider.isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Access denied. Manager privileges required.'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      });
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Manager Dashboard')),
-      body: const Center(child: Text('Welcome, Manager')),
+      backgroundColor: AppTheme.customLightGrey,
+      appBar: AppBar(
+        title: const Text(
+          'Manager Dashboard',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.white,
+          ),
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+          onPressed: () {
+            // Navigate to home instead of just popping
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/',
+              (route) => false,
+            );
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppTheme.white),
+            onPressed: () async {
+              // Show confirmation dialog
+              final shouldLogout = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.errorColor,
+                        foregroundColor: AppTheme.white,
+                      ),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (shouldLogout == true) {
+                try {
+                  await context.read<AuthProvider>().signOut();
+                  // Clear all routes and navigate to home
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/',
+                    (route) => false,
+                  );
+                } catch (e) {
+                  print('Error during logout: $e');
+                  // Force navigation even if logout fails
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/',
+                    (route) => false,
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Row(
+            children: [
+              // Sidebar Navigation
+              Container(
+                width: constraints.maxWidth < 800 ? 200 : 250,
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Manager Profile Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: AppTheme.grey.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.manage_accounts,
+                              color: AppTheme.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.watch<AuthProvider>().user?.name ??
+                                      'Manager',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.customBlack,
+                                  ),
+                                ),
+                                Text(
+                                  'Manager',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.customGrey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Navigation Items
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        children: [
+                          _buildNavItem(
+                            icon: Icons.dashboard,
+                            title: 'Overview',
+                            index: 0,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.people,
+                            title: 'Staff Management',
+                            index: 1,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.shopping_cart,
+                            title: 'Orders',
+                            index: 2,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.restaurant_menu,
+                            title: 'Menu',
+                            index: 3,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.analytics,
+                            title: 'Analytics',
+                            index: 4,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.schedule,
+                            title: 'Schedule',
+                            index: 5,
+                          ),
+                          _buildNavItem(
+                            icon: Icons.settings,
+                            title: 'Settings',
+                            index: 6,
+                          ),
+                          const Divider(color: AppTheme.grey, height: 32),
+                          _buildLogoutItem(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Content Area
+              Expanded(
+                child: _buildContent(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String title,
+    required int index,
+  }) {
+    final isSelected = _selectedIndex == index;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: AppTheme.transparent,
+        child: InkWell(
+          onTap: () => setState(() => _selectedIndex = index),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? AppTheme.primaryColor : AppTheme.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? AppTheme.white : AppTheme.customGrey,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? AppTheme.white : AppTheme.customGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutItem() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: AppTheme.transparent,
+        child: InkWell(
+          onTap: () async {
+            // Show confirmation dialog
+            final shouldLogout = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Logout'),
+                content: const Text('Are you sure you want to logout?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.errorColor,
+                      foregroundColor: AppTheme.white,
+                    ),
+                    child: const Text('Logout'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldLogout == true) {
+              try {
+                await context.read<AuthProvider>().signOut();
+                // Clear all routes and navigate to home
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/',
+                  (route) => false,
+                );
+              } catch (e) {
+                print('Error during logout: $e');
+                // Force navigation even if logout fails
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/',
+                  (route) => false,
+                );
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.logout,
+                  color: AppTheme.errorColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Logout',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.errorColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildOverview();
+      case 1:
+        return _buildStaffManagement();
+      case 2:
+        return _buildOrders();
+      case 3:
+        return _buildMenu();
+      case 4:
+        return _buildAnalytics();
+      case 5:
+        return _buildSchedule();
+      case 6:
+        return _buildSettings();
+      default:
+        return _buildOverview();
+    }
+  }
+
+  Widget _buildOverview() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Manager Overview',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.customBlack,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _loadDashboardData,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(_isLoading ? 'Loading...' : 'Refresh'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: AppTheme.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Stats Cards
+          LayoutBuilder(
+            builder: (context, constraints) {
+              int crossAxisCount = 4;
+              if (constraints.maxWidth < 1200) crossAxisCount = 3;
+              if (constraints.maxWidth < 900) crossAxisCount = 2;
+              if (constraints.maxWidth < 600) crossAxisCount = 1;
+
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                childAspectRatio: 1.5,
+                children: [
+                  _buildStatCard(
+                    title: 'Total Staff',
+                    value: _isLoading
+                        ? '...'
+                        : _getStaffStats()['total'].toString(),
+                    icon: Icons.people,
+                    color: AppTheme.infoColor,
+                    change: _isLoading
+                        ? ''
+                        : '${_getStaffStats()['total']} employees',
+                    isPositive: true,
+                  ),
+                  _buildStatCard(
+                    title: 'Active Orders',
+                    value: _isLoading
+                        ? '...'
+                        : _getOrderStats()['pending'].toString(),
+                    icon: Icons.shopping_cart,
+                    color: AppTheme.warningColor,
+                    change: _isLoading
+                        ? ''
+                        : '${_getOrderStats()['pending']} pending',
+                    isPositive: true,
+                  ),
+                  _buildStatCard(
+                    title: 'Today\'s Revenue',
+                    value: _isLoading
+                        ? '...'
+                        : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)}',
+                    icon: Icons.attach_money,
+                    color: AppTheme.successColor,
+                    change: _isLoading
+                        ? ''
+                        : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)} total',
+                    isPositive: true,
+                  ),
+                  _buildStatCard(
+                    title: 'Menu Items',
+                    value: _isLoading ? '...' : _menuItems.length.toString(),
+                    icon: Icons.restaurant_menu,
+                    color: AppTheme.purpleColor,
+                    change: _isLoading ? '' : '${_menuItems.length} items',
+                    isPositive: true,
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Staff Overview
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Staff Overview',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.customBlack,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _selectedIndex = 1),
+                      child: const Text('View All Staff'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (_staff.isNotEmpty) ...[
+                  ...List.generate(
+                    _staff.take(5).length,
+                    (index) => _buildStaffItem(_staff[index]),
+                  ),
+                ] else ...[
+                  const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(
+                      child: Text(
+                        'No staff members found',
+                        style: TextStyle(color: AppTheme.grey),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required String change,
+    required bool isPositive,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPositive
+                      ? AppTheme.successColor.withOpacity(0.1)
+                      : AppTheme.errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  change,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isPositive
+                        ? AppTheme.successColor
+                        : AppTheme.errorColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.customBlack,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.customGrey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaffItem(AppUser staff) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getRoleColor(staff.role).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(
+                staff.name.isNotEmpty ? staff.name[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: _getRoleColor(staff.role),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  staff.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.customBlack,
+                  ),
+                ),
+                Text(
+                  staff.email ?? 'No email',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.customGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getRoleColor(staff.role).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              staff.role.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: _getRoleColor(staff.role),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return Colors.red;
+      case 'manager':
+        return Colors.indigo;
+      case 'employee':
+        return Colors.blue;
+      case 'delivery':
+        return Colors.orange;
+      case 'kitchen':
+        return Colors.purple;
+      default:
+        return Colors.green;
+    }
+  }
+
+  Widget _buildStaffManagement() {
+    return SizedBox(
+      width: double.infinity,
+      height: double.infinity,
+      child: StaffManagementSection(
+        staff: _staff,
+        onStaffUpdated: _loadDashboardData,
+        isLoading: _isLoading,
+      ),
+    );
+  }
+
+  Widget _buildOrders() {
+    return const Center(
+      child: Text(
+        'Orders Management - Coming Soon',
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
+    );
+  }
+
+  Widget _buildMenu() {
+    return const Center(
+      child: Text(
+        'Menu Management - Coming Soon',
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
+    );
+  }
+
+  Widget _buildAnalytics() {
+    return const Center(
+      child: Text(
+        'Analytics - Coming Soon',
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
+    );
+  }
+
+  Widget _buildSchedule() {
+    return const Center(
+      child: Text(
+        'Schedule Management - Coming Soon',
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
+    );
+  }
+
+  Widget _buildSettings() {
+    return const Center(
+      child: Text(
+        'Settings - Coming Soon',
+        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
     );
   }
 }

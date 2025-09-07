@@ -8,9 +8,11 @@ import 'theme.dart';
 import 'manage_users_page.dart';
 import 'manage_menu_page.dart';
 import 'manage_orders_page.dart';
+import 'analytics_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
 import 'models.dart';
+import 'settings_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -274,7 +276,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
 
     return Scaffold(
-              backgroundColor: AppTheme.customLightGrey,
+      backgroundColor: AppTheme.customLightGrey,
       appBar: AppBar(
         title: const Text(
           'Admin Dashboard',
@@ -784,7 +786,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isPositive ? AppTheme.successColor : AppTheme.errorColor,
+                    color: isPositive
+                        ? AppTheme.successColor
+                        : AppTheme.errorColor,
                   ),
                 ),
               ),
@@ -886,20 +890,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildAnalytics() {
-    return const Center(
-      child: Text(
-        'Analytics - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
-      ),
+    return AnalyticsPage(
+      orders: _orders,
+      users: _users,
+      menuItems: _menuItems,
+      isLoading: _isLoading,
+      onRefresh: _loadDashboardData,
     );
   }
 
   Widget _buildSettings() {
-    return const Center(
-      child: Text(
-        'Settings - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
-      ),
-    );
+    return const SettingsPage();
   }
 }

@@ -63,7 +63,9 @@ import 'manager_dashboard_page.dart';
 import 'employee_dashboard_page.dart';
 import 'delivery_dashboard_page.dart';
 import 'kitchen_dashboard_page.dart';
+import 'waiter_dashboard_page.dart';
 import 'ch/user_dashboard_page.dart';
+import 'debug_user_role.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,6 +125,8 @@ class MyApp extends StatelessWidget {
               '/admin_dashboard': (context) => const AdminDashboardPage(),
               '/manager_dashboard': (context) => const ManagerDashboardPage(),
               '/employee_dashboard': (context) => const EmployeeDashboardPage(),
+              '/waiter_dashboard': (context) => const WaiterDashboardPage(),
+              '/debug_user_role': (context) => const DebugUserRole(),
               '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
               '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
             },

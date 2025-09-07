@@ -17,7 +17,9 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
   final List<String> _roles = [
     'user',
     'admin',
+    'manager',
     'employee',
+    'waiter',
     'delivery',
     'kitchen'
   ];
@@ -99,8 +101,12 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     switch (role.toLowerCase()) {
       case 'admin':
         return Colors.red;
+      case 'manager':
+        return Colors.indigo;
       case 'employee':
         return Colors.blue;
+      case 'waiter':
+        return Colors.teal;
       case 'delivery':
         return Colors.orange;
       case 'kitchen':
@@ -236,6 +242,11 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                       name: 'Sarah Employee',
                       email: 'sarah.employee@restaurant.com',
                       role: 'employee',
+                    );
+                    await _apiService.createTestUser(
+                      name: 'Wendy Waiter',
+                      email: 'wendy.waiter@restaurant.com',
+                      role: 'waiter',
                     );
                     await _apiService.createTestUser(
                       name: 'Mike Delivery',

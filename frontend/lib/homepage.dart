@@ -9,7 +9,6 @@ import 'takeaway_page.dart';
 
 import '../widgets/header_widget.dart';
 import '../widgets/hero_section.dart';
-import '../widgets/menu_section.dart';
 import '../widgets/about_section.dart';
 import '../widgets/testimonials_section.dart';
 import '../widgets/newsletter_section.dart';
@@ -78,6 +77,8 @@ class _HomePageState extends State<HomePage> {
                       onPickup: () => _handleNavigation(context, 'Takeaway'),
                     ),
                     if (authProvider.isLoggedIn) _RoleQuickAccess(),
+
+                    // Continuing the home_screen.dart sections
                     _MenuCategoryCarousel(),
                     AboutSection(),
                     TestimonialsSection(),
@@ -106,18 +107,90 @@ class _RoleQuickAccess extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+
+    // Debug information
+    print('=== ROLE DEBUG INFO ===');
+    print('User: ${auth.user?.name}');
+    print('Email: ${auth.user?.email}');
+    print('Role: ${auth.user?.role}');
+    print('isAdmin: ${auth.isAdmin}');
+    print('isManager: ${auth.isManager}');
+    print('isEmployee: ${auth.isEmployee}');
+    print('isDelivery: ${auth.isDelivery}');
+    print('isKitchen: ${auth.isKitchen}');
+    print('isWaiter: ${auth.isWaiter}');
+    print('======================');
+
     String? route;
+    String? buttonText;
+
     if (auth.isAdmin) {
       route = '/admin_dashboard';
-    } else if (auth.isManager)
+      buttonText = 'Go to Admin Dashboard';
+    } else if (auth.isManager) {
       route = '/manager_dashboard';
-    else if (auth.isKitchen)
+      buttonText = 'Go to Manager Dashboard';
+    } else if (auth.isKitchen) {
       route = '/kitchen_dashboard';
-    else if (auth.isDelivery)
+      buttonText = 'Go to Kitchen Dashboard';
+    } else if (auth.isDelivery) {
       route = '/delivery_dashboard';
-    else if (auth.isEmployee) route = '/employee_dashboard';
+      buttonText = 'Go to Delivery Dashboard';
+    } else if (auth.isEmployee || auth.isWaiter) {
+      route = auth.isWaiter ? '/waiter_dashboard' : '/employee_dashboard';
+      buttonText =
+          auth.isWaiter ? 'Go to Waiter Dashboard' : 'Go to Employee Dashboard';
+    }
 
-    if (route == null) return const SizedBox.shrink();
+    if (route == null) {
+      // Show debug info for users without specific roles
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            border: Border.all(color: Colors.orange),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Debug Info:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('User: ${auth.user?.name ?? "Not logged in"}'),
+              Text('Role: ${auth.user?.role ?? "No role"}'),
+              Text('isManager: ${auth.isManager}'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => auth.refreshUserProfile(),
+                      child: const Text('Refresh User Profile'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/debug_user_role'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Debug Role'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -126,7 +199,7 @@ class _RoleQuickAccess extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () => Navigator.pushNamed(context, route!),
           icon: const Icon(Icons.dashboard_customize),
-          label: const Text('Go to your dashboard'),
+          label: Text(buttonText!),
         ),
       ),
     );
@@ -175,8 +248,8 @@ class _ServiceSelectionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style:
-                          const TextStyle(fontSize: 16, color: AppTheme.customGrey),
+                      style: const TextStyle(
+                          fontSize: 16, color: AppTheme.customGrey),
                     ),
                   ],
                 ),
@@ -184,7 +257,7 @@ class _ServiceSelectionCard extends StatelessWidget {
               const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryColor),
             ],
           ),
-        ), 
+        ),
       ),
     );
   }
@@ -231,19 +304,19 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
   void initState() {
     super.initState();
     _startAutoScroll();
-    
+
     // Add scroll listener to track position and ensure smooth looping
     _scrollController.addListener(() {
       if (_scrollController.hasClients) {
         final currentOffset = _scrollController.offset;
         final maxScrollExtent = _scrollController.position.maxScrollExtent;
-        
+
         // Update current index based on scroll position
         _currentScrollIndex = (currentOffset / 160.0).round();
         if (_currentScrollIndex >= categories.length) {
           _currentScrollIndex = categories.length - 1;
         }
-        
+
         // Ensure we stay within bounds
         if (_currentScrollIndex < 0) {
           _currentScrollIndex = 0;
@@ -276,17 +349,18 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
     if (_scrollController.hasClients) {
       // Move to the next category in circular motion
       _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
-      
+
       // Calculate the target offset for smooth scrolling
       double targetOffset;
-      
+
       if (_currentScrollIndex == 0) {
         // When we reach the end, smoothly scroll back to the beginning
         targetOffset = 0;
       } else {
-        targetOffset = _currentScrollIndex * 160.0; // 140 (width) + 20 (separator)
+        targetOffset =
+            _currentScrollIndex * 160.0; // 140 (width) + 20 (separator)
       }
-      
+
       // Ensure smooth circular scrolling
       _scrollController.animateTo(
         targetOffset,
@@ -298,8 +372,9 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   void scrollLeft() {
     if (_scrollController.hasClients) {
-      _currentScrollIndex = (_currentScrollIndex - 1 + categories.length) % categories.length;
-      
+      _currentScrollIndex =
+          (_currentScrollIndex - 1 + categories.length) % categories.length;
+
       // Calculate the target offset for smooth circular scrolling
       double targetOffset;
       if (_currentScrollIndex == categories.length - 1) {
@@ -308,7 +383,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
       } else {
         targetOffset = _currentScrollIndex * 160.0;
       }
-      
+
       _scrollController.animateTo(
         targetOffset,
         duration: const Duration(milliseconds: 800),
@@ -321,7 +396,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
   void scrollRight() {
     if (_scrollController.hasClients) {
       _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
-      
+
       // Calculate the target offset for smooth circular scrolling
       double targetOffset;
       if (_currentScrollIndex == 0) {
@@ -330,7 +405,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
       } else {
         targetOffset = _currentScrollIndex * 160.0;
       }
-      
+
       _scrollController.animateTo(
         targetOffset,
         duration: const Duration(milliseconds: 800),
@@ -357,7 +432,8 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
           Row(
             children: [
               IconButton(
-                icon: Icon(Icons.arrow_left, size: 32, color: isDark ? AppTheme.white.withOpacity(0.7) : AppTheme.customBlack),
+                icon: Icon(Icons.arrow_left,
+                    size: 32, color: isDark ? Colors.white70 : Colors.black87),
                 onPressed: scrollLeft,
               ),
               Expanded(
@@ -380,72 +456,82 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             ),
                           );
                         },
-                                                 child: MouseRegion(
-                           onEnter: (_) => setState(() => _hoveredIndex = index),
-                           onExit: (_) => setState(() => _hoveredIndex = -1),
-                           child: AnimatedContainer(
-                             duration: const Duration(milliseconds: 400),
-                             decoration: BoxDecoration(
-                               color: _hoveredIndex == index 
-                                   ? AppTheme.primaryColor.withOpacity(0.2)
-                                   : (isDark ? AppTheme.white.withOpacity(0.06) : AppTheme.white.withOpacity(0.7)),
-                               borderRadius: BorderRadius.circular(24),
-                               border: Border.all(
-                                 color: _hoveredIndex == index 
-                                     ? AppTheme.primaryColor
-                                     : AppTheme.white.withOpacity(isDark ? 0.12 : 0.2),
-                                 width: _hoveredIndex == index ? 2 : 1,
-                               ),
-                               boxShadow: [
-                                 BoxShadow(
-                                   color: _hoveredIndex == index
-                                       ? AppTheme.primaryColor.withOpacity(0.3)
-                                       : AppTheme.black.withOpacity(isDark ? 0.5 : 0.06),
-                                   blurRadius: 18,
-                                   offset: const Offset(0, 8),
-                                 ),
-                               ],
-                             ),
-                          child: Container(
-                            width: 140,
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                                                                                  Icon(
-                                   icon, 
-                                   size: 36, 
-                                   color: _hoveredIndex == index 
-                                       ? AppTheme.black
-                                       : (isDark ? AppTheme.white : AppTheme.black),
-                                 ),
-                                 const SizedBox(height: 16),
-                                 Text(
-                                   name,
-                                   textAlign: TextAlign.center,
-                                   style: TextStyle(
-                                     fontSize: 16,
-                                     fontWeight: FontWeight.w600,
-                                     color: _hoveredIndex == index 
-                                         ? AppTheme.black
-                                         : (isDark ? AppTheme.white : AppTheme.black),
-                                   ),
-                                 ),
-                                const SizedBox(height: 10),
-                                const Icon(Icons.arrow_forward,
-                                    color: AppTheme.primaryColor, size: 20),
+                        child: MouseRegion(
+                          onEnter: (_) => setState(() => _hoveredIndex = index),
+                          onExit: (_) => setState(() => _hoveredIndex = -1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            decoration: BoxDecoration(
+                              color: _hoveredIndex == index
+                                  ? const Color(0xFFDAE952).withOpacity(0.2)
+                                  : (isDark
+                                      ? Colors.white.withOpacity(0.06)
+                                      : Colors.white.withOpacity(0.7)),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: _hoveredIndex == index
+                                    ? const Color(0xFFDAE952)
+                                    : Colors.white
+                                        .withOpacity(isDark ? 0.12 : 0.2),
+                                width: _hoveredIndex == index ? 2 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _hoveredIndex == index
+                                      ? const Color(0xFFDAE952).withOpacity(0.3)
+                                      : Colors.black
+                                          .withOpacity(isDark ? 0.5 : 0.06),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
                               ],
+                            ),
+                            child: Container(
+                              width: 140,
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    icon,
+                                    size: 36,
+                                    color: _hoveredIndex == index
+                                        ? Colors.black
+                                        : (isDark
+                                            ? Colors.white
+                                            : Colors.black),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    name,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: _hoveredIndex == index
+                                          ? Colors.black
+                                          : (isDark
+                                              ? Colors.white
+                                              : Colors.black),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Icon(Icons.arrow_forward,
+                                      color: Color(0xFFDAE952), size: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),);
+                      );
                     },
                   ),
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.arrow_right, size: 32, color: isDark ? AppTheme.white.withOpacity(0.7) : AppTheme.customBlack),
+                icon: Icon(Icons.arrow_right,
+                    size: 32, color: isDark ? Colors.white70 : Colors.black87),
                 onPressed: scrollRight,
               ),
             ],
