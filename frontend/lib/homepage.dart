@@ -9,7 +9,6 @@ import 'takeaway_page.dart';
 
 import '../widgets/header_widget.dart';
 import '../widgets/hero_section.dart';
-import '../widgets/menu_section.dart';
 import '../widgets/about_section.dart';
 import '../widgets/testimonials_section.dart';
 import '../widgets/newsletter_section.dart';
@@ -113,18 +112,90 @@ class _RoleQuickAccess extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+
+    // Debug information
+    print('=== ROLE DEBUG INFO ===');
+    print('User: ${auth.user?.name}');
+    print('Email: ${auth.user?.email}');
+    print('Role: ${auth.user?.role}');
+    print('isAdmin: ${auth.isAdmin}');
+    print('isManager: ${auth.isManager}');
+    print('isEmployee: ${auth.isEmployee}');
+    print('isDelivery: ${auth.isDelivery}');
+    print('isKitchen: ${auth.isKitchen}');
+    print('isWaiter: ${auth.isWaiter}');
+    print('======================');
+
     String? route;
+    String? buttonText;
+
     if (auth.isAdmin) {
       route = '/admin_dashboard';
-    } else if (auth.isManager)
+      buttonText = 'Go to Admin Dashboard';
+    } else if (auth.isManager) {
       route = '/manager_dashboard';
-    else if (auth.isKitchen)
+      buttonText = 'Go to Manager Dashboard';
+    } else if (auth.isKitchen) {
       route = '/kitchen_dashboard';
-    else if (auth.isDelivery)
+      buttonText = 'Go to Kitchen Dashboard';
+    } else if (auth.isDelivery) {
       route = '/delivery_dashboard';
-    else if (auth.isEmployee) route = '/employee_dashboard';
+      buttonText = 'Go to Delivery Dashboard';
+    } else if (auth.isEmployee || auth.isWaiter) {
+      route = auth.isWaiter ? '/waiter_dashboard' : '/employee_dashboard';
+      buttonText =
+          auth.isWaiter ? 'Go to Waiter Dashboard' : 'Go to Employee Dashboard';
+    }
 
-    if (route == null) return const SizedBox.shrink();
+    if (route == null) {
+      // Show debug info for users without specific roles
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            border: Border.all(color: Colors.orange),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Debug Info:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('User: ${auth.user?.name ?? "Not logged in"}'),
+              Text('Role: ${auth.user?.role ?? "No role"}'),
+              Text('isManager: ${auth.isManager}'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => auth.refreshUserProfile(),
+                      child: const Text('Refresh User Profile'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/debug_user_role'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Debug Role'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -133,7 +204,7 @@ class _RoleQuickAccess extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () => Navigator.pushNamed(context, route!),
           icon: const Icon(Icons.dashboard_customize),
-          label: const Text('Go to your dashboard'),
+          label: Text(buttonText!),
         ),
       ),
     );

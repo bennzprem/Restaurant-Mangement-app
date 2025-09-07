@@ -17,6 +17,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAdmin => _user?.role == 'admin';
   bool get isManager => _user?.role == 'manager';
   bool get isEmployee => _user?.role == 'employee';
+  bool get isWaiter => _user?.role == 'waiter';
   bool get isDelivery => _user?.role == 'delivery';
   bool get isKitchen => _user?.role == 'kitchen';
 
@@ -60,7 +61,17 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _supabase.auth.signOut();
+    try {
+      await _supabase.auth.signOut();
+      _user = null;
+      notifyListeners();
+    } catch (e) {
+      print('Error during signOut: $e');
+      // Force clear user state even if signOut fails
+      _user = null;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   // vvv THIS IS THE MISSING FUNCTION vvv

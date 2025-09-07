@@ -12,6 +12,7 @@ import 'analytics_page.dart';
 import 'api_service.dart';
 import 'user_models.dart';
 import 'models.dart';
+import 'settings_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -899,11 +900,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildSettings() {
-    return const Center(
-      child: Text(
-        'Settings - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
-      ),
-    );
+    return const SettingsPage();
   }
 }

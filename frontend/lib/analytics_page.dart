@@ -510,9 +510,8 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             ),
           ),
           const SizedBox(height: 12),
-          ...categoryRevenue.entries
-              .map((entry) => _buildCategoryRevenueItem(entry.key, entry.value))
-              .toList(),
+          ...categoryRevenue.entries.map(
+              (entry) => _buildCategoryRevenueItem(entry.key, entry.value)),
         ],
       ),
     );
@@ -551,10 +550,8 @@ class _AnalyticsPageState extends State<AnalyticsPage>
           const SizedBox(height: 16),
 
           // Order Status List
-          ...statusData.entries
-              .map((entry) => _buildStatusItem(entry.key, entry.value,
-                  statusData.values.reduce((a, b) => a + b)))
-              .toList(),
+          ...statusData.entries.map((entry) => _buildStatusItem(entry.key,
+              entry.value, statusData.values.reduce((a, b) => a + b))),
 
           const SizedBox(height: 24),
 
@@ -1217,7 +1214,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Revenue Trend (${_selectedTimeRange})',
+              'Revenue Trend ($_selectedTimeRange)',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1537,7 +1534,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
       children: [
         // Chart Title
         Text(
-          'User Registration Trend (${_selectedTimeRange})',
+          'User Registration Trend ($_selectedTimeRange)',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
