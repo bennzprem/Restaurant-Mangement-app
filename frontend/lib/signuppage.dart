@@ -1510,3 +1510,4 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     );
   }
 }
+ 
