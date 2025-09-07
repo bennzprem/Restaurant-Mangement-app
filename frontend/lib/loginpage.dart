@@ -392,7 +392,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ],
                   ),
                   child: Image.asset(
-                    'assets/logo/logo.gif',
+                    'assets/logo/logoDP.png',
                     fit: BoxFit.contain,
                   ),
                 ),

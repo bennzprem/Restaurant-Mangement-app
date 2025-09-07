@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // Added for Timer
 import 'dart:ui'; // Added for ImageFilter
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../auth_provider.dart';
 
 //updated
 class HeroSection extends StatefulWidget {
@@ -94,6 +96,7 @@ class _HeroSectionState extends State<HeroSection> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
     final minHeight = screenH; // Use full viewport height instead of fixed 665
@@ -115,33 +118,6 @@ class _HeroSectionState extends State<HeroSection> {
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Stack(
                 children: [
-                  // Logo positioned at the top left
-                  Positioned(
-                    top: 20,
-                    left: 36,
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          'assets/logo/logo.gif',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Byte Eat',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.85,
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -167,7 +143,10 @@ Positioned(
                   // Background Image with Blur
                   Positioned.fill(
                     child: ImageFiltered(
-                      imageFilter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
+                      imageFilter: ImageFilter.blur(
+                        sigmaX: authProvider.isLoggedIn ? 0.0 : 3.0,
+                        sigmaY: authProvider.isLoggedIn ? 0.0 : 3.0,
+                      ),
   child: Container(
                         decoration: BoxDecoration(
       image: DecorationImage(
@@ -178,25 +157,27 @@ Positioned(
   ),
 ),
                   ),
-                  // Dark Overlay for better text readability
-                  Positioned.fill(
-  child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.6),
-                            Colors.black.withOpacity(0.4),
-                          ],
+                  // Dark Overlay for better text readability (hidden if logged in)
+                  if (!authProvider.isLoggedIn)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.3),
+                              Colors.black.withOpacity(0.6),
+                              Colors.black.withOpacity(0.4),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ),
-                  // Caption Content
-                  Positioned.fill(
-    child: Center(
+                  // Caption Content (hidden if logged in)
+                  if (!authProvider.isLoggedIn)
+                    Positioned.fill(
+                      child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
@@ -821,9 +802,9 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                     ),
                   ),
                 ),
-              ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

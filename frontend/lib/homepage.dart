@@ -14,7 +14,6 @@ import '../widgets/about_section.dart';
 import '../widgets/testimonials_section.dart';
 import '../widgets/newsletter_section.dart';
 import '../widgets/footer_widget.dart';
-import '../widgets/navbar_widget.dart';
 
 import 'theme.dart'; // Your AppTheme
 
@@ -66,7 +65,11 @@ class _HomePageState extends State<HomePage> {
                     : 0;
             return SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.only(
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  top: 0, // No top padding - content starts immediately after header
+                ),
                 child: Column(
                   children: [
                     HeroSection(
@@ -86,21 +89,13 @@ class _HomePageState extends State<HomePage> {
             );
           }),
 
-          // Fixed header always visible
+          // Fixed header with integrated navigation at the very top
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
-                HeaderWidget(),
-                const NavbarWidget(),
-              ],
-            ),
+            child: HeaderWidget(active: HeaderActive.home),
           ),
-
-          // Positioned login/profile button can be added if needed here,
-          // but the original home_page used AppBar for this - we can optionally add a floating or header widget for that separately if needed
         ],
       ),
     );

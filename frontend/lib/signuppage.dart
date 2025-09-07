@@ -390,7 +390,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                     ],
                   ),
                   child: Image.asset(
-                    'assets/logo/logo.gif',
+                    'assets/logo/logoDP.png',
                     fit: BoxFit.contain,
                   ),
                 ),
