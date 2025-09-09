@@ -4,6 +4,8 @@ import 'api_service.dart';
 import 'auth_provider.dart';
 import 'menu_screen.dart';
 import 'qr_scanner_page.dart'; // Import the new scanner page
+import 'theme.dart';
+import 'widgets/header_widget.dart';
 
 class OrderFromTablePage extends StatefulWidget {
   const OrderFromTablePage({super.key});
@@ -110,65 +112,332 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Order from Table')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // --- Scan QR Code Card ---
-            OutlinedButton.icon(
-              icon: const Icon(Icons.qr_code_scanner, size: 36),
-              label: const Text('Scan QR Code', style: TextStyle(fontSize: 18)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _scanQrCode,
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0),
-              child: Row(children: [
-                Expanded(child: Divider()),
+      backgroundColor: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
+      appBar: null,
+      body: Column(
+        children: [
+          // Fixed Header
+          HeaderWidget(
+            showBack: true,
+            onBack: () => Navigator.pop(context),
+          ),
+          // Scrollable content
+          Expanded(
+            child: Stack(
+              children: [
+                // Background gradient
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: isDark
+                          ? [const Color(0xFF0F0F10), const Color(0xFF1A1A1A)]
+                          : [const Color(0xFFF8F9FA), const Color(0xFFE9ECEF)],
+                    ),
+                  ),
+                ),
+                // Main content
                 Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text('OR')),
-                Expanded(child: Divider()),
-              ]),
+                  padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 20),
+                  child: Column(
+                    children: [
+                      // Page title with fallback back button
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        margin: const EdgeInsets.only(bottom: 40),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.restaurant_outlined,
+                                    color: AppTheme.primaryColor,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Order from Table',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? Colors.white : AppTheme.darkTextColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Choose your preferred method to start ordering',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDark ? Colors.grey[400] : AppTheme.lightTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Side by side cards
+                      Expanded(
+                        child: Row(
+                          children: [
+                            // QR Code Card (Left)
+                            Expanded(
+                              child: _buildQRCodeCard(isDark),
+                            ),
+                            
+                            const SizedBox(width: 20),
+                            
+                            // Manual Entry Card (Right)
+                            Expanded(
+                              child: _buildManualEntryCard(isDark),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // --- Enter Code Section ---
-            Text('Enter Table Code Manually',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _codeController,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 4),
-              decoration: const InputDecoration(
-                hintText: 'E.G., TBL000',
-                border: OutlineInputBorder(),
+  Widget _buildQRCodeCard(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.qr_code_scanner,
+              size: 40,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Scan QR Code',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppTheme.darkTextColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Point your camera at the QR code on your table',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.grey[400] : AppTheme.lightTextColor,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _scanQrCode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Scan QR Code',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManualEntryCard(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.keyboard_outlined,
+                  color: AppTheme.accentColor,
+                  size: 24,
+                ),
               ),
+              const SizedBox(width: 16),
+              Text(
+                'Enter Table Code',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Table Code',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey[300] : AppTheme.lightTextColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _codeController,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+              color: isDark ? Colors.white : AppTheme.darkTextColor,
+            ),
+            decoration: InputDecoration(
+              hintText: 'E.G., TBL000',
+              hintStyle: TextStyle(
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
+                letterSpacing: 1,
+              ),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F9FA),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppTheme.primaryColor,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
               onPressed: _isLoading ? null : _validateCodeAndProceed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
               child: _isLoading
                   ? const SizedBox(
                       height: 24,
                       width: 24,
-                      child: CircularProgressIndicator(color: Colors.white))
-                  : const Text('Find Table'),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Find Table',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

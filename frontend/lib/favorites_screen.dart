@@ -5,6 +5,7 @@ import 'favorites_provider.dart';
 import 'models.dart';
 import 'cart_provider.dart';
 import 'theme.dart';
+import 'widgets/header_widget.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -27,59 +28,83 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Favorites')),
-      body: Consumer<FavoritesProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
-            );
-          }
+      appBar: null,
+      body: Column(
+        children: [
+          // Fixed Header
+          HeaderWidget(
+            showBack: true,
+            onBack: () => Navigator.pop(context),
+          ),
+          // Main content
+          Expanded(
+            child: Consumer<FavoritesProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                  );
+                }
 
-          if (provider.error.isNotEmpty) {
-            return Center(
-              child: Text(
-                provider.error,
-                style: const TextStyle(color: AppTheme.errorColor, fontSize: 18),
-              ),
-            );
-          }
+                if (provider.error.isNotEmpty) {
+                  return Center(
+                    child: Text(
+                      provider.error,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.red[300] 
+                            : AppTheme.errorColor, 
+                        fontSize: 18
+                      ),
+                    ),
+                  );
+                }
 
-          if (provider.favoriteItems.isEmpty) {
-            return const Center(
-              child: Text(
-                'You have no favorite items yet.\nTap the heart icon to add some!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: AppTheme.grey),
-              ),
-            );
-          }
+                if (provider.favoriteItems.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'You have no favorite items yet.\nTap the heart icon to add some!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18, 
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.grey[400] 
+                            : AppTheme.grey
+                      ),
+                    ),
+                  );
+                }
 
-          // We use a ListView for a cleaner look on the favorites page
-          return ListView.builder(
-            padding: const EdgeInsets.all(24),
-            itemCount: provider.favoriteItems.length,
-            itemBuilder: (context, index) {
-              final item = provider.favoriteItems[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 24.0),
-                child: _buildFavoriteItemCard(item),
-              );
-            },
-          );
-        },
+                // We use a ListView for a cleaner look on the favorites page
+                return ListView.builder(
+                  padding: const EdgeInsets.all(24),
+                  itemCount: provider.favoriteItems.length,
+                  itemBuilder: (context, index) {
+                    final item = provider.favoriteItems[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 24.0),
+                      child: _buildFavoriteItemCard(item),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildFavoriteItemCard(MenuItem item) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: isDark ? const Color(0xFF1A1A1A) : AppTheme.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.black.withOpacity(0.08),
+            color: isDark ? Colors.black.withOpacity(0.3) : AppTheme.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -124,16 +149,54 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.customBlack,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  // Title row with favorite button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppTheme.customBlack,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Heart icon to unlike
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: IconButton(
+                            padding: const EdgeInsets.all(8),
+                            iconSize: 18,
+                            icon: const Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                            ),
+                            onPressed: () {
+                              Provider.of<FavoritesProvider>(
+                                context,
+                                listen: false,
+                              ).toggleFavorite(item);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 4),
@@ -143,7 +206,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     item.description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.customGrey,
+                      color: isDark ? Colors.grey[400] : AppTheme.customGrey,
                       height: 1.3,
                     ),
                     maxLines: 2,
@@ -174,13 +237,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppTheme.customLightGrey,
+                                color: isDark ? Colors.grey[700] : AppTheme.customLightGrey,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Unavailable',
                                 style: TextStyle(
-                                  color: AppTheme.grey,
+                                  color: isDark ? Colors.grey[400] : AppTheme.grey,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -190,23 +253,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                           final quantity = cart.getItemQuantity(item.id);
                           return quantity == 0
-                              ? ElevatedButton(
-                                  onPressed: () => cart.addItem(item),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryColor,
-                                    foregroundColor: AppTheme.black,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                              ? MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: ElevatedButton(
+                                    onPressed: () => cart.addItem(item),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: AppTheme.black,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      elevation: 0,
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text(
-                                    'Add',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
+                                    child: const Text(
+                                      'Add',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -227,38 +293,45 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget _buildQuantityCounter(MenuItem item) {
     final cart = Provider.of<CartProvider>(context);
     final quantity = cart.getItemQuantity(item.id);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
+        color: isDark ? AppTheme.primaryColor.withOpacity(0.2) : AppTheme.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppTheme.primaryColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.removeSingleItem(item.id),
-            splashRadius: 16,
-            constraints: const BoxConstraints(),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
+              onPressed: () => cart.removeSingleItem(item.id),
+              splashRadius: 16,
+              constraints: const BoxConstraints(),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Text(
               quantity.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.customBlack,
+                color: isDark ? Colors.white : AppTheme.customBlack,
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.addItem(item),
-            splashRadius: 16,
-            constraints: const BoxConstraints(),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+              onPressed: () => cart.addItem(item),
+              splashRadius: 16,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ],
       ),
