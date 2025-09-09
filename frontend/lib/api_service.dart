@@ -405,6 +405,86 @@ class ApiService {
     }
   }
 
+  // Simple table count method
+  Future<Map<String, dynamic>> getTablesCount() async {
+    try {
+      print('🌐 Making API call to: $baseUrl/api/tables/count');
+      final response = await http.get(Uri.parse('$baseUrl/api/tables/count'));
+      print('📡 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Parsed data: $data');
+        return data;
+      } else {
+        print('❌ API Error: ${response.statusCode} - ${response.body}');
+        throw 'Failed to load table count: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('❌ Error getting table count: $e');
+      throw 'Failed to load table count.';
+    }
+  }
+
+  // Close all active table sessions (admin/testing utility)
+  Future<int> closeAllTableSessions() async {
+    final response =
+        await http.post(Uri.parse('$baseUrl/api/table-sessions/close-all'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return (data['closed'] ?? 0) as int;
+    }
+    throw Exception('Failed to close sessions: ${response.body}');
+  }
+
+  // Close a specific table session by ID
+  Future<void> closeTableSession(String sessionId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/table-sessions/close'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session_id': sessionId}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to close session: ${response.body}');
+    }
+  }
+
+  // Claim a table session for a waiter by session code
+  Future<Map<String, dynamic>> claimTableSession({
+    required String sessionCode,
+    required String waiterId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/table-sessions/claim');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'session_code': sessionCode,
+        'waiter_id': waiterId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to claim table: ${response.body}');
+  }
+
+  // Submit items for a given table session; backend will create/attach order
+  Future<void> addItemsToOrder({
+    required String sessionId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/orders/add-items'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session_id': sessionId, 'items': items}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Add items failed: ${response.body}');
+    }
+  }
+
   final _supabase = Supabase.instance.client;
 
   Future<List<AppUser>> getAllUsers() async {

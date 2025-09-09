@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
 import 'theme.dart';
+import 'waiter_table_claim_page.dart';
+import 'widgets/table_count_widget.dart';
+import 'waiter_cart_page.dart';
 
 class WaiterDashboardPage extends StatelessWidget {
   const WaiterDashboardPage({super.key});
@@ -64,7 +67,11 @@ class WaiterDashboardPage extends StatelessWidget {
                   icon: Icons.qr_code_scanner,
                   label: 'Scan Table QR',
                   onTap: () {
-                    Navigator.pushNamed(context, '/dine-in');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const WaiterTableClaimPage(),
+                      ),
+                    );
                   },
                 ),
                 _ActionChip(
@@ -81,17 +88,20 @@ class WaiterDashboardPage extends StatelessWidget {
                     Navigator.pushNamed(context, '/delivery_dashboard');
                   },
                 ),
+                _ActionChip(
+                  icon: Icons.shopping_basket,
+                  label: 'Waiter Carts',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const WaiterCartPage()),
+                    );
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: Center(
-                child: Text(
-                  'Waiter tools will appear here (tables, open tabs, quick add items).',
-                  style: TextStyle(color: Colors.grey[600]),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              child: const TableCountWidget(),
             ),
           ],
         ),

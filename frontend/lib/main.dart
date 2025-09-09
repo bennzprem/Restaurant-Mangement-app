@@ -42,6 +42,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
+import 'waiter_cart_provider.dart';
 import 'theme.dart';
 import 'homepage.dart';
 import 'loginpage.dart';
@@ -89,6 +90,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (ctx) => AuthProvider()),
         ChangeNotifierProvider(create: (ctx) => CartProvider()),
+        ChangeNotifierProvider(create: (ctx) => WaiterCartProvider()),
         ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
         // FavoritesProvider now depends on AuthProvider
         ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(

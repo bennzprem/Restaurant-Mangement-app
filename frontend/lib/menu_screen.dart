@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'cart_provider.dart';
+import 'waiter_cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
-import 'widgets/footer_widget.dart';
 
 import 'auth_provider.dart';
+import 'package:restaurant_app/widgets/menu_navbar_widget.dart';
 
 class MenuScreen extends StatefulWidget {
   final String? tableSessionId;
@@ -41,6 +42,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ApiService _apiService = ApiService();
+  String? _routeSessionId;
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -121,6 +123,18 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Capture session id passed via Navigator arguments (from waiter claim)
+    if (_routeSessionId == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['tableSessionId'] is String) {
+        _routeSessionId = args['tableSessionId'] as String;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
@@ -172,7 +186,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           Column(
             children: [
               // Space for fixed header
-              const SizedBox(height: 75),
+              const SizedBox(height: 120),
 
               // Menu content
               Expanded(
@@ -203,7 +217,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
                         // Main menu content
                         Expanded(
-                          child: _buildMenuContent(selectedCategory, menuCategories),
+                          child: _buildMenuContent(selectedCategory),
                         ),
                       ],
                     );
@@ -218,7 +232,22 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             top: 0,
             left: 0,
             right: 0,
-            child: HeaderWidget(active: HeaderActive.menu),
+            child: Column(
+              children: [
+                HeaderWidget(),
+                MenuNavbarWidget(
+                  searchController: _searchController,
+                  onSearchExpansionChanged: (isExpanded) {
+                    setState(() {
+                      _isSearching = isExpanded;
+                    });
+                  },
+                  isSearchExpanded: _isSearching,
+                  onFilterPressed: () => _showFilterDialog(context),
+                  tableSessionId: widget.tableSessionId ?? _routeSessionId,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -494,7 +523,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildMenuContent(MenuCategory selectedCategory, List<MenuCategory> allCategories) {
+  Widget _buildMenuContent(MenuCategory selectedCategory) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 24),
@@ -527,7 +556,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _searchQuery.length >= 3 ? 'Results' : selectedCategory.name,
+                              selectedCategory.name,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -537,9 +566,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _searchQuery.length >= 3
-                                  ? '${allCategories.expand((c) => c.items).where((item) => item.name.toLowerCase().contains(_searchQuery.toLowerCase()) || item.description.toLowerCase().contains(_searchQuery.toLowerCase())).length} matching items'
-                                  : '${selectedCategory.items.length} delicious items',
+                              '${selectedCategory.items.length} delicious items',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isDark ? Colors.white70 : Colors.black54,
@@ -549,157 +576,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
-                      // Action icons with in-place search
-                      Row(
-                        children: [
-                          // In-place search field
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            width: _isSearching ? 200 : 0,
-                            height: 40,
-                            child: _isSearching
-                                ? Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? Colors.white10 : Colors.white.withOpacity(0.9),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: const Color(0xFFDAE952),
-                                        width: 1.6,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFFDAE952).withOpacity(0.25),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: TextField(
-                                      controller: _searchController,
-                                      autofocus: true,
-                                      onChanged: (value) {
-                                        _debounce?.cancel();
-                                        _debounce = Timer(const Duration(milliseconds: 300), () {
-                                          setState(() {
-                                            _searchQuery = value;
-                                          });
-                                        });
-                                      },
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white : Colors.black87,
-                                        fontSize: 14,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Search...',
-                                        hintStyle: TextStyle(
-                                          color: isDark ? Colors.white60 : Colors.black54,
-                                          fontSize: 14,
-                                        ),
-                                        border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
-                                        ),
-                                      ),
-                                      textAlign: TextAlign.left,
-                                      textAlignVertical: TextAlignVertical.center,
-                                    ),
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                          // Search toggle icon
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _isSearching = !_isSearching;
-                                if (!_isSearching) {
-                                  _searchController.clear();
-                                  _searchQuery = '';
-                                }
-                              });
-                            },
-                            icon: Icon(
-                              _isSearching ? Icons.close : Icons.search,
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                          // Filter icon
-                          IconButton(
-                            onPressed: () => _showFilterDialog(context),
-                            icon: Icon(
-                              Icons.filter_list,
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                          // Favorite icon (only when logged in)
-                          Consumer<AuthProvider>(
-                            builder: (context, authProvider, child) {
-                              if (authProvider.isLoggedIn) {
-                                return IconButton(
-                                  onPressed: () {
-                                    // Navigate to favorites or show favorites
-                                    Navigator.pushNamed(context, '/favorites');
-                                  },
-                                  icon: Icon(
-                                    Icons.favorite_border,
-                                    color: isDark ? Colors.white70 : Colors.black54,
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                          // Cart icon
-                          Consumer<CartProvider>(
-                            builder: (context, cartProvider, child) {
-                              return Stack(
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      Navigator.pushNamed(context, '/cart');
-                                    },
-                                    icon: Icon(
-                                      Icons.shopping_cart_outlined,
-                                      color: isDark ? Colors.white70 : Colors.black54,
-                                    ),
-                                  ),
-                                  if (cartProvider.items.isNotEmpty)
-                                    Positioned(
-                                      right: 8,
-                                      top: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFDAE952),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 16,
-                                          minHeight: 16,
-                                        ),
-                                        child: Text(
-                                          '${cartProvider.items.length}',
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
-
 
                 // Menu items grid
                 Expanded(
@@ -711,16 +590,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               .floor()
                               .clamp(1, 4);
 
-                      // Filter items based on search query (3+ characters) across ALL categories
-                      final allItems = allCategories.expand((c) => c.items).toList();
-                      final filteredItems = _searchQuery.length >= 3
-                          ? allItems.where((item) {
-                              final q = _searchQuery.toLowerCase();
-                              return item.name.toLowerCase().contains(q) ||
-                                     item.description.toLowerCase().contains(q);
-                            }).toList()
-                          : selectedCategory.items;
-
                       return GridView.builder(
                         padding: const EdgeInsets.all(20),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -729,7 +598,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           mainAxisSpacing: 16,
                           mainAxisExtent: 300,
                         ),
-                        itemCount: filteredItems.length,
+                        itemCount: selectedCategory.items.length,
                         itemBuilder: (context, index) {
                           return AnimatedBuilder(
                             animation: _fadeController,
@@ -738,7 +607,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 scale: _fadeAnimation.value,
                                 child: Opacity(
                                   opacity: _fadeAnimation.value,
-                                  child: _buildMenuItemCard(filteredItems[index]),
+                                  child: _buildMenuItemCard(
+                                      selectedCategory.items[index]),
                                 ),
                               );
                             },
@@ -758,6 +628,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   Widget _buildMenuItemCard(MenuItem item) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String? sessionId = widget.tableSessionId ?? _routeSessionId;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -908,8 +779,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               color: AppTheme.primaryColor,
                             ),
                           ),
-                          Consumer<CartProvider>(
-                            builder: (context, cart, child) {
+                          Consumer2<CartProvider, WaiterCartProvider>(
+                            builder: (context, cart, waiterCart, child) {
                               if (!item.isAvailable) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
@@ -929,13 +800,17 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 );
                               }
 
-                              final quantity = cart.getItemQuantity(item.id);
+                              final quantity = sessionId == null
+                                  ? cart.getItemQuantity(item.id)
+                                  : waiterCart.getItemQuantity(
+                                      sessionId, item.id);
                               return quantity == 0
                                   ? ElevatedButton(
-                                      onPressed: () => cart.addItem(item),
+                                      onPressed: () => sessionId == null
+                                          ? cart.addItem(item)
+                                          : waiterCart.addItem(sessionId, item),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            AppTheme.primaryColor,
+                                        backgroundColor: AppTheme.primaryColor,
                                         foregroundColor: Colors.black,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
@@ -953,7 +828,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                         ),
                                       ),
                                     )
-                                  : _buildQuantityCounter(item);
+                                  : _buildQuantityCounter(item,
+                                      sessionId: sessionId);
                             },
                           ),
                         ],
@@ -969,9 +845,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuantityCounter(MenuItem item) {
+  Widget _buildQuantityCounter(MenuItem item, {String? sessionId}) {
     final cart = Provider.of<CartProvider>(context);
-    final quantity = cart.getItemQuantity(item.id);
+    final waiterCart = Provider.of<WaiterCartProvider>(context);
+    final quantity = sessionId == null
+        ? cart.getItemQuantity(item.id)
+        : waiterCart.getItemQuantity(sessionId, item.id);
 
     return Container(
       decoration: BoxDecoration(
@@ -983,8 +862,11 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.removeSingleItem(item.id),
+            icon: const Icon(Icons.remove,
+                size: 16, color: AppTheme.primaryColor),
+            onPressed: () => sessionId == null
+                ? cart.removeSingleItem(item.id)
+                : waiterCart.removeSingleItem(sessionId, item.id),
             splashRadius: 16,
             constraints: const BoxConstraints(),
           ),
@@ -1001,7 +883,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           ),
           IconButton(
             icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-            onPressed: () => cart.addItem(item),
+            onPressed: () => sessionId == null
+                ? cart.addItem(item)
+                : waiterCart.addItem(sessionId, item),
             splashRadius: 16,
             constraints: const BoxConstraints(),
           ),
