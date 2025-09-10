@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'waiter_cart_provider.dart';
 import 'api_service.dart';
 import 'theme.dart';
+import 'auth_provider.dart';
+import 'waiter_order_status_page.dart';
 
 class WaiterCartPage extends StatelessWidget {
   const WaiterCartPage({super.key});
@@ -24,6 +26,7 @@ class _WaiterCartList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wc = context.watch<WaiterCartProvider>();
+    final auth = context.watch<AuthProvider>();
 
     // Use provider's public list of sessions with items
     final sessions = wc.activeSessionIds;
@@ -88,8 +91,10 @@ class _WaiterCartList extends StatelessWidget {
                                           'price': ci.menuItem.price,
                                         })
                                     .toList();
-                                await _api.addItemsToOrder(
-                                    sessionId: sessionId, items: payloadItems);
+                                final orderId = await _api.addItemsToOrder(
+                                    sessionId: sessionId,
+                                    items: payloadItems,
+                                    waiterId: auth.user?.id);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                       content: Text('Order submitted')),
@@ -97,6 +102,14 @@ class _WaiterCartList extends StatelessWidget {
                                 context
                                     .read<WaiterCartProvider>()
                                     .clearCart(sessionId);
+                                // Navigate to order status tracker for waiter
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => WaiterOrderStatusPage(
+                                      orderId: orderId,
+                                    ),
+                                  ),
+                                );
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

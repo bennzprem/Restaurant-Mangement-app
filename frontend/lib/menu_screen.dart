@@ -986,7 +986,24 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   ? MouseRegion(
                                       cursor: SystemMouseCursors.click,
                                       child: ElevatedButton(
-                                        onPressed: () => cart.addItem(item),
+                                        onPressed: () {
+                                          if (sessionId != null) {
+                                            waiterCart.addItem(sessionId, item);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    '${item.name} added to waiter cart'),
+                                                backgroundColor:
+                                                    AppTheme.successColor,
+                                                duration:
+                                                    const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          } else {
+                                            cart.addItem(item);
+                                          }
+                                        },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               AppTheme.primaryColor,
@@ -1046,7 +1063,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: IconButton(
               icon: const Icon(Icons.remove,
                   size: 16, color: AppTheme.primaryColor),
-              onPressed: () => cart.removeSingleItem(item.id),
+              onPressed: () {
+                if (sessionId != null) {
+                  waiterCart.removeSingleItem(sessionId, item.id);
+                } else {
+                  cart.removeSingleItem(item.id);
+                }
+              },
               splashRadius: 16,
               constraints: const BoxConstraints(),
             ),
@@ -1067,7 +1090,20 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: IconButton(
               icon:
                   const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-              onPressed: () => cart.addItem(item),
+              onPressed: () {
+                if (sessionId != null) {
+                  waiterCart.addItem(sessionId, item);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${item.name} added to waiter cart'),
+                      backgroundColor: AppTheme.successColor,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  cart.addItem(item);
+                }
+              },
               splashRadius: 16,
               constraints: const BoxConstraints(),
             ),

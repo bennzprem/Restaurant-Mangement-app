@@ -5,6 +5,8 @@ import 'theme.dart';
 import 'waiter_table_claim_page.dart';
 import 'widgets/table_count_widget.dart';
 import 'waiter_cart_page.dart';
+import 'waiter_cart_provider.dart';
+import 'waiter_orders_page.dart';
 
 class WaiterDashboardPage extends StatelessWidget {
   const WaiterDashboardPage({super.key});
@@ -85,15 +87,28 @@ class WaiterDashboardPage extends StatelessWidget {
                   icon: Icons.receipt_long,
                   label: 'View Orders',
                   onTap: () {
-                    Navigator.pushNamed(context, '/delivery_dashboard');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const WaiterOrdersPage(),
+                      ),
+                    );
                   },
                 ),
-                _ActionChip(
-                  icon: Icons.shopping_basket,
-                  label: 'Waiter Carts',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const WaiterCartPage()),
+                Consumer<WaiterCartProvider>(
+                  builder: (context, waiterCart, child) {
+                    final activeCartsCount = waiterCart.activeSessionIds.length;
+                    return _ActionChip(
+                      icon: Icons.shopping_basket,
+                      label: 'Waiter Carts',
+                      badge: activeCartsCount > 0
+                          ? activeCartsCount.toString()
+                          : null,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const WaiterCartPage()),
+                        );
+                      },
                     );
                   },
                 ),
@@ -113,11 +128,13 @@ class WaiterDashboardPage extends StatelessWidget {
 class _ActionChip extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? badge;
   final VoidCallback onTap;
 
   const _ActionChip({
     required this.icon,
     required this.label,
+    this.badge,
     required this.onTap,
   });
 
@@ -142,7 +159,36 @@ class _ActionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppTheme.primaryColor),
+            Stack(
+              children: [
+                Icon(icon, color: AppTheme.primaryColor),
+                if (badge != null)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.errorColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        badge!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(width: 8),
             Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],

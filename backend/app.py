@@ -33,6 +33,8 @@ EMAIL_PASS = os.environ.get('EMAIL_PASS', "fisd ztcu jkkz gucz")
 # Where your Flutter web is served (used in email links)
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611')
 
+
+
 # ----------------------------------------------------
 
 
@@ -1347,30 +1349,33 @@ def add_items_to_order():
         data = request.get_json()
         session_id = data.get('session_id')
         items = data.get('items') # Expecting a list of {'menu_item_id': id, 'quantity': qty}
+        waiter_id = data.get('waiter_id')  # Get waiter ID from request
 
         if not all([session_id, items]):
             return jsonify({"error": "session_id and items are required"}), 400
 
-        # Find an existing 'active' order for this table session
-        order_response = supabase.table('orders').select('id').eq('table_session_id', session_id).eq('status', 'active').maybe_single().execute()
+        # Calculate total amount from items
+        total_amount = sum(item['quantity'] * item['price'] for item in items)
         
-        order_id = None
-        if order_response.data:
-            # An active order already exists
-            order_id = order_response.data['id']
-        else:
-            # No active order found, so create a new one
-            auth_header = request.headers.get('Authorization')
-            token = auth_header.split(" ")[1]
-            user = supabase.auth.get_user(token).user
-            
-            new_order_response = supabase.table('orders').insert({
-                'table_session_id': session_id,
-                'user_id': user.id,
-                'status': 'active'
-                # Other fields like total_price can be updated later
-            }).execute()
-            order_id = new_order_response.data[0]['id']
+        # Get waiter information if waiter_id is provided
+        waiter_name = "Unknown Waiter"
+        if waiter_id:
+            try:
+                waiter_response = supabase.table('users').select('name').eq('id', waiter_id).maybe_single().execute()
+                if waiter_response.data:
+                    waiter_name = waiter_response.data['name']
+            except Exception as e:
+                print(f"Error fetching waiter info: {e}")
+        
+        # For waiter orders, we'll create a new order each time since we don't have table_session_id
+        # In a real implementation, you might want to track table sessions differently
+        new_order_response = supabase.table('orders').insert({
+            'user_id': waiter_id,  # Store waiter ID as the user
+            'status': 'Preparing',  # Use standard status
+            'total_amount': total_amount,
+            'delivery_address': f'Table Session: {session_id} | Waiter: {waiter_name}'  # Include waiter info
+        }).execute()
+        order_id = new_order_response.data[0]['id']
 
         # Prepare items to be inserted into order_items
         items_to_insert = []
@@ -1390,6 +1395,95 @@ def add_items_to_order():
 
     except Exception as e:
         print(f"Error in add_items_to_order: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/kitchen/orders', methods=['GET'])
+def get_kitchen_orders():
+    """
+    Gets all orders with their items and waiter information for kitchen dashboard.
+    """
+    try:
+        # Get orders first
+        orders_response = supabase.table('orders').select('''
+            id,
+            total_amount,
+            status,
+            created_at,
+            delivery_address,
+            user_id
+        ''').eq('status', 'Preparing').order('created_at', desc=True).execute()
+        
+        if not orders_response.data:
+            return jsonify([]), 200
+        
+        # Process the data to make it more kitchen-friendly
+        kitchen_orders = []
+        for order in orders_response.data:
+            # Get waiter name
+            waiter_name = "Unknown Waiter"
+            if order.get('user_id'):
+                try:
+                    waiter_response = supabase.table('users').select('name').eq('id', order['user_id']).maybe_single().execute()
+                    if waiter_response.data:
+                        waiter_name = waiter_response.data['name']
+                except Exception as e:
+                    print(f"Error fetching waiter info: {e}")
+            
+            # Get order items
+            order_items = []
+            try:
+                items_response = supabase.table('order_items').select('''
+                    quantity,
+                    price_at_order,
+                    menu_item_id
+                ''').eq('order_id', order['id']).execute()
+                
+                if items_response.data:
+                    for item in items_response.data:
+                        # Get menu item details
+                        try:
+                            menu_response = supabase.table('menu_items').select('''
+                                name,
+                                description,
+                                image_url
+                            ''').eq('id', item['menu_item_id']).maybe_single().execute()
+                            
+                            if menu_response.data:
+                                menu_item = menu_response.data
+                                order_items.append({
+                                    'name': menu_item['name'],
+                                    'description': menu_item.get('description', ''),
+                                    'quantity': item['quantity'],
+                                    'price': item['price_at_order'],
+                                    'image_url': menu_item.get('image_url', '')
+                                })
+                        except Exception as e:
+                            print(f"Error fetching menu item {item['menu_item_id']}: {e}")
+                            # Add item with basic info if menu item fetch fails
+                            order_items.append({
+                                'name': f"Item ID: {item['menu_item_id']}",
+                                'description': 'Menu item details unavailable',
+                                'quantity': item['quantity'],
+                                'price': item['price_at_order'],
+                                'image_url': ''
+                            })
+            except Exception as e:
+                print(f"Error fetching order items for order {order['id']}: {e}")
+            
+            kitchen_orders.append({
+                'order_id': order['id'],
+                'total_amount': order['total_amount'],
+                'status': order['status'],
+                'created_at': order['created_at'],
+                'waiter_name': waiter_name,
+                'table_info': order['delivery_address'],
+                'items': order_items
+            })
+        
+        return jsonify(kitchen_orders), 200
+        
+    except Exception as e:
+        print(f"Error fetching kitchen orders: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 # --- SIMPLE TABLE COUNT ENDPOINT ---
