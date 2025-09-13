@@ -43,6 +43,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ApiService _apiService = ApiService();
   String? _routeSessionId;
+  
+  // Getter for session ID
+  String? get sessionId => widget.tableSessionId ?? _routeSessionId;
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -228,7 +231,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     return Stack(
                       children: [
                         // Main menu content
-                        _buildMenuContent(selectedCategory, menuCategories),
+                        _buildMenuContent(selectedCategory),
                         
                         // Backdrop overlay when sidebar is open
                         if (_isCategorySidebarOpen)
@@ -1130,7 +1133,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               final quantity = sessionId == null
                                   ? cart.getItemQuantity(item.id)
                                   : waiterCart.getItemQuantity(
-                                      sessionId, item.id);
+                                      sessionId!, item.id);
                               return quantity == 0
                                   ? MouseRegion(
                                       cursor: SystemMouseCursors.click,
