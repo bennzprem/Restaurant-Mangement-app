@@ -56,4 +56,30 @@ class CartProvider with ChangeNotifier {
     _items.clear();
     notifyListeners();
   }
-}
+void updateCartFromVoice(List<dynamic> voiceCartData) {
+    // This method rebuilds the entire cart based on the new data from the backend.
+    
+    // Clear the existing cart to start fresh
+    _items.clear();
+
+    // Loop through the data from the backend and populate the cart map
+    for (var itemData in voiceCartData) {
+      // This parsing assumes your JSON structure from Supabase.
+      // 'menu_items' is the name of the joined table.
+      if (itemData['menu_items'] != null) {
+        final menuItem = MenuItem.fromJson(itemData['menu_items']);
+        final cartItem = CartItem(
+          menuItem: menuItem,
+          quantity: itemData['quantity'],
+        );
+        // Use the menu item's ID as the key in the map
+        _items[menuItem.id] = cartItem;
+      }
+    }
+
+    // This is the most important step: it tells the app to redraw the cart UI.
+    print("✅ Cart updated from voice. New item count: ${_items.length}");
+    notifyListeners();
+  }
+  }
+

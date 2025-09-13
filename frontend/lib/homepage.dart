@@ -6,12 +6,14 @@ import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen.dart';
 import 'dine_in_page.dart';
 import 'takeaway_page.dart';
+import 'api_service.dart';
+import 'models.dart';
 
 import '../widgets/header_widget.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/about_section.dart';
-import '../widgets/testimonials_section.dart';
-import '../widgets/newsletter_section.dart';
+import '../widgets/ai_culinary_curator_section.dart';
+import '../widgets/culinary_philosophy_section.dart';
 import '../widgets/footer_widget.dart';
 
 import 'theme.dart'; // Your AppTheme
@@ -81,8 +83,8 @@ class _HomePageState extends State<HomePage> {
                     // Continuing the home_screen.dart sections
                     _MenuCategoryCarousel(),
                     AboutSection(),
-                    TestimonialsSection(),
-                    NewsletterSection(),
+                    AiCulinaryCuratorSection(),
+                    CulinaryPhilosophySection(),
                     FooterWidget(),
                   ],
                 ),
@@ -271,38 +273,31 @@ class _MenuCategoryCarousel extends StatefulWidget {
 }
 
 class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
-  final List<String> categories = [
-    'Appetizers',
-    'Soups & Salads',
-    'Pizzas (11-inch)',
-    'Pasta',
-    'Sandwiches & Wraps',
-    'Main Course - Indian',
-    'Main Course - Global',
-    'Desserts',
-    'Beverages',
-  ];
+  List<MenuCategory> categories = [];
+  final ApiService _apiService = ApiService();
+  bool _isLoading = true;
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
   int _currentScrollIndex = 0;
   int _hoveredIndex = -1;
 
-  final Map<String, IconData> categoryIcons = {
-    'Appetizers': Icons.fastfood,
-    'Soups & Salads': Icons.ramen_dining,
-    'Pizzas (11-inch)': Icons.local_pizza,
-    'Pasta': Icons.restaurant_menu,
-    'Sandwiches & Wraps': Icons.lunch_dining,
-    'Main Course - Indian': Icons.dinner_dining,
-    'Main Course - Global': Icons.public,
-    'Desserts': Icons.icecream,
-    'Beverages': Icons.local_cafe,
+  final Map<String, String> categoryIcons = {
+    'Appetizers': '🍽️',
+    'Soups & Salads': '🥗',
+    'Pizzas (11-inch)': '🍕',
+    'Pasta': '🍝',
+    'Sandwiches & Wraps': '🥪',
+    'Main Course - Indian': '🥘',
+    'Main Course - Global': '🌍',
+    'Desserts': '🍰',
+    'Beverages': '🥤',
   };
 
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     _startAutoScroll();
 
     // Add scroll listener to track position and ensure smooth looping
@@ -330,6 +325,37 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
     _autoScrollTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final fetchedCategories = await _apiService.fetchMenu(
+        vegOnly: false,
+        veganOnly: false,
+        glutenFreeOnly: false,
+        nutsFree: false,
+      );
+      setState(() {
+        categories = fetchedCategories;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Fallback to default categories if API fails
+      setState(() {
+        categories = [
+          MenuCategory(id: -1, name: 'Appetizers', items: const []),
+          MenuCategory(id: -1, name: 'Soups & Salads', items: const []),
+          MenuCategory(id: -1, name: 'Pizzas (11-inch)', items: const []),
+          MenuCategory(id: -1, name: 'Pasta', items: const []),
+          MenuCategory(id: -1, name: 'Sandwiches & Wraps', items: const []),
+          MenuCategory(id: -1, name: 'Main Course - Indian', items: const []),
+          MenuCategory(id: -1, name: 'Main Course - Global', items: const []),
+          MenuCategory(id: -1, name: 'Desserts', items: const []),
+          MenuCategory(id: -1, name: 'Beverages', items: const []),
+        ];
+        _isLoading = false;
+      });
+    }
   }
 
   void _startAutoScroll() {
@@ -429,24 +455,29 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                   fontWeight: FontWeight.bold,
                   color: isDark ? AppTheme.white : AppTheme.black)),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_left,
-                    size: 32, color: isDark ? Colors.white70 : Colors.black87),
-                onPressed: scrollLeft,
-              ),
-              Expanded(
-                child: SizedBox(
-                  height: 200,
-                  child: ListView.separated(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 20),
-                    itemBuilder: (context, index) {
-                      final name = categories[index];
-                      final icon = categoryIcons[name] ?? Icons.restaurant_menu;
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            )
+          else
+            Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_left,
+                      size: 32, color: isDark ? Colors.white70 : Colors.black87),
+                  onPressed: scrollLeft,
+                ),
+                Expanded(
+                  child: SizedBox(
+                    height: 200,
+                    child: ListView.separated(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 20),
+                      itemBuilder: (context, index) {
+                        final name = categories[index].name;
+                        final emoji = categoryIcons[name] ?? '🍴';
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -493,14 +524,9 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    icon,
-                                    size: 36,
-                                    color: _hoveredIndex == index
-                                        ? Colors.black
-                                        : (isDark
-                                            ? Colors.white
-                                            : Colors.black),
+                                  Text(
+                                    emoji,
+                                    style: const TextStyle(fontSize: 36),
                                   ),
                                   const SizedBox(height: 16),
                                   Text(

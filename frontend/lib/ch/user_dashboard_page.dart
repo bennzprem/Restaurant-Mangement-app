@@ -376,7 +376,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$greeting, $userName! 🍴',
+          '$greeting, $userName!',
           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
