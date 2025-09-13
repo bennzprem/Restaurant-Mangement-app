@@ -99,11 +99,21 @@ class AboutPage extends StatelessWidget {
           ),
 
           // Fixed header like on the homepage
-          const Positioned(
+          Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: HeaderWidget(),
+            child: HeaderWidget(
+              active: HeaderActive.about,
+              showBack: true,
+              onBack: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
+              },
+            ),
           ),
           // Navbar is part of scrollable content on About page, so it's not fixed
         ],

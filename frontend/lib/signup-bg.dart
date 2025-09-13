@@ -1,214 +1,261 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-// A model class to hold information about each particle.
-class Particle {
-  double x;
-  double y;
-  double radius;
-  double speed;
-  double angle;
-  Color color;
-  double opacity;
-  double pulsePhase; // For the pulsing animation
-  double glowIntensity;
+// --- Food Emojis ---
+// An expanded and curated list for a clean and appealing visual.
+const List<String> _foodEmojis = [
+  // Savory
+  '🍕', '🍔', '🍟', '🌭', '🍿', '🥓', '🍳', '🧇', '🥞', '🍞', '🥐', '🥨',
+  '🥯', '🥖', '🧀', '🥗', '🥙', '🥪', '🌮', '🌯', '🍱', '🍙', '🍚', '🍛',
+  '🍜', '🍝', '🍣', '🍤', '🥟', '🥡',
+  // Sweet
+  '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭',
+  '🍮', '🍯',
+  // Drinks
+  '☕️', '🍵', '🥤', '🧋', '🍷', '🍸', '🍹', '🍺', '🍻',
+  // Fruits & Veggies
+  '🍇', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒',
+  '🍓', '🥝', '🥥', '🥑', '🍆', '🌽', '🌶️', '🥬', '🥦', '🍄', '🧅',
+];
 
-  Particle({
-    required this.x,
-    required this.y,
-    required this.radius,
-    required this.speed,
-    required this.angle,
-    required this.color,
-    this.opacity = 1.0,
-    this.pulsePhase = 0.0,
-    this.glowIntensity = 1.0,
-  });
+// --- Theme Palette ---
+// Using your app's green for a subtle, cohesive glow effect.
+const Color _themeColor = Color(0xFFB2D871);
+
+// --- Particle Model ---
+// Each emoji is a particle with its own physics properties.
+class FoodParticle {
+  final String emoji;
+  Offset position;
+  Offset velocity;
+  final double depth; // For the parallax effect (0.0 deep to 1.0 close)
+  double targetSize;
+  double currentSize;
+  double rotation;
+  final double rotationSpeed;
+
+  FoodParticle({
+    required this.emoji,
+    required this.position,
+    required this.velocity,
+    required this.depth,
+    required this.rotation,
+    required this.rotationSpeed,
+  })  : targetSize = 20 + depth * 30,
+        currentSize = 0.0; // Start at 0 for a smooth "pop-in" effect
 }
 
-
-// The main widget that will display the animated background.
+// The main widget that displays the animated background.
 class AnimatedBackground extends StatefulWidget {
-  final Color particleColor;
   final Color backgroundColor;
+  final Color? particleColor; // Kept for compatibility
 
   const AnimatedBackground({
     super.key,
-    required this.particleColor,
     required this.backgroundColor,
+    this.particleColor,
   });
 
   @override
   _AnimatedBackgroundState createState() => _AnimatedBackgroundState();
 }
 
-class _AnimatedBackgroundState extends State<AnimatedBackground>
-    with TickerProviderStateMixin {
-  late AnimationController _particleController;
-  late AnimationController _pulseController;
-  final List<Particle> _particles = [];
+class _AnimatedBackgroundState extends State<AnimatedBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<FoodParticle> _particles = [];
   final Random _random = Random();
+  Offset _pointerPosition = Offset.infinite; // Use infinite to signify no pointer
+  Size? _size;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _particleController = AnimationController(
-      duration: const Duration(seconds: 20),
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 16), // Target 60fps
       vsync: this,
-    )..repeat();
-    
-    _pulseController = AnimationController(
-      duration: const Duration(seconds: 4), // Slightly slower pulse
-      vsync: this,
-    )..repeat(reverse: true);
+    )..addListener(_updateAnimation);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize particles once we have the context to get the size.
-    if (_particles.isEmpty) {
-      _initializeParticles();
+  void _initialize(Size size) {
+    _size = size;
+    const particleCount = 40; // Increased particle count
+    for (int i = 0; i < particleCount; i++) {
+      _particles.add(_createParticle(size, isInitial: true));
     }
+    _controller.repeat();
+    _isInitialized = true;
   }
 
-  void _initializeParticles() {
-    // Wait for the layout to be built to get the size.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final size = context.size;
-      if (size == null) return;
+  void _updateAnimation() {
+    if (!_isInitialized || !mounted) return;
 
-      const int numberOfParticles = 20;
-      for (int i = 0; i < numberOfParticles; i++) {
-        _particles.add(_create3DBubble(size));
+    const double interactionRadius = 80.0;
+    const double repulsionForce = 1.5;
+    const double friction = 0.98; // Reduced friction for smoother, longer drifts
+
+    setState(() {
+      for (int i = 0; i < _particles.length; i++) {
+        var particle = _particles[i];
+
+        // --- Gentle Swirling Motion ---
+        final swirl = Offset(
+          sin(particle.position.dy * 0.005 + particle.depth * pi) * 0.07,
+          cos(particle.position.dx * 0.005 + particle.depth * pi) * 0.07,
+        );
+        particle.velocity += swirl;
+
+        // --- Interaction Logic ---
+        if (_pointerPosition.isFinite) {
+          final distance = (particle.position - _pointerPosition).distance;
+          if (distance < interactionRadius) {
+            final vector = particle.position - _pointerPosition;
+            final force = repulsionForce * (1 - distance / interactionRadius);
+            particle.velocity += vector.scale(force, force);
+          }
+        }
+        
+        // --- Physics Update ---
+        particle.velocity *= friction;
+        particle.position += particle.velocity;
+        particle.rotation += particle.rotationSpeed;
+
+        // --- Smooth Size Transition ---
+        particle.currentSize += (particle.targetSize - particle.currentSize) * 0.1;
+
+        // --- Reset Logic ---
+        // If a particle goes too far off-screen, replace it with a new one.
+        if (particle.position.dx < -50 ||
+            particle.position.dx > _size!.width + 50 ||
+            particle.position.dy < -50 ||
+            particle.position.dy > _size!.height + 50) {
+          _particles[i] = _createParticle(_size!);
+        }
       }
-      
-      setState(() {}); // Trigger a repaint with the new particles.
     });
   }
 
-  // Helper method to create 3D bubble particles
-  Particle _create3DBubble(Size size) {
-    return Particle(
-      x: _random.nextDouble() * size.width,
-      y: _random.nextDouble() * size.height,
-      radius: _random.nextDouble() * 20 + 10, // Increased size: radius between 10 and 30
-      speed: _random.nextDouble() * 0.7 + 0.3, // Speed between 0.3 and 1.0
-      angle: _random.nextDouble() * 2 * pi, // Random direction.
-      color: widget.particleColor,
-      opacity: _random.nextDouble() * 0.5 + 0.3, // Opacity between 0.3 and 0.8
-      pulsePhase: _random.nextDouble() * 2 * pi, // Random start for pulse animation
-      glowIntensity: _random.nextDouble() * 0.6 + 0.4, // Glow between 0.4 and 1.0
+  FoodParticle _createParticle(Size size, {bool isInitial = false}) {
+    final depth = _random.nextDouble();
+    Offset position;
+
+    if (isInitial) {
+      // Start initial particles anywhere on screen
+      position = Offset(
+        _random.nextDouble() * size.width,
+        _random.nextDouble() * size.height,
+      );
+    } else {
+      // Create new particles just off-screen to drift in
+      final edge = _random.nextInt(4);
+      switch (edge) {
+        case 0: // Top
+          position = Offset(_random.nextDouble() * size.width, -50);
+          break;
+        case 1: // Right
+          position = Offset(size.width + 50, _random.nextDouble() * size.height);
+          break;
+        case 2: // Bottom
+          position = Offset(_random.nextDouble() * size.width, size.height + 50);
+          break;
+        default: // Left
+          position = Offset(-50, _random.nextDouble() * size.height);
+          break;
+      }
+    }
+
+    return FoodParticle(
+      emoji: _foodEmojis[_random.nextInt(_foodEmojis.length)],
+      position: position,
+      velocity: Offset(
+        (_random.nextDouble() - 0.5) * 0.5,
+        (_random.nextDouble() - 0.5) * 0.5,
+      ),
+      depth: depth,
+      rotation: _random.nextDouble() * 2 * pi,
+      rotationSpeed: (_random.nextDouble() - 0.5) * 0.01,
     );
   }
 
   @override
   void dispose() {
-    _particleController.dispose();
-    _pulseController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_particleController, _pulseController]),
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _BubblePainter(
-            particles: _particles,
-            pulseAnimationValue: _pulseController.value,
-            backgroundColor: widget.backgroundColor,
+    return LayoutBuilder(builder: (context, constraints) {
+      if (!_isInitialized) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        if (size.width > 0 && size.height > 0) {
+          _initialize(size);
+        }
+      }
+
+      return MouseRegion(
+        onHover: (event) => setState(() => _pointerPosition = event.localPosition),
+        onExit: (event) => setState(() => _pointerPosition = Offset.infinite),
+        child: GestureDetector(
+          onPanUpdate: (details) => setState(() => _pointerPosition = details.localPosition),
+          onPanEnd: (details) => setState(() => _pointerPosition = Offset.infinite),
+          child: CustomPaint(
+            painter: _EmojiPainter(
+              particles: _particles,
+              backgroundColor: widget.backgroundColor,
+            ),
+            child: Container(),
           ),
-          child: Container(),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 }
 
-// The CustomPainter that handles drawing the 3D bubbles.
-class _BubblePainter extends CustomPainter {
-  final List<Particle> particles;
-  final double pulseAnimationValue;
+class _EmojiPainter extends CustomPainter {
+  final List<FoodParticle> particles;
   final Color backgroundColor;
-  final Random _random = Random();
 
-  _BubblePainter({
-    required this.particles,
-    required this.pulseAnimationValue,
-    required this.backgroundColor,
-  });
+  _EmojiPainter({required this.particles, required this.backgroundColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = backgroundColor;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), backgroundPaint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = backgroundColor);
 
-    for (var particle in particles) {
-      _draw3DBubble(canvas, particle, size);
+    // Sort particles by depth to draw farther ones first
+    particles.sort((a, b) => a.depth.compareTo(b.depth));
+    
+    for (final particle in particles) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: particle.emoji,
+          style: TextStyle(
+            fontSize: particle.currentSize,
+            shadows: [
+              Shadow(
+                color: _themeColor.withOpacity(0.5 * particle.depth),
+                blurRadius: 10.0,
+              ),
+            ],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      
+      canvas.save();
+      canvas.translate(particle.position.dx, particle.position.dy);
+      canvas.rotate(particle.rotation);
+      
+      textPainter.paint(canvas, -Offset(textPainter.width / 2, textPainter.height / 2));
+      
+      canvas.restore();
     }
-  }
-
-  void _draw3DBubble(Canvas canvas, Particle particle, Size size) {
-    // Update particle position for continuous motion
-    particle.x += cos(particle.angle) * particle.speed;
-    particle.y += sin(particle.angle) * particle.speed;
-
-    // Wrap particles around the screen for a seamless loop
-    if (particle.x < -particle.radius) {
-      particle.x = size.width + particle.radius;
-      particle.y = _random.nextDouble() * size.height;
-    } else if (particle.x > size.width + particle.radius) {
-      particle.x = -particle.radius;
-      particle.y = _random.nextDouble() * size.height;
-    }
-    if (particle.y < -particle.radius) {
-      particle.y = size.height + particle.radius;
-      particle.x = _random.nextDouble() * size.width;
-    } else if (particle.y > size.height + particle.radius) {
-      particle.y = -particle.radius;
-      particle.x = _random.nextDouble() * size.width;
-    }
-
-    // Calculate pulsing effect using the dedicated controller
-    final pulseEffect = 1.0 + 0.15 * (sin(pulseAnimationValue * 2 * pi + particle.pulsePhase));
-    final currentRadius = particle.radius * pulseEffect;
-    final currentOpacity = particle.opacity * (0.8 + 0.2 * pulseEffect);
-
-    final center = Offset(particle.x, particle.y);
-
-    // Draw a soft outer glow
-    final glowPaint = Paint()
-      ..color = particle.color.withOpacity(currentOpacity * 0.1 * particle.glowIntensity)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15.0);
-    canvas.drawCircle(center, currentRadius * 1.5, glowPaint);
-
-    // Draw the main bubble body with a gradient for a 3D effect
-    final bubblePaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0.3, -0.3), // Light source from top-left
-        colors: [
-          Colors.white.withOpacity(currentOpacity * 0.5),
-          particle.color.withOpacity(currentOpacity),
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: currentRadius));
-    canvas.drawCircle(center, currentRadius, bubblePaint);
-
-    // Draw a sharp highlight to complete the 3D look
-    final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(currentOpacity * 0.7)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      Offset(particle.x - currentRadius * 0.4, particle.y - currentRadius * 0.4),
-      currentRadius * 0.25,
-      highlightPaint,
-    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+  bool shouldRepaint(covariant _EmojiPainter oldDelegate) {
+    // The animation controller handles repainting.
     return true;
   }
 }

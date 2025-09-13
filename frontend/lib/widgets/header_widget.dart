@@ -6,7 +6,7 @@ import 'dart:ui';
 import 'dart:math';
 import 'package:video_player/video_player.dart';
 import '../theme.dart';
-
+import '../voice_overlay.dart';
 enum HeaderActive { none, home, menu, about, contact, login, signup }
 
 class HeaderWidget extends StatelessWidget {
@@ -19,7 +19,22 @@ class HeaderWidget extends StatelessWidget {
     this.showBack = false,
     this.onBack,
   });
-
+  void _showVoiceOverlay(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Voice Interaction',
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const VoiceInteractionOverlay();
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return ClipRect(
@@ -174,6 +189,35 @@ class HeaderWidget extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // New ByteBot Voice Button
+                            Container(
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode
+                  ? Colors.grey.shade800
+                  : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFFDAE952),
+                width: 2,
+              ),
+            ),
+            child: IconButton(
+              onPressed: () => _showVoiceOverlay(context),
+              icon: const Icon(
+                Icons.android, // Using a bot icon
+                color: Color(0xFFDAE952),
+                size: 20,
+              ),
+              tooltip: 'Talk to ByteBot',
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
                             // Theme toggle
                             Container(
                               decoration: BoxDecoration(

@@ -19,6 +19,17 @@ class ApiService {
   // Change this method
   // In class ApiService...
 
+  Future<List<String>> fetchCategories() async {
+    final response = await http.get(Uri.parse('$baseUrl/categories'));
+    
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((dynamic item) => item['category_name'] as String).toList();
+    } else {
+      throw Exception('Failed to load categories');
+    }
+  }
+
   Future<List<MenuCategory>> fetchMenu({
     required bool vegOnly,
     required bool veganOnly,

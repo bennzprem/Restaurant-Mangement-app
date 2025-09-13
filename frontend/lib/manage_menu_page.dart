@@ -589,17 +589,17 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
 
   String _getCategoryIcon(String categoryName) {
     final categoryIcons = {
-      'Appetizers': '🍽️',
-      'Soups & Salads': '🥗',
-      'Pizzas (11-inch)': '🍕',
-      'Pasta': '🍝',
-      'Sandwiches & Wraps': '🥪',
-      'Main Course - Indian': '🥘',
-      'Main Course - Global': '🌍',
-      'Desserts': '🍰',
-      'Beverages': '🥤',
+      'Appetizers': 'restaurant',
+      'Soups & Salads': 'soup_kitchen',
+      'Pizzas (11-inch)': 'local_pizza',
+      'Pasta': 'ramen_dining',
+      'Sandwiches & Wraps': 'lunch_dining',
+      'Main Course - Indian': 'emoji_food_beverage',
+      'Main Course - Global': 'public',
+      'Desserts': 'cake',
+      'Beverages': 'local_drink',
     };
-    return categoryIcons[categoryName] ?? '🍽️';
+    return categoryIcons[categoryName] ?? 'restaurant';
   }
 
   Color _getCategoryColor(String categoryName) {
@@ -1503,17 +1503,17 @@ class _HoverableCategoryCardState extends State<_HoverableCategoryCard> {
 
   String _getCategoryIcon(String categoryName) {
     final categoryIcons = {
-      'Appetizers': '🍽️',
-      'Soups & Salads': '🥗',
-      'Pizzas (11-inch)': '🍕',
-      'Pasta': '🍝',
-      'Sandwiches & Wraps': '🥪',
-      'Main Course - Indian': '🥘',
-      'Main Course - Global': '🌍',
-      'Desserts': '🍰',
-      'Beverages': '🥤',
+      'Appetizers': 'restaurant',
+      'Soups & Salads': 'soup_kitchen',
+      'Pizzas (11-inch)': 'local_pizza',
+      'Pasta': 'ramen_dining',
+      'Sandwiches & Wraps': 'lunch_dining',
+      'Main Course - Indian': 'emoji_food_beverage',
+      'Main Course - Global': 'public',
+      'Desserts': 'cake',
+      'Beverages': 'local_drink',
     };
-    return categoryIcons[categoryName] ?? '🍽️';
+    return categoryIcons[categoryName] ?? 'restaurant';
   }
 
   @override
