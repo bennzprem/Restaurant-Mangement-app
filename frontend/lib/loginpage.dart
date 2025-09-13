@@ -10,6 +10,7 @@ import 'phone-login_page.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
 import 'login-bg.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -110,6 +111,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _passwordController.dispose();
     super.dispose();
   }
+
 /*
   // Core Authentication Logic (Unchanged)
   Future<void> _login() async {
@@ -238,6 +240,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       }
     }
   }
+
   Future<void> _signInWithGoogle() async {
     try {
       final redirectUrl =
@@ -260,14 +263,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Define background colors based on theme - making animations more visible
-    final Color waveColor = isDark ? AppTheme.primaryColor.withOpacity(0.8) : AppTheme.primaryColor.withOpacity(0.6);
-    final Color backgroundColor = isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
+    final Color waveColor = isDark
+        ? AppTheme.primaryColor.withOpacity(0.8)
+        : AppTheme.primaryColor.withOpacity(0.6);
+    final Color backgroundColor =
+        isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
 
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
+        appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            toolbarHeight: 0),
         body: Stack(
           children: [
             // Add the LoginAnimatedBackground widget here, behind the main content.
@@ -285,7 +294,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         HeaderWidget(
                           active: HeaderActive.login,
                           showBack: true,
-                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                          onBack: () =>
+                              Navigator.pushReplacementNamed(context, '/'),
                         ),
                         Expanded(child: _buildDesktopLayout()),
                       ],
@@ -297,7 +307,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         HeaderWidget(
                           active: HeaderActive.login,
                           showBack: true,
-                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                          onBack: () =>
+                              Navigator.pushReplacementNamed(context, '/'),
                         ),
                         Expanded(child: _buildMobileLayout()),
                       ],
@@ -378,7 +389,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     fit: BoxFit.contain,
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
                 Text(
                   'ByteEat',
                   style: TextStyle(
@@ -388,7 +400,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     letterSpacing: -0.5,
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 4 : 6),
+                SizedBox(
+                    height: MediaQuery.of(context).size.width < 600 ? 4 : 6),
                 Text(
                   'Welcome back to your food journey',
                   style: TextStyle(
@@ -408,7 +421,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildNoScrollFormSection() {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -438,7 +451,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 ),
               ),
               SizedBox(height: isMobile ? 16 : 20),
-              
+
               // Form fields (no scroll, fixed layout)
               Expanded(
                 child: Column(
@@ -449,25 +462,25 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       child: _buildNoScrollFormFields(),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Remember me and forgot password
                     _buildRememberMeRow(),
                     const SizedBox(height: 12),
-                    
+
                     // Login button
                     _buildLoginButton(),
                     const SizedBox(height: 8),
-                    
+
                     // Divider
                     _buildDivider(),
                     const SizedBox(height: 8),
-                    
+
                     // Social buttons
                     Expanded(
                       flex: 2,
                       child: _buildCompactSocialButtons(),
                     ),
-                    
+
                     // Sign up link
                     _buildSignUpLink(),
                   ],
@@ -479,9 +492,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       ),
     );
   }
-
-
-
 
   Widget _buildNoScrollFormFields() {
     return Form(
@@ -530,8 +540,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           activeColor: AppTheme.primaryColor,
           checkColor: Colors.white,
-          fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-            if (states.contains(MaterialState.selected)) {
+          fillColor:
+              WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+            if (states.contains(WidgetState.selected)) {
               return AppTheme.primaryColor;
             }
             return isDark ? Colors.grey[600]! : Colors.grey[300]!;
@@ -547,7 +558,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
         const Spacer(),
         TextButton(
-          onPressed: () => Navigator.pushNamed(context, '/forget_password_page'),
+          onPressed: () =>
+              Navigator.pushNamed(context, '/forget_password_page'),
           child: Text(
             'Forgot Password?',
             style: TextStyle(
@@ -620,7 +632,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 : null,
             filled: true,
             fillColor: isDark ? const Color(0xFF151515) : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
@@ -719,7 +732,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _buildCompactSocialButtons() {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Column(
       children: [
         _buildCompactSocialButton(
@@ -783,11 +796,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-
   Widget _buildSignUpLink() {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Center(
       child: RichText(
         textAlign: TextAlign.center,

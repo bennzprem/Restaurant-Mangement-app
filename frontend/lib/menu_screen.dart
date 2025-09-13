@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'cart_provider.dart';
+import 'waiter_cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
-import 'widgets/footer_widget.dart';
-
 import 'auth_provider.dart';
+import 'package:restaurant_app/widgets/menu_navbar_widget.dart';
 
 class MenuScreen extends StatefulWidget {
   final String? tableSessionId;
@@ -42,6 +42,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ApiService _apiService = ApiService();
+  String? _routeSessionId;
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -136,6 +137,18 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Capture session id passed via Navigator arguments (from waiter claim)
+    if (_routeSessionId == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['tableSessionId'] is String) {
+        _routeSessionId = args['tableSessionId'] as String;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
@@ -188,7 +201,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           Column(
             children: [
               // Space for fixed header
-              const SizedBox(height: 75),
+              const SizedBox(height: 120),
 
               // Menu content
               Expanded(
@@ -634,7 +647,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildMenuContent(MenuCategory selectedCategory, List<MenuCategory> allCategories) {
+  Widget _buildMenuContent(MenuCategory selectedCategory) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 24),
@@ -688,7 +701,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _searchQuery.length >= 3 ? 'Results' : selectedCategory.name,
+                              selectedCategory.name,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -698,9 +711,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _searchQuery.length >= 3
-                                  ? '${allCategories.expand((c) => c.items).where((item) => item.name.toLowerCase().contains(_searchQuery.toLowerCase()) || item.description.toLowerCase().contains(_searchQuery.toLowerCase())).length} matching items'
-                                  : '${selectedCategory.items.length} delicious items',
+                              '${selectedCategory.items.length} delicious items',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isDark ? Colors.white70 : Colors.black54,
@@ -723,7 +734,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 ? Container(
                                     margin: const EdgeInsets.only(right: 8),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.white10 : Colors.white.withOpacity(0.9),
+                                      color: isDark
+                                          ? Colors.white10
+                                          : Colors.white.withOpacity(0.9),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: const Color(0xFFDAE952),
@@ -731,7 +744,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFFDAE952).withOpacity(0.25),
+                                          color: const Color(0xFFDAE952)
+                                              .withOpacity(0.25),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -742,30 +756,38 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       autofocus: true,
                                       onChanged: (value) {
                                         _debounce?.cancel();
-                                        _debounce = Timer(const Duration(milliseconds: 300), () {
+                                        _debounce = Timer(
+                                            const Duration(milliseconds: 300),
+                                            () {
                                           setState(() {
                                             _searchQuery = value;
                                           });
                                         });
                                       },
                                       style: TextStyle(
-                                        color: isDark ? Colors.white : Colors.black87,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black87,
                                         fontSize: 14,
                                       ),
                                       decoration: InputDecoration(
                                         hintText: 'Search...',
                                         hintStyle: TextStyle(
-                                          color: isDark ? Colors.white60 : Colors.black54,
+                                          color: isDark
+                                              ? Colors.white60
+                                              : Colors.black54,
                                           fontSize: 14,
                                         ),
                                         border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           horizontal: 16,
                                           vertical: 8,
                                         ),
                                       ),
                                       textAlign: TextAlign.left,
-                                      textAlignVertical: TextAlignVertical.center,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
                                     ),
                                   )
                                 : const SizedBox.shrink(),
@@ -809,11 +831,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   child: IconButton(
                                     onPressed: () {
                                       // Navigate to favorites or show favorites
-                                      Navigator.pushNamed(context, '/favorites');
+                                      Navigator.pushNamed(
+                                          context, '/favorites');
                                     },
                                     icon: Icon(
                                       Icons.favorite_border,
-                                      color: isDark ? Colors.white70 : Colors.black54,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54,
                                     ),
                                   ),
                                 );
@@ -834,7 +859,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       },
                                       icon: Icon(
                                         Icons.shopping_cart_outlined,
-                                        color: isDark ? Colors.white70 : Colors.black54,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black54,
                                       ),
                                     ),
                                   ),
@@ -846,7 +873,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                         padding: const EdgeInsets.all(2),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFDAE952),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         constraints: const BoxConstraints(
                                           minWidth: 16,
@@ -873,7 +901,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   ),
                 ),
 
-
                 // Menu items grid
                 Expanded(
                   child: LayoutBuilder(
@@ -884,16 +911,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               .floor()
                               .clamp(1, 4);
 
-                      // Filter items based on search query (3+ characters) across ALL categories
-                      final allItems = allCategories.expand((c) => c.items).toList();
-                      final filteredItems = _searchQuery.length >= 3
-                          ? allItems.where((item) {
-                              final q = _searchQuery.toLowerCase();
-                              return item.name.toLowerCase().contains(q) ||
-                                     item.description.toLowerCase().contains(q);
-                            }).toList()
-                          : selectedCategory.items;
-
                       return GridView.builder(
                         padding: const EdgeInsets.all(20),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -902,7 +919,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           mainAxisSpacing: 16,
                           mainAxisExtent: 300,
                         ),
-                        itemCount: filteredItems.length,
+                        itemCount: selectedCategory.items.length,
                         itemBuilder: (context, index) {
                           return AnimatedBuilder(
                             animation: _fadeController,
@@ -911,7 +928,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 scale: _fadeAnimation.value,
                                 child: Opacity(
                                   opacity: _fadeAnimation.value,
-                                  child: _buildMenuItemCard(filteredItems[index]),
+                                  child: _buildMenuItemCard(
+                                      selectedCategory.items[index]),
                                 ),
                               );
                             },
@@ -1088,8 +1106,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               color: AppTheme.primaryColor,
                             ),
                           ),
-                          Consumer<CartProvider>(
-                            builder: (context, cart, child) {
+                          Consumer2<CartProvider, WaiterCartProvider>(
+                            builder: (context, cart, waiterCart, child) {
                               if (!item.isAvailable) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1109,7 +1127,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 );
                               }
 
-                              final quantity = cart.getItemQuantity(item.id);
+                              final quantity = sessionId == null
+                                  ? cart.getItemQuantity(item.id)
+                                  : waiterCart.getItemQuantity(
+                                      sessionId, item.id);
                               return quantity == 0
                                   ? MouseRegion(
                                       cursor: SystemMouseCursors.click,
@@ -1136,7 +1157,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                         ),
                                       ),
                                     )
-                                  : _buildQuantityCounter(item);
+                                  : _buildQuantityCounter(item,
+                                      sessionId: sessionId);
                             },
                           ),
                         ],
@@ -1532,9 +1554,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuantityCounter(MenuItem item) {
+  Widget _buildQuantityCounter(MenuItem item, {String? sessionId}) {
     final cart = Provider.of<CartProvider>(context);
-    final quantity = cart.getItemQuantity(item.id);
+    final waiterCart = Provider.of<WaiterCartProvider>(context);
+    final quantity = sessionId == null
+        ? cart.getItemQuantity(item.id)
+        : waiterCart.getItemQuantity(sessionId, item.id);
 
     return Container(
       decoration: BoxDecoration(
@@ -1548,8 +1573,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
-              onPressed: () => cart.removeSingleItem(item.id),
+              icon: const Icon(Icons.remove,
+                  size: 16, color: AppTheme.primaryColor),
+              onPressed: () {
+                if (sessionId != null) {
+                  waiterCart.removeSingleItem(sessionId, item.id);
+                } else {
+                  cart.removeSingleItem(item.id);
+                }
+              },
               splashRadius: 16,
               constraints: const BoxConstraints(),
             ),
@@ -1568,8 +1600,22 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-              onPressed: () => cart.addItem(item),
+              icon:
+                  const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+              onPressed: () {
+                if (sessionId != null) {
+                  waiterCart.addItem(sessionId, item);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${item.name} added to waiter cart'),
+                      backgroundColor: AppTheme.successColor,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  cart.addItem(item);
+                }
+              },
               splashRadius: 16,
               constraints: const BoxConstraints(),
             ),

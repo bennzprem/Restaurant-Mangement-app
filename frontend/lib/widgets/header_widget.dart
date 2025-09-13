@@ -89,82 +89,51 @@ class HeaderWidget extends StatelessWidget {
                         left: 0,
                         top: 0,
                         bottom: 0,
-                  child: Row(
-                    children: [
-                      if (showBack)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: () {
-                                print('🔙 Back button tapped!'); // Debug print
-                                try {
-                                  if (onBack != null) {
-                                    print('🔙 Using custom onBack callback');
-                                    onBack!();
-                                  } else {
-                                    print('🔙 Using default Navigator.pop');
-                                    Navigator.pop(context);
-                                  }
-                                } catch (e) {
-                                  print('❌ Back button error: $e');
-                                  // Fallback navigation
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: themeProvider.isDarkMode
-                                      ? Colors.grey.shade800
-                                      : Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(22),
-                                  border: Border.all(
+                        child: Row(
+                          children: [
+                            if (showBack)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: IconButton(
+                                  onPressed: onBack,
+                                  icon: Icon(
+                                    Icons.arrow_back_ios_new_rounded,
                                     color: themeProvider.isDarkMode
-                                        ? Colors.grey.shade700
-                                        : Colors.grey.shade300,
-                                    width: 1.5,
+                                        ? Colors.white
+                                        : Colors.black,
+                                    size: 18,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  color: themeProvider.isDarkMode
-                                      ? Colors.white
-                                      : Colors.black,
-                                  size: 22,
+                                  style: IconButton.styleFrom(
+                                    padding: const EdgeInsets.all(10),
+                                    shape: const CircleBorder(),
+                                    backgroundColor: themeProvider.isDarkMode
+                                        ? Colors.grey.shade900
+                                        : Colors.grey.shade200,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                      // Logo (MP4 animation)
+                            // Logo (MP4 animation)
                             const _LogoVideo(width: 62, height: 60, scale: 1.6),
                             const SizedBox(width: 10),
-                      Text(
-                        'ByteEat',
-                        style: TextStyle(
-                          fontFamily: 'StoryScript',
-                          fontSize:
-                                    MediaQuery.of(context).size.width < 700 ? 20 : 30,
-                          fontWeight: FontWeight.bold,
+                            Text(
+                              'ByteEat',
+                              style: TextStyle(
+                                fontFamily: 'StoryScript',
+                                fontSize:
+                                    MediaQuery.of(context).size.width < 700
+                                        ? 20
+                                        : 30,
+                                fontWeight: FontWeight.bold,
                                 letterSpacing: 2,
-                          color: themeProvider.isDarkMode
-                              ? Colors.white
-                              : Colors.black,
-                          fontVariations: const [
-                            FontVariation('ital', 0),
-                            FontVariation('wght', 700),
-                          ],
-                        ),
-                      ),
+                                color: themeProvider.isDarkMode
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontVariations: const [
+                                  FontVariation('ital', 0),
+                                  FontVariation('wght', 700),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -180,28 +149,32 @@ class HeaderWidget extends StatelessWidget {
                                 label: 'Home',
                                 isActive: active == HeaderActive.home,
                                 isDark: themeProvider.isDarkMode,
-                                onPressed: () => Navigator.pushNamed(context, '/'),
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/'),
                               ),
                               const SizedBox(width: 24),
                               _NavButton(
                                 label: 'Menu',
                                 isActive: active == HeaderActive.menu,
                                 isDark: themeProvider.isDarkMode,
-                                onPressed: () => Navigator.pushNamed(context, '/menu'),
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/menu'),
                               ),
                               const SizedBox(width: 24),
                               _NavButton(
                                 label: 'About',
                                 isActive: active == HeaderActive.about,
                                 isDark: themeProvider.isDarkMode,
-                                onPressed: () => Navigator.pushNamed(context, '/about'),
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/about'),
                               ),
                               const SizedBox(width: 24),
                               _NavButton(
                                 label: 'Contact',
                                 isActive: active == HeaderActive.contact,
                                 isDark: themeProvider.isDarkMode,
-                                onPressed: () => Navigator.pushNamed(context, '/contact'),
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/contact'),
                               ),
                             ],
                           ),
@@ -247,42 +220,43 @@ class HeaderWidget extends StatelessWidget {
           const SizedBox(width: 8),
                             // Theme toggle
                             Container(
-                            decoration: BoxDecoration(
-                              color: themeProvider.isDarkMode
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color(0xFFDAE952),
-                                width: 2,
+                              decoration: BoxDecoration(
+                                color: themeProvider.isDarkMode
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: const Color(0xFFDAE952),
+                                  width: 2,
+                                ),
                               ),
-                            ),
-                            child: IconButton(
-                              onPressed: () {
-                                themeProvider.toggleTheme();
-                              },
-                              icon: Icon(
-                                themeProvider.isDarkMode
-                                    ? Icons.light_mode
-                                    : Icons.dark_mode,
-                                color: const Color(0xFFDAE952),
-                                size: 20,
-                              ),
-                              style: IconButton.styleFrom(
-                                padding: const EdgeInsets.all(8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                              child: IconButton(
+                                onPressed: () {
+                                  themeProvider.toggleTheme();
+                                },
+                                icon: Icon(
+                                  themeProvider.isDarkMode
+                                      ? Icons.light_mode
+                                      : Icons.dark_mode,
+                                  color: const Color(0xFFDAE952),
+                                  size: 20,
+                                ),
+                                style: IconButton.styleFrom(
+                                  padding: const EdgeInsets.all(8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
                                 ),
                               ),
                             ),
-                      ),
                             const SizedBox(width: 8),
                             // Profile icon (only when logged in)
-                      Consumer<AuthProvider>(
+                            Consumer<AuthProvider>(
                               builder: (context, auth, child) {
-                                if (!auth.isLoggedIn) return const SizedBox.shrink();
+                                if (!auth.isLoggedIn)
+                                  return const SizedBox.shrink();
                                 return Container(
-                                    decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: themeProvider.isDarkMode
                                         ? Colors.grey.shade800
                                         : Colors.grey.shade200,
@@ -293,10 +267,11 @@ class HeaderWidget extends StatelessWidget {
                                     ),
                                   ),
                                   child: IconButton(
-                                  onPressed: () {
+                                    onPressed: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
-                                          builder: (_) => const UserDashboardPage(),
+                                          builder: (_) =>
+                                              const UserDashboardPage(),
                                         ),
                                       );
                                     },
@@ -306,14 +281,14 @@ class HeaderWidget extends StatelessWidget {
                                       size: 20,
                                     ),
                                   ),
-            );
-          },
-        ),
+                                );
+                              },
+                            ),
                           ],
                         ),
-              ),
-            ],
-          ),
+                      ),
+                    ],
+                  ),
                 )
               ],
             );
@@ -771,7 +746,8 @@ class _NavButton extends StatefulWidget {
   State<_NavButton> createState() => _NavButtonState();
 }
 
-class _NavButtonState extends State<_NavButton> with SingleTickerProviderStateMixin {
+class _NavButtonState extends State<_NavButton>
+    with SingleTickerProviderStateMixin {
   bool isHovered = false;
   late AnimationController _animationController;
   late Animation<double> _underlineAnimation;
@@ -790,7 +766,7 @@ class _NavButtonState extends State<_NavButton> with SingleTickerProviderStateMi
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     if (widget.isActive) {
       _animationController.forward();
     }
@@ -831,16 +807,17 @@ class _NavButtonState extends State<_NavButton> with SingleTickerProviderStateMi
                     widget.label,
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          widget.isActive ? FontWeight.w600 : FontWeight.w500,
                       color: themeProvider.isDarkMode
-                          ? (widget.isActive 
+                          ? (widget.isActive
                               ? Colors.white
-                              : isHovered 
+                              : isHovered
                                   ? Colors.white
                                   : Colors.white.withOpacity(0.7))
-                          : (widget.isActive 
+                          : (widget.isActive
                               ? Colors.black
-                              : isHovered 
+                              : isHovered
                                   ? Colors.black
                                   : Colors.black.withOpacity(0.7)),
                     ),
@@ -853,7 +830,8 @@ class _NavButtonState extends State<_NavButton> with SingleTickerProviderStateMi
                 builder: (context, child) {
                   return Container(
                     height: 2,
-                    width: widget.label.length * 8.0 * _underlineAnimation.value,
+                    width:
+                        widget.label.length * 8.0 * _underlineAnimation.value,
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(1),
@@ -885,12 +863,10 @@ class _AuthButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color green = const Color(0xFFDAE952);
     final bool filled = isActive;
-    final Color background = filled
-        ? green
-        : (isDark ? Colors.black : Colors.white);
-    final Color textColor = filled
-        ? Colors.black
-        : (isDark ? Colors.white : Colors.black);
+    final Color background =
+        filled ? green : (isDark ? Colors.black : Colors.white);
+    final Color textColor =
+        filled ? Colors.black : (isDark ? Colors.white : Colors.black);
 
     return ElevatedButton(
       onPressed: onPressed,
@@ -914,7 +890,8 @@ class _LogoVideo extends StatefulWidget {
   final double width;
   final double height;
   final double scale; // zoom-in to crop any letterboxing
-  const _LogoVideo({required this.width, required this.height, this.scale = 1.8});
+  const _LogoVideo(
+      {required this.width, required this.height, this.scale = 1.8});
 
   @override
   State<_LogoVideo> createState() => _LogoVideoState();

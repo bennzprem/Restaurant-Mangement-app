@@ -39,6 +39,8 @@ EMAIL_PASS = os.environ.get('EMAIL_PASS', "fisd ztcu jkkz gucz")
 # Where your Flutter web is served (used in email links)
 FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611')
 
+
+
 # ----------------------------------------------------
 
 
@@ -1232,6 +1234,153 @@ def start_table_session():
     except Exception as e:
         print(f"An error CRASHED the function: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/table-sessions/claim', methods=['POST'])
+def claim_table_session():
+    """
+    Assigns a waiter to an active table session identified by a session code.
+    Body: { "session_code": "TBL001", "waiter_id": "<uuid>" }
+    Returns table info for confirmation.
+    """
+    try:
+        data = request.get_json()
+        session_code = (data or {}).get('session_code')
+        waiter_id = (data or {}).get('waiter_id')
+
+        if not session_code or not waiter_id:
+            return jsonify({"error": "session_code and waiter_id are required"}), 400
+
+        # Try to find an existing ACTIVE session for this code
+        session_response = supabase.table('table_sessions').select('*, tables(*)') \
+            .eq('session_code', session_code.upper()) \
+            .eq('status', 'active') \
+            .maybe_single().execute()
+
+        session = session_response.data if session_response and session_response.data else None
+
+        # If none, create or REACTIVATE a session by resolving the table
+        if session is None:
+            # Try to resolve table by number encoded in the code, e.g. TBL001 -> 1
+            digits = ''.join([c for c in session_code if c.isdigit()])
+            table_row = None
+            if digits:
+                try:
+                    table_num = int(digits.lstrip('0') or '0')
+                except Exception:
+                    table_num = None
+                if table_num is not None and table_num > 0:
+                    table_row = supabase.table('tables').select('*') \
+                        .eq('table_number', table_num).maybe_single().execute().data
+
+            # Fallback: try matching exact code to a potential 'code' column on tables
+            if table_row is None:
+                try:
+                    table_row = supabase.table('tables').select('*') \
+                        .eq('code', session_code.upper()).maybe_single().execute().data
+                except Exception:
+                    table_row = None
+
+            if table_row is None:
+                return jsonify({"error": "Table not found for provided code"}), 404
+
+            # Check for existing row with same session_code (even if ended)
+            existing_any = supabase.table('table_sessions').select('*') \
+                .eq('session_code', session_code.upper()) \
+                .order('started_at', desc=True) \
+                .maybe_single().execute()
+
+            if existing_any and existing_any.data:
+                # Reactivate the existing session to avoid UNIQUE violation
+                reactivate = supabase.table('table_sessions').update({
+                    'table_id': table_row['id'],
+                    'status': 'active',
+                    'waiter_id': waiter_id,
+                    'started_at': datetime.now(timezone.utc).isoformat(),
+                    'ended_at': None
+                }).eq('id', existing_any.data['id']).execute()
+
+                if not reactivate.data:
+                    return jsonify({"error": "Failed to reactivate session"}), 500
+
+                session = supabase.table('table_sessions').select('*, tables(*)') \
+                    .eq('id', reactivate.data[0]['id']).single().execute().data
+            else:
+                # Create a new active session (no conflicting code exists)
+                create_resp = supabase.table('table_sessions').insert({
+                    'table_id': table_row['id'],
+                    'session_code': session_code.upper(),
+                    'status': 'active',
+                    'waiter_id': waiter_id,
+                    'started_at': datetime.now(timezone.utc).isoformat()
+                }).execute()
+
+                if not create_resp.data:
+                    return jsonify({"error": "Failed to create table session"}), 500
+
+                # Re-fetch with join to include tables(*)
+                session = supabase.table('table_sessions').select('*, tables(*)') \
+                    .eq('id', create_resp.data[0]['id']).single().execute().data
+        else:
+            # Existing active session found – assign waiter if not already set
+            update_payload = {'waiter_id': waiter_id}
+            supabase.table('table_sessions').update(update_payload).eq('id', session['id']).execute()
+
+        return jsonify({
+            "sessionId": session['id'],
+            "tableId": session['table_id'],
+            "tableNumber": session['tables']['table_number'],
+            "waiterId": waiter_id
+        }), 200
+    except Exception as e:
+        print(f"Error claiming table session: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/table-sessions/close', methods=['POST'])
+def close_table_session():
+    """
+    Closes a specific table session by setting its status to 'ended'.
+    Expects JSON body: { "session_id": <uuid> }
+    """
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id') if data else None
+
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        update_response = supabase.table('table_sessions') \
+            .update({'status': 'ended'}) \
+            .eq('id', str(session_id)) \
+            .execute()
+
+        if not update_response.data:
+            return jsonify({"error": "Session not found or already ended"}), 404
+
+        return jsonify({"message": "Session closed", "session_id": session_id}), 200
+    except Exception as e:
+        print(f"Error closing table session: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/table-sessions/close-all', methods=['POST'])
+def close_all_table_sessions():
+    """
+    Closes all active table sessions. Useful to clear stale sessions during testing.
+    """
+    try:
+        # Update all sessions currently marked as active
+        update_response = supabase.table('table_sessions') \
+            .update({'status': 'ended'}) \
+            .eq('status', 'active') \
+            .execute()
+
+        closed_count = 0
+        if isinstance(update_response.data, list):
+            closed_count = len(update_response.data)
+
+        return jsonify({"message": "Closed active sessions", "closed": closed_count}), 200
+    except Exception as e:
+        print(f"Error closing all table sessions: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
 @app.route('/api/orders/add-items', methods=['POST'])
 def add_items_to_order():
     """
@@ -1242,30 +1391,33 @@ def add_items_to_order():
         data = request.get_json()
         session_id = data.get('session_id')
         items = data.get('items') # Expecting a list of {'menu_item_id': id, 'quantity': qty}
+        waiter_id = data.get('waiter_id')  # Get waiter ID from request
 
         if not all([session_id, items]):
             return jsonify({"error": "session_id and items are required"}), 400
 
-        # Find an existing 'active' order for this table session
-        order_response = supabase.table('orders').select('id').eq('table_session_id', session_id).eq('status', 'active').maybe_single().execute()
+        # Calculate total amount from items
+        total_amount = sum(item['quantity'] * item['price'] for item in items)
         
-        order_id = None
-        if order_response.data:
-            # An active order already exists
-            order_id = order_response.data['id']
-        else:
-            # No active order found, so create a new one
-            auth_header = request.headers.get('Authorization')
-            token = auth_header.split(" ")[1]
-            user = supabase.auth.get_user(token).user
-            
-            new_order_response = supabase.table('orders').insert({
-                'table_session_id': session_id,
-                'user_id': user.id,
-                'status': 'active'
-                # Other fields like total_price can be updated later
-            }).execute()
-            order_id = new_order_response.data[0]['id']
+        # Get waiter information if waiter_id is provided
+        waiter_name = "Unknown Waiter"
+        if waiter_id:
+            try:
+                waiter_response = supabase.table('users').select('name').eq('id', waiter_id).maybe_single().execute()
+                if waiter_response.data:
+                    waiter_name = waiter_response.data['name']
+            except Exception as e:
+                print(f"Error fetching waiter info: {e}")
+        
+        # For waiter orders, we'll create a new order each time since we don't have table_session_id
+        # In a real implementation, you might want to track table sessions differently
+        new_order_response = supabase.table('orders').insert({
+            'user_id': waiter_id,  # Store waiter ID as the user
+            'status': 'Preparing',  # Use standard status
+            'total_amount': total_amount,
+            'delivery_address': f'Table Session: {session_id} | Waiter: {waiter_name}'  # Include waiter info
+        }).execute()
+        order_id = new_order_response.data[0]['id']
 
         # Prepare items to be inserted into order_items
         items_to_insert = []
@@ -1403,6 +1555,135 @@ def handle_voice_command():
         print("--- A FATAL ERROR OCCURRED ---")
         traceback.print_exc()
         return jsonify({"error": "A major server error occurred. Check the logs."}), 500
+@app.route('/api/kitchen/orders', methods=['GET'])
+def get_kitchen_orders():
+    """
+    Gets all orders with their items and waiter information for kitchen dashboard.
+    """
+    try:
+        # Get orders first
+        orders_response = supabase.table('orders').select('''
+            id,
+            total_amount,
+            status,
+            created_at,
+            delivery_address,
+            user_id
+        ''').eq('status', 'Preparing').order('created_at', desc=True).execute()
+        
+        if not orders_response.data:
+            return jsonify([]), 200
+        
+        # Process the data to make it more kitchen-friendly
+        kitchen_orders = []
+        for order in orders_response.data:
+            # Get waiter name
+            waiter_name = "Unknown Waiter"
+            if order.get('user_id'):
+                try:
+                    waiter_response = supabase.table('users').select('name').eq('id', order['user_id']).maybe_single().execute()
+                    if waiter_response.data:
+                        waiter_name = waiter_response.data['name']
+                except Exception as e:
+                    print(f"Error fetching waiter info: {e}")
+            
+            # Get order items
+            order_items = []
+            try:
+                items_response = supabase.table('order_items').select('''
+                    quantity,
+                    price_at_order,
+                    menu_item_id
+                ''').eq('order_id', order['id']).execute()
+                
+                if items_response.data:
+                    for item in items_response.data:
+                        # Get menu item details
+                        try:
+                            menu_response = supabase.table('menu_items').select('''
+                                name,
+                                description,
+                                image_url
+                            ''').eq('id', item['menu_item_id']).maybe_single().execute()
+                            
+                            if menu_response.data:
+                                menu_item = menu_response.data
+                                order_items.append({
+                                    'name': menu_item['name'],
+                                    'description': menu_item.get('description', ''),
+                                    'quantity': item['quantity'],
+                                    'price': item['price_at_order'],
+                                    'image_url': menu_item.get('image_url', '')
+                                })
+                        except Exception as e:
+                            print(f"Error fetching menu item {item['menu_item_id']}: {e}")
+                            # Add item with basic info if menu item fetch fails
+                            order_items.append({
+                                'name': f"Item ID: {item['menu_item_id']}",
+                                'description': 'Menu item details unavailable',
+                                'quantity': item['quantity'],
+                                'price': item['price_at_order'],
+                                'image_url': ''
+                            })
+            except Exception as e:
+                print(f"Error fetching order items for order {order['id']}: {e}")
+            
+            kitchen_orders.append({
+                'order_id': order['id'],
+                'total_amount': order['total_amount'],
+                'status': order['status'],
+                'created_at': order['created_at'],
+                'waiter_name': waiter_name,
+                'table_info': order['delivery_address'],
+                'items': order_items
+            })
+        
+        return jsonify(kitchen_orders), 200
+        
+    except Exception as e:
+        print(f"Error fetching kitchen orders: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+# --- SIMPLE TABLE COUNT ENDPOINT ---
+
+@app.route('/api/tables/count', methods=['GET'])
+def get_tables_count():
+    """
+    Gets the total number of tables and available tables count.
+    """
+    try:
+        # Get all tables
+        tables_response = supabase.table('tables').select('*').execute()
+        
+        if not tables_response.data:
+            return jsonify({
+                "total_tables": 0,
+                "available_tables": 0,
+                "occupied_tables": 0
+            }), 200
+        
+        total_tables = len(tables_response.data)
+        
+        # Get active sessions to count occupied tables
+        sessions_response = supabase.table('table_sessions').select('table_id').eq('status', 'active').execute()
+        
+        occupied_table_ids = set()
+        if sessions_response.data:
+            occupied_table_ids = {session['table_id'] for session in sessions_response.data}
+        
+        occupied_tables = len(occupied_table_ids)
+        available_tables = total_tables - occupied_tables
+        
+        return jsonify({
+            "total_tables": total_tables,
+            "available_tables": available_tables,
+            "occupied_tables": occupied_tables
+        }), 200
+        
+    except Exception as e:
+        print(f"Error fetching table count: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // Added for Timer
 import 'dart:ui'; // Added for ImageFilter
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../auth_provider.dart';
-import '../book_table_page.dart';
-import '../order_from_table_page.dart';
 
 //updated
 class HeroSection extends StatefulWidget {
@@ -26,7 +21,7 @@ class HeroSection extends StatefulWidget {
 
 class _HeroSectionState extends State<HeroSection> {
   int selectedIndex = 0;
-  int _hoverIndex = -1;
+  final int _hoverIndex = -1;
   Timer? _autoScrollTimer;
 
   final List<Map<String, String>> modes = [
@@ -66,7 +61,7 @@ class _HeroSectionState extends State<HeroSection> {
   }
 
   void _startAutoScroll() {
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (mounted) {
         setState(() {
           selectedIndex = (selectedIndex + 1) % modes.length;
@@ -94,11 +89,8 @@ class _HeroSectionState extends State<HeroSection> {
     _resetAutoScrollTimer();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
     final screenW = MediaQuery.of(context).size.width;
     final screenH = MediaQuery.of(context).size.height;
     final minHeight = screenH; // Use full viewport height instead of fixed 665
@@ -109,7 +101,6 @@ class _HeroSectionState extends State<HeroSection> {
       height: minHeight, // Now uses full viewport height
       child: Stack(
         children: [
-
           // LEFT BACKGROUND (60%)
           Positioned(
             left: 0,
@@ -120,16 +111,44 @@ class _HeroSectionState extends State<HeroSection> {
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Stack(
                 children: [
+                  // Logo positioned at the top left
+                  Positioned(
+                    top: 20,
+                    left: 36,
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/logo/logo.gif',
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Byte Eat',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.85,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
           // DYNAMIC IMAGE BACKGROUND WITH CAPTIONS (40% right side)
-Positioned(
-  right: 0,
-  top: 0,
-  width: screenW * 0.4,
+          Positioned(
+            right: 0,
+            top: 0,
+            width: screenW * 0.4,
             height: minHeight,
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 1000),
@@ -145,41 +164,36 @@ Positioned(
                   // Background Image with Blur
                   Positioned.fill(
                     child: ImageFiltered(
-                      imageFilter: ImageFilter.blur(
-                        sigmaX: authProvider.isLoggedIn ? 0.0 : 3.0,
-                        sigmaY: authProvider.isLoggedIn ? 0.0 : 3.0,
-                      ),
-  child: Container(
-                        decoration: BoxDecoration(
-      image: DecorationImage(
-                            image: AssetImage(selected['image']!),
-        fit: BoxFit.cover, 
-      ),
-    ),
-  ),
-),
-                  ),
-                  // Dark Overlay for better text readability (hidden if logged in)
-                  if (!authProvider.isLoggedIn)
-                    Positioned.fill(
+                      imageFilter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.3),
-                              Colors.black.withOpacity(0.6),
-                              Colors.black.withOpacity(0.4),
-                            ],
+                          image: DecorationImage(
+                            image: AssetImage(selected['image']!),
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
+                    ),
                   ),
-                  // Caption Content (hidden if logged in)
-                  if (!authProvider.isLoggedIn)
-                    Positioned.fill(
-                      child: Center(
+                  // Dark Overlay for better text readability
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.3),
+                            Colors.black.withOpacity(0.6),
+                            Colors.black.withOpacity(0.4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Caption Content
+                  Positioned.fill(
+                    child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
@@ -206,10 +220,12 @@ Positioned(
                             // Title
                             Text(
                               'Join ByteEat Today!',
-                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                    fontSize: 28,
-                                    color: Colors.white,
-                                  ),
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 12),
@@ -281,9 +297,9 @@ Positioned(
                     ),
                   ),
                 ],
-    ),
-  ),
-),
+              ),
+            ),
+          ),
 
           // FOREGROUND CONTENT (Row, but no image here)
           Positioned(
@@ -315,64 +331,75 @@ Positioned(
                   top: 200, // Position below the header and navbar
                   left: 56,
                   right: 56,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Service names near top
-                        Padding(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Service names near top
+                      Padding(
                         padding: const EdgeInsets.only(bottom: 18.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(modes.length, (i) {
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                    right: i < modes.length - 1 ? 22 : 0),
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                                                      child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedIndex = i;
-                                      });
-                                      _resetAutoScrollTimer();
-                                    },
-                                    child: Text(
-                                      modes[i]['title']!,
-                                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                            fontSize: 44,
-                                            color: Theme.of(context).brightness == Brightness.dark
-                                                ? (i == selectedIndex ? Colors.white : Colors.white60)
-                                                : (i == selectedIndex ? Colors.black : Colors.black45),
-                                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(modes.length, (i) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  right: i < modes.length - 1 ? 22 : 0),
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedIndex = i;
+                                    });
+                                    _resetAutoScrollTimer();
+                                  },
+                                  child: Text(
+                                    modes[i]['title']!,
+                                    style: TextStyle(
+                                      fontSize: 44,
+                                      fontWeight: i == selectedIndex
+                                          ? FontWeight.bold
+                                          : FontWeight.w400,
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? (i == selectedIndex
+                                              ? Colors.white
+                                              : Colors.white60)
+                                          : (i == selectedIndex
+                                              ? Colors.black
+                                              : Colors.black45),
+                                      letterSpacing: 1.4,
                                     ),
                                   ),
                                 ),
-                              );
-                            }),
-                          ),
+                              ),
+                            );
+                          }),
                         ),
+                      ),
                       // Description
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: Text(
-                            selected['description']!,
-                            style: TextStyle(
-                              fontSize: 22,
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white70
-                                  : Colors.black87,
-                              height: 1.45,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Text(
+                          selected['description']!,
+                          style: TextStyle(
+                            fontSize: 22,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white70
+                                    : Colors.black87,
+                            height: 1.45,
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
                       const SizedBox(height: 50),
                       // Dynamic action buttons based on selected service
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 600),
-                        transitionBuilder: (Widget child, Animation<double> animation) {
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
                           return SlideTransition(
                             position: Tween<Offset>(
                               begin: const Offset(0.3, 0),
@@ -419,6 +446,7 @@ Positioned(
     );
   }
 }
+
 class _DynamicActionButtons extends StatefulWidget {
   final String mode;
   const _DynamicActionButtons({super.key, required this.mode});
@@ -435,20 +463,19 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
   @override
   void initState() {
     super.initState();
-    
-    _buttonControllers = List.generate(3, (index) => 
-      AnimationController(
-        duration: Duration(milliseconds: 400 + (index * 100)),
-        vsync: this,
-      )
-    );
-    
-    _buttonAnimations = _buttonControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeOutBack)
-      )
-    ).toList();
-    
+
+    _buttonControllers = List.generate(
+        3,
+        (index) => AnimationController(
+              duration: Duration(milliseconds: 400 + (index * 100)),
+              vsync: this,
+            ));
+
+    _buttonAnimations = _buttonControllers
+        .map((controller) => Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: controller, curve: Curves.easeOutBack)))
+        .toList();
+
     // Start animations after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAnimations();
@@ -483,27 +510,17 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         {
           'label': 'Reserve a Table',
           'icon': Icons.event_seat,
-          'onTap': () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BookTablePage()),
-            );
-          }
+          'onTap': () {/*todo*/}
         },
         {
           'label': 'Order from Table',
           'icon': Icons.table_restaurant,
-          'onTap': () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OrderFromTablePage()),
-            );
-          }
+          'onTap': () {/*todo*/}
         },
         {
           'label': 'Explore Menu',
           'icon': Icons.menu_book,
-          'onTap': () {
-            Navigator.pushNamed(context, '/menu');
-          }
+          'onTap': () {/*todo*/}
         },
       ];
     } else if (widget.mode == 'Delivery') {
@@ -511,18 +528,32 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         {
           'label': 'Order Now',
           'icon': Icons.delivery_dining,
-          'onTap': () {
-            Navigator.pushNamed(context, '/menu');
-          }
+          'onTap': () {/*todo*/}
         },
-        {'label': 'Meal Subscription', 'icon': Icons.subscriptions, 'onTap': () { /*todo*/ }},
-        {'label': 'Track Delivery', 'icon': Icons.location_on, 'onTap': () { /*todo*/ }},
+        {
+          'label': 'Meal Subscription',
+          'icon': Icons.subscriptions,
+          'onTap': () {/*todo*/}
+        },
+        {
+          'label': 'Track Delivery',
+          'icon': Icons.location_on,
+          'onTap': () {/*todo*/}
+        },
       ];
     } else if (widget.mode == 'Takeaway') {
       options = [
-        {'label': 'Pickup Option', 'icon': Icons.shopping_bag, 'onTap': () { /*todo*/ }},
-        {'label': 'Pre Order', 'icon': Icons.timer, 'onTap': () { /*todo*/ }},
-        {'label': 'Favourite Orders', 'icon': Icons.favorite, 'onTap': () { /*todo*/ }},
+        {
+          'label': 'Pickup Option',
+          'icon': Icons.shopping_bag,
+          'onTap': () {/*todo*/}
+        },
+        {'label': 'Pre Order', 'icon': Icons.timer, 'onTap': () {/*todo*/}},
+        {
+          'label': 'Favourite Orders',
+          'icon': Icons.favorite,
+          'onTap': () {/*todo*/}
+        },
       ];
     }
 
@@ -532,7 +563,7 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         children: options.asMap().entries.map((entry) {
           int index = entry.key;
           Map<String, dynamic> option = entry.value;
-          
+
           return Expanded(
             child: AnimatedBuilder(
               animation: _buttonAnimations[index],
@@ -590,10 +621,9 @@ class _CompactActionCardState extends State<_CompactActionCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut)
-    );
+        CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut));
   }
 
   @override
@@ -631,7 +661,7 @@ class _CompactActionCardState extends State<_CompactActionCard>
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _isHovered 
+                  color: _isHovered
                       ? const Color(0xFFDAE952).withOpacity(0.8)
                       : (Theme.of(context).brightness == Brightness.dark
                           ? Colors.white.withOpacity(0.2)
@@ -645,37 +675,37 @@ class _CompactActionCardState extends State<_CompactActionCard>
                   borderRadius: BorderRadius.circular(16),
                   onTap: widget.onTap,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Text(
-                            widget.label,
-                            style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black87,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDAE952).withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFFDAE952).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Icon(
                             widget.icon,
                             color: const Color(0xFFDAE952),
-                            size: 20,
+                            size: 18,
                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.label,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black87,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -721,14 +751,12 @@ class _ModernActionButtonState extends State<_ModernActionButton>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut)
-    );
-    
+        CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut));
+
     _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut)
-    );
+        CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut));
   }
 
   @override
@@ -767,7 +795,7 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _isHovered 
+                  color: _isHovered
                       ? const Color(0xFFDAE952).withOpacity(0.8)
                       : (Theme.of(context).brightness == Brightness.dark
                           ? Colors.white.withOpacity(0.2)
@@ -781,7 +809,8 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                   borderRadius: BorderRadius.circular(16),
                   onTap: widget.onTap,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     child: Row(
                       children: [
                         Container(
@@ -801,7 +830,8 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                           child: Text(
                             widget.label,
                             style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? Colors.white
                                   : Colors.black87,
                               fontSize: 15,
@@ -815,9 +845,10 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                           duration: const Duration(milliseconds: 200),
                           child: Icon(
                             Icons.arrow_forward_ios,
-                            color: _isHovered 
+                            color: _isHovered
                                 ? const Color(0xFFDAE952)
-                                : (Theme.of(context).brightness == Brightness.dark
+                                : (Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? Colors.white60
                                     : Colors.black54),
                             size: 14,
@@ -827,12 +858,11 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                     ),
                   ),
                 ),
+              ),
             ),
-          ),
-        );
+          );
         },
       ),
     );
   }
 }
-

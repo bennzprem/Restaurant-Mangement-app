@@ -314,9 +314,10 @@ class ApiService {
     required String time,
     required int partySize,
   }) async {
-    final url = '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
+    final url =
+        '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
     print('🌐 API Call: $url');
-    
+
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -333,12 +334,14 @@ class ApiService {
 
         // We map over the dynamic list, create a Table object for each item,
         // and then call .toList() to convert the result into a List<app_models.Table>
-        final tables = data.map((json) => app_models.Table.fromJson(json)).toList();
+        final tables =
+            data.map((json) => app_models.Table.fromJson(json)).toList();
         print('✅ Successfully created ${tables.length} Table objects');
         return tables;
       } else {
         print('❌ API Error: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to fetch available tables: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Failed to fetch available tables: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('❌ Network/Parse Error: $e');
@@ -404,19 +407,21 @@ class ApiService {
       print('🔍 Checking for existing bookings...');
       print('   Date: $date');
       print('   Time: $time');
-      
+
       final reservations = await getReservations(authToken);
-      
+
       // Check if any reservation matches the same date and time
       final hasConflict = reservations.any((reservation) {
-        final reservationDate = DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
-        final reservationTime = DateFormat('HH:mm').format(reservation.reservationTime);
-        
+        final reservationDate =
+            DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
+        final reservationTime =
+            DateFormat('HH:mm').format(reservation.reservationTime);
+
         print('   Checking reservation: $reservationDate at $reservationTime');
-        
+
         return reservationDate == date && reservationTime == time;
       });
-      
+
       print('✅ Existing booking check result: $hasConflict');
       return hasConflict;
     } catch (e) {
@@ -459,6 +464,107 @@ class ApiService {
       // Try to parse a specific error message from the backend
       final errorData = json.decode(response.body);
       throw Exception(errorData['error'] ?? 'Failed to start table session.');
+    }
+  }
+
+  // Simple table count method
+  Future<Map<String, dynamic>> getTablesCount() async {
+    try {
+      print('🌐 Making API call to: $baseUrl/api/tables/count');
+      final response = await http.get(Uri.parse('$baseUrl/api/tables/count'));
+      print('📡 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Parsed data: $data');
+        return data;
+      } else {
+        print('❌ API Error: ${response.statusCode} - ${response.body}');
+        throw 'Failed to load table count: ${response.statusCode}';
+      }
+    } catch (e) {
+      print('❌ Error getting table count: $e');
+      throw 'Failed to load table count.';
+    }
+  }
+
+  // Close all active table sessions (admin/testing utility)
+  Future<int> closeAllTableSessions() async {
+    final response =
+        await http.post(Uri.parse('$baseUrl/api/table-sessions/close-all'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return (data['closed'] ?? 0) as int;
+    }
+    throw Exception('Failed to close sessions: ${response.body}');
+  }
+
+  // Close a specific table session by ID
+  Future<void> closeTableSession(String sessionId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/table-sessions/close'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'session_id': sessionId}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to close session: ${response.body}');
+    }
+  }
+
+  // Claim a table session for a waiter by session code
+  Future<Map<String, dynamic>> claimTableSession({
+    required String sessionCode,
+    required String waiterId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/table-sessions/claim');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'session_code': sessionCode,
+        'waiter_id': waiterId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to claim table: ${response.body}');
+  }
+
+  // Submit items for a given table session; returns created orderId
+  Future<int> addItemsToOrder({
+    required String sessionId,
+    required List<Map<String, dynamic>> items,
+    String? waiterId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/orders/add-items'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'session_id': sessionId,
+        'items': items,
+        'waiter_id': waiterId,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Add items failed: ${response.body}');
+    }
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    return (data['order_id'] as num).toInt();
+  }
+
+  // Get kitchen orders with waiter and food details
+  Future<List<Map<String, dynamic>>> getKitchenOrders() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/kitchen/orders'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to load kitchen orders: ${response.body}');
     }
   }
 

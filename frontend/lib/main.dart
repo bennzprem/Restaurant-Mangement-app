@@ -42,6 +42,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
+import 'waiter_cart_provider.dart';
 import 'theme.dart';
 import 'homepage.dart';
 import 'loginpage.dart';
@@ -68,6 +69,7 @@ import 'ch/user_dashboard_page.dart';
 import 'debug_user_role.dart';
 import 'cart_screen.dart';
 import 'favorites_screen.dart';
+import 'services/payment_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +80,9 @@ void main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqdnhpYW1ndmNtd2planNtdmhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MDk1OTcsImV4cCI6MjA2OTE4NTU5N30.x7qzN7zB2oHbRaMJaIm8sQDTDO16NrzLRnzXDzSJW-U',
   );
+
+  // Initialize Razorpay
+  PaymentService.initialize();
 
   runApp(const MyApp());
 }
@@ -91,6 +96,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (ctx) => AuthProvider()),
         ChangeNotifierProvider(create: (ctx) => CartProvider()),
+        ChangeNotifierProvider(create: (ctx) => WaiterCartProvider()),
         ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
         // FavoritesProvider now depends on AuthProvider
         ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(

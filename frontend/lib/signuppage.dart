@@ -262,15 +262,20 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Define background colors based on theme - making animations more visible
-    final Color particleColor = isDark ? AppTheme.primaryColor.withOpacity(0.8) : AppTheme.primaryColor.withOpacity(0.6);
-    final Color backgroundColor = isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
-
+    final Color particleColor = isDark
+        ? AppTheme.primaryColor.withOpacity(0.8)
+        : AppTheme.primaryColor.withOpacity(0.6);
+    final Color backgroundColor =
+        isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
 
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(scrollbars: false),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0, toolbarHeight: 0),
+        appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            toolbarHeight: 0),
         body: Stack(
           children: [
             // Add the AnimatedBackground widget here, behind the main content.
@@ -288,7 +293,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                         HeaderWidget(
                           active: HeaderActive.signup,
                           showBack: true,
-                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                          onBack: () =>
+                              Navigator.pushReplacementNamed(context, '/'),
                         ),
                         Expanded(child: _buildDesktopLayout()),
                       ],
@@ -300,7 +306,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                         HeaderWidget(
                           active: HeaderActive.signup,
                           showBack: true,
-                          onBack: () => Navigator.pushReplacementNamed(context, '/'),
+                          onBack: () =>
+                              Navigator.pushReplacementNamed(context, '/'),
                         ),
                         Expanded(child: _buildMobileLayout()),
                       ],
@@ -326,11 +333,11 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           color: Colors.transparent, // Make Material widget transparent
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-              child: Container(
-                // Use a more transparent color to see the background animation better.
-                color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
-                child: _buildNoScrollFormSection(),
-              ),
+            child: Container(
+              // Use a more transparent color to see the background animation better.
+              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
+              child: _buildNoScrollFormSection(),
+            ),
           ),
         ),
       ),
@@ -410,7 +417,6 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     );
   }
 
-
   Widget _buildEnhancedVisualSection() {
     return Container(
       decoration: BoxDecoration(
@@ -428,19 +434,19 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
         children: [
           // Animated background elements
           _buildAnimatedBackground(),
-          
+
           // Support button (top-right)
           Positioned(
             top: 20,
             right: 20,
             child: _buildSupportButton(),
           ),
-          
+
           // Main content card
           Center(
             child: _buildMainContentCard(),
           ),
-          
+
           // Bottom text
           Positioned(
             bottom: 30,
@@ -461,19 +467,30 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           children: [
             // Floating orbs
             Positioned(
-              top: 60 + 20 * sin(_visualAnimationController.value * 2 * 3.14159),
-              left: 40 + 15 * cos(_visualAnimationController.value * 2 * 3.14159),
-              child: _buildFloatingOrb(40, const Color(0xFFDAE952).withOpacity(0.3)),
+              top:
+                  60 + 20 * sin(_visualAnimationController.value * 2 * 3.14159),
+              left:
+                  40 + 15 * cos(_visualAnimationController.value * 2 * 3.14159),
+              child: _buildFloatingOrb(
+                  40, const Color(0xFFDAE952).withOpacity(0.3)),
             ),
             Positioned(
-              top: 120 + 25 * sin(_visualAnimationController.value * 1.5 * 3.14159 + 1),
-              right: 60 + 20 * cos(_visualAnimationController.value * 1.5 * 3.14159 + 1),
-              child: _buildFloatingOrb(30, const Color(0xFF4CAF50).withOpacity(0.2)),
+              top: 120 +
+                  25 *
+                      sin(_visualAnimationController.value * 1.5 * 3.14159 + 1),
+              right: 60 +
+                  20 *
+                      cos(_visualAnimationController.value * 1.5 * 3.14159 + 1),
+              child: _buildFloatingOrb(
+                  30, const Color(0xFF4CAF50).withOpacity(0.2)),
             ),
             Positioned(
-              bottom: 200 + 30 * sin(_visualAnimationController.value * 3 * 3.14159 + 2),
-              left: 80 + 25 * cos(_visualAnimationController.value * 3 * 3.14159 + 2),
-              child: _buildFloatingOrb(35, const Color(0xFF81C784).withOpacity(0.25)),
+              bottom: 200 +
+                  30 * sin(_visualAnimationController.value * 3 * 3.14159 + 2),
+              left: 80 +
+                  25 * cos(_visualAnimationController.value * 3 * 3.14159 + 2),
+              child: _buildFloatingOrb(
+                  35, const Color(0xFF81C784).withOpacity(0.25)),
             ),
           ],
         );
@@ -515,7 +532,10 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           Icon(Icons.headset_mic, color: Colors.white70, size: 16),
           const SizedBox(width: 6),
           const Text('Support',
-              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -526,7 +546,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
       animation: _visualAnimationController,
       builder: (context, _) {
         return Transform.translate(
-          offset: Offset(0, 10 * sin(_visualAnimationController.value * 2 * 3.14159)),
+          offset: Offset(
+              0, 10 * sin(_visualAnimationController.value * 2 * 3.14159)),
           child: Container(
             width: 320,
             decoration: BoxDecoration(
@@ -570,7 +591,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                       const SizedBox(height: 8),
                       Text(
                         'Create an account to start exploring delicious food options.',
-                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.9), fontSize: 14),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -583,7 +605,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: const Text('Learn more', style: TextStyle(fontSize: 12)),
+                          child: const Text('Learn more',
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ),
                     ],
@@ -604,9 +627,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
         const Text(
           'Join our community',
           style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold),
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         Text(
@@ -621,7 +642,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   Widget _buildNoScrollFormSection() {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -663,7 +684,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                 ),
               ),
               SizedBox(height: isMobile ? 16 : 18),
-              
+
               // Form fields (no scroll, fixed layout)
               Expanded(
                 child: Column(
@@ -674,31 +695,33 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                       child: _buildNoScrollFormFields(),
                     ),
                     const SizedBox(height: 6),
-                    
+
                     // Password strength (compact) - only show when password doesn't meet criteria
-                    if (_passwordController.text.isNotEmpty && _passwordStrength < 1.0)
+                    if (_passwordController.text.isNotEmpty &&
+                        _passwordStrength < 1.0)
                       _buildCompactPasswordStrength(),
-                    if (_passwordController.text.isNotEmpty && _passwordStrength < 1.0)
+                    if (_passwordController.text.isNotEmpty &&
+                        _passwordStrength < 1.0)
                       const SizedBox(height: 4),
-                    
+
                     // Terms row (compact)
                     _buildCompactTermsRow(),
                     const SizedBox(height: 8),
-                    
+
                     // Sign up button
                     _buildSignUpButton(),
                     const SizedBox(height: 6),
-                    
+
                     // Divider
                     _buildDivider(),
                     const SizedBox(height: 6),
-                    
+
                     // Social buttons (compact)
                     Expanded(
                       flex: 2,
                       child: _buildCompactSocialButtons(),
                     ),
-                    
+
                     // Login link
                     _buildLoginLink(),
                   ],
@@ -781,7 +804,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   labelText: 'Full Name',
                   hintText: 'Enter your full name',
                   prefixIcon: Icons.person_outline,
-                  validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter your name' : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -795,10 +819,15 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   validator: (value) {
                     final v = value?.trim() ?? '';
                     if (v.isEmpty) return 'Please enter an email address';
-                    final emailRegex = RegExp(r'^[\w\.-]+@([\w\-]+\.)+[A-Za-z]{2,}$');
-                    final allowedProviders = RegExp(r'@(gmail\.com|yahoo\.com|hotmail\.com)$', caseSensitive: false);
-                    if (!emailRegex.hasMatch(v)) return 'Enter a valid email address';
-                    if (!allowedProviders.hasMatch(v)) return 'Use a common provider (gmail, yahoo, hotmail)';
+                    final emailRegex =
+                        RegExp(r'^[\w\.-]+@([\w\-]+\.)+[A-Za-z]{2,}$');
+                    final allowedProviders = RegExp(
+                        r'@(gmail\.com|yahoo\.com|hotmail\.com)$',
+                        caseSensitive: false);
+                    if (!emailRegex.hasMatch(v))
+                      return 'Enter a valid email address';
+                    if (!allowedProviders.hasMatch(v))
+                      return 'Use a common provider (gmail, yahoo, hotmail)';
                     return null;
                   },
                 ),
@@ -819,9 +848,12 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   validator: (value) {
                     final v = value ?? '';
                     if (v.length < 8) return 'At least 8 characters required';
-                    if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Include at least one uppercase letter';
-                    if (!RegExp(r'[0-9]').hasMatch(v)) return 'Include at least one number';
-                    if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Include at least one special character';
+                    if (!RegExp(r'[A-Z]').hasMatch(v))
+                      return 'Include at least one uppercase letter';
+                    if (!RegExp(r'[0-9]').hasMatch(v))
+                      return 'Include at least one number';
+                    if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v))
+                      return 'Include at least one special character';
                     return null;
                   },
                 ),
@@ -863,7 +895,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 6,
-            decoration: BoxDecoration(color: isDark ? Colors.grey[700] : Colors.grey[200]),
+            decoration: BoxDecoration(
+                color: isDark ? Colors.grey[700] : Colors.grey[200]),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: _passwordStrength,
@@ -877,9 +910,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               ? 'Use 8+ chars with a mix of letters, numbers, and symbols'
               : 'Password strength: $_passwordStrengthLabel',
           style: TextStyle(
-            color: isDark ? Colors.grey[400] : Colors.grey[600], 
-            fontSize: 11
-          ),
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontSize: 11),
         ),
       ],
     );
@@ -895,8 +927,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           activeColor: AppTheme.primaryColor,
           checkColor: Colors.white,
-          fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-            if (states.contains(MaterialState.selected)) {
+          fillColor:
+              WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+            if (states.contains(WidgetState.selected)) {
               return AppTheme.primaryColor;
             }
             return isDark ? Colors.grey[600]! : Colors.grey[300]!;
@@ -906,9 +939,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
           child: RichText(
             text: TextSpan(
               style: TextStyle(
-                color: isDark ? Colors.grey[300] : Colors.grey[700], 
-                fontSize: 13
-              ),
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                  fontSize: 13),
               children: [
                 const TextSpan(text: 'I agree to the '),
                 TextSpan(
@@ -990,7 +1022,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
         TextFormField(
           controller: controller,
           obscureText: isPassword
-              ? (controller == _confirmPasswordController ? _obscureConfirmPassword : _obscurePassword)
+              ? (controller == _confirmPasswordController
+                  ? _obscureConfirmPassword
+                  : _obscurePassword)
               : false,
           keyboardType: keyboardType,
           style: TextStyle(
@@ -1014,7 +1048,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
-                      (controller == _confirmPasswordController ? _obscureConfirmPassword : _obscurePassword)
+                      (controller == _confirmPasswordController
+                              ? _obscureConfirmPassword
+                              : _obscurePassword)
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       color: AppTheme.primaryColor,
@@ -1031,7 +1067,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                 : null,
             filled: true,
             fillColor: isDark ? const Color(0xFF151515) : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
@@ -1089,8 +1126,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   r'@(gmail\.com|yahoo\.com|hotmail\.com)$',
                   caseSensitive: false);
               if (!emailRegex.hasMatch(v)) return 'Enter a valid email address';
-              if (!allowedProviders.hasMatch(v))
+              if (!allowedProviders.hasMatch(v)) {
                 return 'Use a common provider (gmail, yahoo, hotmail)';
+              }
               return null;
             },
           ),
@@ -1104,12 +1142,15 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
             validator: (value) {
               final v = value ?? '';
               if (v.length < 8) return 'At least 8 characters required';
-              if (!RegExp(r'[A-Z]').hasMatch(v))
+              if (!RegExp(r'[A-Z]').hasMatch(v)) {
                 return 'Include at least one uppercase letter';
-              if (!RegExp(r'[0-9]').hasMatch(v))
+              }
+              if (!RegExp(r'[0-9]').hasMatch(v)) {
                 return 'Include at least one number';
-              if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v))
+              }
+              if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(v)) {
                 return 'Include at least one special character';
+              }
               return null;
             },
           ),
@@ -1200,7 +1241,8 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
                   )
                 : null,
             filled: true,
-            fillColor: isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
+            fillColor:
+                isDark ? const Color(0xFF151515) : const Color(0xFFF8F9FA),
             contentPadding: EdgeInsets.symmetric(
               vertical: MediaQuery.of(context).size.width < 600 ? 16.0 : 18.0,
               horizontal: 20.0,
@@ -1510,4 +1552,3 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     );
   }
 }
- 

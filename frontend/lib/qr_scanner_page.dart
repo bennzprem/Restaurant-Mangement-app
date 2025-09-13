@@ -14,7 +14,6 @@ class QrScannerPage extends StatelessWidget {
           if (barcodes.isNotEmpty) {
             final String? code = barcodes.first.rawValue;
             if (code != null) {
-              // Once a code is detected, pop the page and return the code
               Navigator.of(context).pop(code);
             }
           }
