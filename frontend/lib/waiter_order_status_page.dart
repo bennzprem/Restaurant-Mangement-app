@@ -15,20 +15,17 @@ class WaiterOrderStatusPage extends StatefulWidget {
 class _WaiterOrderStatusPageState extends State<WaiterOrderStatusPage> {
   final ApiService _api = ApiService();
   String _status = 'Preparing';
-  Timer? _timer;
   RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
     _poll();
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _poll());
     _subscribeRealtime();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _channel?.unsubscribe();
     super.dispose();
   }

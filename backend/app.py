@@ -559,15 +559,42 @@ def get_all_orders():
 
 @app.route('/orders/<int:order_id>/items', methods=['GET'])
 def get_order_items(order_id):
-    """Returns all items for a specific order."""
+    """Returns all items for a specific order with menu item details."""
     try:
-        api_url = f"{SUPABASE_URL}/rest/v1/order_items?order_id=eq.{order_id}"
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()
+        # Get order items with menu item details using Supabase join
+        items_response = supabase.table('order_items').select('''
+            quantity,
+            price_at_order,
+            menu_item_id,
+            menu_items (
+                id,
+                name,
+                description,
+                image_url
+            )
+        ''').eq('order_id', order_id).execute()
         
-        response_data = jsonify(response.json())
-        response_data.headers.add('Access-Control-Allow-Origin', '*')
-        return response_data, 200
+        if items_response.data:
+            # Transform the data to match expected frontend format
+            transformed_items = []
+            for item in items_response.data:
+                transformed_item = {
+                    'quantity': item['quantity'],
+                    'price_at_order': item['price_at_order'],
+                    'menu_item_id': item['menu_item_id'],
+                    'menu_items': item['menu_items'] if item['menu_items'] else None,
+                    'name': item['menu_items']['name'] if item['menu_items'] else f"Item ID: {item['menu_item_id']}"
+                }
+                transformed_items.append(transformed_item)
+            
+            response_data = jsonify(transformed_items)
+            response_data.headers.add('Access-Control-Allow-Origin', '*')
+            return response_data, 200
+        else:
+            response_data = jsonify([])
+            response_data.headers.add('Access-Control-Allow-Origin', '*')
+            return response_data, 200
+            
     except Exception as e:
         print(f"Error fetching order items: {e}")
         response = jsonify({"error": str(e)})
