@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'api_service.dart';
 import 'models.dart';
@@ -20,19 +21,18 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
   final ApiService _api = ApiService();
   List<Order> _orders = [];
   bool _loading = true;
-  Timer? _timer;
+  RealtimeChannel? _ordersChannel;
 
   @override
   void initState() {
     super.initState();
     _load();
-    // Light polling so list reflects kitchen updates
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _load());
+    _subscribeToOrderChanges();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _ordersChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -60,6 +60,36 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
           ),
         );
       }
+    }
+  }
+
+  void _subscribeToOrderChanges() {
+    try {
+      final auth = context.read<AuthProvider>();
+      if (!auth.isLoggedIn || auth.user?.id == null) return;
+
+      final supabase = Supabase.instance.client;
+      _ordersChannel = supabase
+          .channel('waiter-orders-${auth.user!.id}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'orders',
+            callback: (payload) async {
+              // Only refresh if the order belongs to this waiter
+              final orderData = payload.newRecord;
+              final orderUserId = orderData['user_id'];
+              if (orderUserId == auth.user?.id) {
+                // Reload orders to get the latest data
+                await _load();
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      print('Error subscribing to order changes: $e');
+      // Fallback to periodic refresh if realtime fails
+      Timer.periodic(const Duration(seconds: 10), (_) => _load());
     }
   }
 
@@ -181,7 +211,7 @@ class _OrderTileState extends State<_OrderTile> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content:
-                  Text('Payment successful! Order completed. Table freed.'),
+                  Text('Cash payment received! Order completed. Table freed.'),
               backgroundColor: AppTheme.successColor,
             ),
           );
@@ -222,7 +252,24 @@ class _OrderTileState extends State<_OrderTile> {
                   onPressed: () => Navigator.of(context).pop(false),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                // Cash Payment Button
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final confirmed = await _showCashPaymentConfirmation();
+                    if (mounted) {
+                      Navigator.of(context).pop(confirmed);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.money),
+                  label: const Text('Cash Payment'),
+                ),
+                const SizedBox(width: 8),
+                // Digital Payment Button
+                ElevatedButton.icon(
                   onPressed: () async {
                     // Process Razorpay payment first
                     final success = await PaymentService.processPayment(
@@ -243,7 +290,97 @@ class _OrderTileState extends State<_OrderTile> {
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Pay with Razorpay'),
+                  icon: const Icon(Icons.credit_card),
+                  label: const Text('Digital Payment'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
+
+  Future<bool> _showCashPaymentConfirmation() async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.money, color: Colors.green),
+                  const SizedBox(width: 8),
+                  const Text('Cash Payment'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Order #${widget.order.id}'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Amount: ₹${widget.order.totalAmount.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                color: Colors.green[700], size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cash Payment Instructions',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '1. Collect ₹${widget.order.totalAmount.toStringAsFixed(0)} from the customer\n'
+                          '2. Verify the amount received\n'
+                          '3. Confirm payment completion',
+                          style: TextStyle(color: Colors.green[700]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Have you received the cash payment from the customer?',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Confirm Cash Received'),
                 ),
               ],
             );
@@ -352,6 +489,15 @@ class _OrderTileState extends State<_OrderTile> {
           FutureBuilder<List<Map<String, dynamic>>>(
             future: _itemsFuture,
             builder: (context, snap) {
+              if (snap.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Error loading items: ${snap.error}',
+                    style: TextStyle(color: Colors.red[600]),
+                  ),
+                );
+              }
               if (!snap.hasData) {
                 return const Padding(
                   padding: EdgeInsets.all(12),
@@ -359,15 +505,24 @@ class _OrderTileState extends State<_OrderTile> {
                 );
               }
               final items = snap.data!;
+              if (items.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('No items found for this order'),
+                );
+              }
               return Column(
                 children: [
                   ...items.map((it) => Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                              child: Text(it['menu_items']?['name'] ??
-                                  it['name'] ??
-                                  'Item')),
+                              child: Text(
+                            it['menu_items']?['name'] ??
+                                it['name'] ??
+                                'Unknown Item',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          )),
                           Text('x${it['quantity']}'),
                           Text(
                               '₹${(it['price_at_order'] * it['quantity']).toStringAsFixed(0)}'),

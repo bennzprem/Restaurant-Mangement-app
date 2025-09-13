@@ -103,10 +103,10 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                   end: Alignment.centerRight,
                 ),
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(0),      // Left top sharp
-                  bottomLeft: Radius.circular(25),  // Left bottom round
-                  topRight: Radius.circular(25),    // Right top round
-                  bottomRight: Radius.circular(0),  // Right bottom sharp
+                  topLeft: Radius.circular(0), // Left top sharp
+                  bottomLeft: Radius.circular(25), // Left bottom round
+                  topRight: Radius.circular(25), // Right top round
+                  bottomRight: Radius.circular(0), // Right bottom sharp
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -131,9 +131,10 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                       splashColor: Colors.transparent,
                       highlightColor: Colors.transparent,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: (isActive || isHover) 
+                          color: (isActive || isHover)
                               ? Colors.white.withOpacity(0.2)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
@@ -142,10 +143,12 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                           _navItems[index],
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                            color: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white 
-                                : Colors.black,
+                            fontWeight:
+                                isActive ? FontWeight.bold : FontWeight.w500,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -156,7 +159,7 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
               ),
             ),
           ),
-          
+
           // Right side - Search, Filter, Favorites, Cart
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -169,7 +172,8 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
@@ -184,17 +188,23 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                       Expanded(
                         child: TextField(
                           controller: widget.searchController,
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                          style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87),
                           decoration: InputDecoration(
                             hintText: 'Search for dishes...',
-                            hintStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black45),
+                            hintStyle: TextStyle(
+                                color:
+                                    isDark ? Colors.white70 : Colors.black45),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, size: 20, color: isDark ? Colors.white : Colors.black87),
+                        icon: Icon(Icons.close,
+                            size: 20,
+                            color: isDark ? Colors.white : Colors.black87),
                         onPressed: () {
                           setState(() {
                             _isSearchExpanded = false;
@@ -226,15 +236,16 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Filter button
               Container(
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
@@ -258,15 +269,16 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Favorites button
               Container(
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white10 : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFFDAE952), width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
@@ -282,7 +294,8 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                     color: const Color(0xFFDAE952),
                   ),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const FavoritesScreen()),
                   ),
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(10),
@@ -292,15 +305,20 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Cart button with badge
               Consumer<CartProvider>(
                 builder: (_, cart, ch) => Badge(
                   label: Text(
-                    cart.items.values.fold(0, (sum, item) => sum + item.quantity).toString(),
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    cart.items.values
+                        .fold(0, (sum, item) => sum + item.quantity)
+                        .toString(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                   isLabelVisible: cart.items.isNotEmpty,
                   backgroundColor: const Color(0xFFDAE952),
@@ -308,7 +326,8 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white10 : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFDAE952), width: 1.5),
+                      border: Border.all(
+                          color: const Color(0xFFDAE952), width: 1.5),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
@@ -325,7 +344,8 @@ class _MenuNavbarWidgetState extends State<MenuNavbarWidget> {
                       ),
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => CartScreen(tableSessionId: widget.tableSessionId),
+                          builder: (context) =>
+                              CartScreen(tableSessionId: widget.tableSessionId),
                         ),
                       ),
                       style: IconButton.styleFrom(

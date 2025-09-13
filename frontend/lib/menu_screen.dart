@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
-import 'cart_provider.dart';
 import 'waiter_cart_provider.dart';
 import 'favorites_provider.dart';
 import 'models.dart';
@@ -12,6 +11,7 @@ import 'theme.dart';
 import 'widgets/header_widget.dart';
 import 'auth_provider.dart';
 import 'package:restaurant_app/widgets/menu_navbar_widget.dart';
+import 'cart_provider.dart';
 
 class MenuScreen extends StatefulWidget {
   final String? tableSessionId;
@@ -794,109 +794,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                     ),
                                   )
                                 : const SizedBox.shrink(),
-                          ),
-                          // Search toggle icon
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isSearching = !_isSearching;
-                                  if (!_isSearching) {
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                  }
-                                });
-                              },
-                              icon: Icon(
-                                _isSearching ? Icons.close : Icons.search,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                          ),
-                          // Filter icon
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: IconButton(
-                              onPressed: () => _showFilterDialog(context),
-                              icon: Icon(
-                                Icons.filter_list,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                          ),
-                          // Favorite icon (only when logged in)
-                          Consumer<AuthProvider>(
-                            builder: (context, authProvider, child) {
-                              if (authProvider.isLoggedIn) {
-                                return MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: IconButton(
-                                    onPressed: () {
-                                      // Navigate to favorites or show favorites
-                                      Navigator.pushNamed(
-                                          context, '/favorites');
-                                    },
-                                    icon: Icon(
-                                      Icons.favorite_border,
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                          // Cart icon
-                          Consumer<CartProvider>(
-                            builder: (context, cartProvider, child) {
-                              return Stack(
-                                children: [
-                                  MouseRegion(
-                                    cursor: SystemMouseCursors.click,
-                                    child: IconButton(
-                                      onPressed: () {
-                                        Navigator.pushNamed(context, '/cart');
-                                      },
-                                      icon: Icon(
-                                        Icons.shopping_cart_outlined,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                                  if (cartProvider.items.isNotEmpty)
-                                    Positioned(
-                                      right: 8,
-                                      top: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFDAE952),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 16,
-                                          minHeight: 16,
-                                        ),
-                                        child: Text(
-                                          '${cartProvider.items.length}',
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
                           ),
                         ],
                       ),
