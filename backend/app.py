@@ -1457,6 +1457,180 @@ def handle_voice_command():
         traceback.print_exc()
         return jsonify({"error": "A major server error occurred. Check the logs."}), 500
 
+# --- CREATE TABLE (OPTIONAL SESSION CODE) ---
+
+@app.route('/api/tables', methods=['POST'])
+def create_table():
+    """
+    Creates a new table. Optionally accepts a session_code to create an active
+    table session for that table immediately (useful when pre-printing QR codes).
+
+    Body:
+    {
+      "table_number": 12,               // required
+      "capacity": 4,                    // optional (defaults 4)
+      "location_preference": "Patio",  // optional
+      "session_code": "TBL012"         // optional, creates active session
+    }
+    """
+    try:
+        data = request.get_json() or {}
+        table_number = data.get('table_number')
+        capacity = data.get('capacity', 4)
+        location_preference = data.get('location_preference')
+        session_code = data.get('session_code')
+
+        if not table_number:
+            return jsonify({"error": "table_number is required"}), 400
+
+        # Create table row
+        table_payload = {
+            'table_number': table_number,
+            'capacity': capacity,
+        }
+        if location_preference is not None:
+            table_payload['location_preference'] = location_preference
+
+        table_resp = supabase.table('tables').insert(table_payload).execute()
+        if not table_resp.data:
+            return jsonify({"error": "Failed to create table"}), 500
+
+        table_row = table_resp.data[0]
+        result = { 'table': table_row }
+
+        # Optionally create an active session with provided code
+        if session_code:
+            # If a session with the same code is already active, return conflict
+            existing = supabase.table('table_sessions').select('id') \
+                .eq('session_code', session_code.upper()) \
+                .eq('status', 'active').execute()
+            if existing.data:
+                return jsonify({
+                    'error': 'An active session already exists with this session_code'
+                }), 409
+
+            create_session = supabase.table('table_sessions').insert({
+                'table_id': table_row['id'],
+                'session_code': session_code.upper(),
+                'status': 'active',
+                'started_at': datetime.now(timezone.utc).isoformat(),
+            }).execute()
+
+            if not create_session.data:
+                return jsonify({"error": "Table created but failed to create session"}), 500
+
+            result['session'] = create_session.data[0]
+
+        return jsonify(result), 201
+
+    except Exception as e:
+        print(f"Error creating table: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tables', methods=['GET'])
+def list_tables():
+    """Returns all tables with active occupancy/session info."""
+    try:
+        tables_resp = supabase.table('tables').select('*').order('table_number').execute()
+        tables = tables_resp.data or []
+
+        # Fetch active sessions to determine occupancy and codes
+        sessions_resp = supabase.table('table_sessions') \
+            .select('table_id, session_code, status') \
+            .eq('status', 'active').execute()
+        active_by_table = {}
+        if sessions_resp.data:
+            for s in sessions_resp.data:
+                active_by_table[s['table_id']] = {
+                    'session_code': s.get('session_code'),
+                    'status': s.get('status', 'active')
+                }
+
+        result = []
+        for t in tables:
+            info = {
+                'id': t.get('id'),
+                'table_number': t.get('table_number'),
+                'capacity': t.get('capacity'),
+                'location_preference': t.get('location_preference'),
+                'occupied': t.get('id') in active_by_table,
+                'active_session_code': active_by_table.get(t.get('id'), {}).get('session_code')
+            }
+            result.append(info)
+
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error listing tables: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tables/<table_id>/toggle', methods=['POST'])
+def toggle_table_occupancy(table_id):
+    """
+    Toggles a table between occupied and available.
+    - If an active session exists for this table, close it (set available).
+    - Otherwise create a new active session (set occupied). Optional body:
+      { "session_code": "TBL007" }
+    Returns: { occupied: bool, active_session_code: str|null }
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        desired_code = (data.get('session_code') or '').strip().upper() or None
+
+        # Check table exists and get number for default code
+        # table_id may arrive as string UUID or integer; compare via eq works for both
+        table_row = supabase.table('tables').select('*').eq('id', table_id).maybe_single().execute()
+        if not table_row or not table_row.data:
+            return jsonify({"error": "Table not found"}), 404
+
+        # Check for active session for this table
+        active = supabase.table('table_sessions').select('*') \
+            .eq('table_id', table_id).eq('status', 'active').maybe_single().execute()
+
+        # If active exists, close it
+        if active and active.data:
+            supabase.table('table_sessions').update({
+                'status': 'closed',
+                'ended_at': datetime.now(timezone.utc).isoformat(),
+            }).eq('id', active.data['id']).execute()
+            return jsonify({
+                'occupied': False,
+                'active_session_code': None,
+            }), 200
+
+        # Else create a new active session
+        session_code = desired_code
+        if not session_code:
+            # Default code: TBL{table_number:03d}
+            tbl_num = table_row.data.get('table_number')
+            try:
+                session_code = f"TBL{int(tbl_num):03d}"
+            except Exception:
+                session_code = f"TBL{table_id}"
+
+        # Ensure no conflicting active session with same code
+        conflict = supabase.table('table_sessions').select('id').eq('session_code', session_code).eq('status', 'active').execute()
+        if conflict and conflict.data:
+            return jsonify({"error": "An active session already uses this code"}), 409
+
+        created = supabase.table('table_sessions').insert({
+            'table_id': table_id,
+            'session_code': session_code,
+            'status': 'active',
+            'started_at': datetime.now(timezone.utc).isoformat(),
+        }).execute()
+
+        if not created or not created.data:
+            return jsonify({"error": "Failed to create session"}), 500
+
+        return jsonify({
+            'occupied': True,
+            'active_session_code': session_code,
+        }), 200
+
+    except Exception as e:
+        print(f"Error toggling table occupancy: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 

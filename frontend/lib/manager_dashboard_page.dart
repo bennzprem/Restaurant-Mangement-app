@@ -25,14 +25,18 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
   int _ordersCount = 0;
   List<MenuItem> _menuItems = [];
   bool _isLoading = false;
+  List<Map<String, dynamic>> _tables = [];
   RealtimeChannel? _ordersChannel;
   Timer? _pollTimer;
+  RealtimeChannel? _tablesChannel;
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
     _subscribeToOrderChanges();
+    _loadTables();
+    _subscribeToTableChanges();
   }
 
   void _subscribeToOrderChanges() {
@@ -59,7 +63,156 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
   void dispose() {
     _ordersChannel?.unsubscribe();
     _pollTimer?.cancel();
+    _tablesChannel?.unsubscribe();
     super.dispose();
+  }
+
+  Future<void> _showAddTableDialog() async {
+    final numberController = TextEditingController();
+    final capacityController = TextEditingController(text: '4');
+    final locationController = TextEditingController();
+    final codeController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Table'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: numberController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Table Number',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: capacityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Capacity',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Location Preference (optional)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Table Code (optional, e.g. TBL012)',
+                  helperText:
+                      'If provided, an active session will be created with this code',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final number = int.tryParse(numberController.text.trim());
+              final capacity = int.tryParse(capacityController.text.trim());
+              if (number == null || number <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enter a valid table number')),
+                );
+                return;
+              }
+              if (capacity == null || capacity <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enter a valid capacity')),
+                );
+                return;
+              }
+              try {
+                await _apiService.createTable(
+                  tableNumber: number,
+                  capacity: capacity,
+                  locationPreference: locationController.text.trim().isEmpty
+                      ? null
+                      : locationController.text.trim(),
+                  sessionCode: codeController.text.trim().isEmpty
+                      ? null
+                      : codeController.text.trim(),
+                );
+                if (mounted) {
+                  Navigator.of(context).pop(true);
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to create table: $e')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successColor,
+              foregroundColor: AppTheme.white,
+            ),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      // Refresh counts/overview and tables list immediately
+      _loadDashboardData();
+      try {
+        final data = await _apiService.getTables();
+        if (mounted) setState(() => _tables = data);
+      } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Table created successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadTables() async {
+    try {
+      final data = await _apiService.getTables();
+      if (mounted) setState(() => _tables = data);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load tables: $e')),
+        );
+      }
+    }
+  }
+
+  void _subscribeToTableChanges() {
+    final supabase = Supabase.instance.client;
+    _tablesChannel = supabase
+        .channel('tables-and-sessions')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'tables',
+          callback: (_) => _loadTables(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'table_sessions',
+          callback: (_) => _loadTables(),
+        )
+        .subscribe();
   }
 
   Future<void> _loadDashboardData() async {
@@ -88,6 +241,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
         _orders = orders;
         _ordersCount = ordersCount;
         _menuItems = menuItems;
+        // Load tables lazily when Tables tab opens
         _isLoading = false;
       });
     } catch (e) {
@@ -362,9 +516,14 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                             index: 5,
                           ),
                           _buildNavItem(
+                            icon: Icons.table_bar,
+                            title: 'Tables',
+                            index: 6,
+                          ),
+                          _buildNavItem(
                             icon: Icons.settings,
                             title: 'Settings',
-                            index: 6,
+                            index: 7,
                           ),
                           const Divider(color: AppTheme.grey, height: 32),
                           _buildLogoutItem(),
@@ -524,6 +683,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
       case 5:
         return _buildSchedule();
       case 6:
+        return _buildTables();
+      case 7:
         return _buildSettings();
       default:
         return _buildOverview();
@@ -547,26 +708,43 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   color: AppTheme.customBlack,
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _loadDashboardData,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh),
-                label: Text(_isLoading ? 'Loading...' : 'Refresh'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: AppTheme.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Row(children: [
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _loadDashboardData,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: Text(_isLoading ? 'Loading...' : 'Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: AppTheme.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _showAddTableDialog,
+                  icon: const Icon(Icons.table_restaurant),
+                  label: const Text('Add Table'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.successColor,
+                    foregroundColor: AppTheme.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ]),
             ],
           ),
           const SizedBox(height: 24),
@@ -902,6 +1080,182 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
       child: Text(
         'Schedule Management - Coming Soon',
         style: TextStyle(fontSize: 24, color: AppTheme.grey),
+      ),
+    );
+  }
+
+  Widget _buildTables() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tables',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.customBlack,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showAddTableDialog,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Table'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor,
+                  foregroundColor: AppTheme.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Use Add Table to register a table and optional code for QR.',
+                style: TextStyle(color: AppTheme.customGrey),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _loadTables,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+              )
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_tables.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: const [
+                  Icon(Icons.table_bar, color: AppTheme.grey),
+                  SizedBox(height: 8),
+                  Text('No tables loaded. Tap Refresh to fetch tables.'),
+                ],
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _tables.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 2.6,
+              ),
+              itemBuilder: (context, i) {
+                final t = _tables[i];
+                final occupied = t['occupied'] == true;
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: occupied ? Colors.red : Colors.green,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.table_bar,
+                        color: occupied ? Colors.red : Colors.green,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Table #${t['table_number']}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 16),
+                            ),
+                            Text('Capacity: ${t['capacity'] ?? '-'}'),
+                            if (t['location_preference'] != null)
+                              Text('Location: ${t['location_preference']}'),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: occupied
+                                  ? Colors.red.withOpacity(0.1)
+                                  : Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              occupied ? 'Occupied' : 'Available',
+                              style: TextStyle(
+                                color: occupied ? Colors.red : Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (t['active_session_code'] != null) ...[
+                            const SizedBox(height: 6),
+                            Text('Code: ${t['active_session_code']}'),
+                          ],
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                await _apiService.toggleTable(t['id']);
+                                await _loadTables();
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Toggle failed: $e')),
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              occupied ? Icons.lock_open : Icons.lock,
+                              size: 16,
+                            ),
+                            label: Text(
+                                occupied ? 'Set Available' : 'Set Occupied'),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
       ),
     );
   }

@@ -620,25 +620,21 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
 
   Widget _buildMenuItemCard(MenuItem item) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => _showMenuItemDetails(item),
-        child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white10 : Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(isDark ? 0.12 : 0.25),
-              ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(isDark ? 0.12 : 0.25),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               // Image section
               ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -803,7 +799,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                   ? MouseRegion(
                                       cursor: SystemMouseCursors.click,
                                       child: ElevatedButton(
-                                        onPressed: () => _showAddToCartOptions(item),
+                                        onPressed: () => cart.addItem(item),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               Theme.of(context).primaryColor,

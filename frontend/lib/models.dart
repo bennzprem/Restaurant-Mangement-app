@@ -39,7 +39,7 @@ class MenuItem {
       isVegan: json['is_vegan'] ?? false, // <-- ADD THIS
       isGlutenFree: json['is_gluten_free'] ?? false, // <-- ADD THIS
       containsNuts: json['contains_nuts'] ?? false, // <-- ADD THIS
-      categoryId: json['category_id'], // <-- ADD THIS
+      categoryId: json['category_id'] as int?, // <-- ADD THIS
     );
   }
 }
