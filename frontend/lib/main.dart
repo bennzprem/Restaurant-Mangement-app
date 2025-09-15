@@ -70,6 +70,8 @@ import 'debug_user_role.dart';
 import 'cart_screen.dart';
 import 'favorites_screen.dart';
 import 'services/payment_service.dart';
+import 'explore_menu_page.dart';
+import 'pages/explore/coming_soon_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,9 +129,13 @@ class MyApp extends StatelessWidget {
               '/dine-in': (context) => const DineInPage(),
               '/takeaway': (context) => TakeawayPage(),
               '/booking-history': (context) => const BookingHistoryPage(),
-              '/menu': (context) => const MenuScreen(),
+              '/menu': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+                return MenuScreen(initialCategory: args?['initialCategory'] as String?);
+              },
               '/about': (context) => AboutPage(),
               '/contact': (context) => const ContactPage(),
+              '/explore-menu': (context) => const ExploreMenuPage(),
               '/admin_dashboard': (context) => const AdminDashboardPage(),
               '/manager_dashboard': (context) => const ManagerDashboardPage(),
               '/employee_dashboard': (context) => const EmployeeDashboardPage(),
@@ -139,6 +145,11 @@ class MyApp extends StatelessWidget {
               '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
               '/cart': (context) => const CartScreen(),
               '/favorites': (context) => const FavoritesScreen(),
+              // Explore section detail placeholders
+              '/explore/categories': (context) => const ComingSoonPage(title: 'Explore by Category'),
+              '/explore/special-diet': (context) => const ComingSoonPage(title: 'Special Dietary Categories'),
+              '/explore/fitness': (context) => const ComingSoonPage(title: 'Fitness Categories'),
+              '/explore/subscription-combo': (context) => const ComingSoonPage(title: 'Subscription & Combo Categories'),
             },
           );
         },

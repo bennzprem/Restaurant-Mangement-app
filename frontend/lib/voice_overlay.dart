@@ -47,16 +47,26 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
 
   void _initSpeech() async {
     await _speechToText.initialize();
+    _speechToText.statusListener = (status) {
+      if (status == 'done' && _currentState == VoiceState.listening) {
+        _stopListening();
+      }
+    };
     setState(() {});
   }
 
   void _startListening() async {
+    await _flutterTts.stop();
     setState(() {
       _currentState = VoiceState.listening;
       _lastWords = "";
       _aiResponse = "";
     });
-    await _speechToText.listen(onResult: _onSpeechResult);
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      listenFor: const Duration(seconds: 15),
+      pauseFor: const Duration(seconds: 3),
+    );
   }
 
   void _stopListening() async {
@@ -200,9 +210,13 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
 
   Widget _buildMicButton() {
     return GestureDetector(
-      onTapDown: (_) => _startListening(),
-      onTapUp: (_) => _stopListening(),
-      onTapCancel: () => _stopListening(),
+      onTap: () {
+        if (_speechToText.isListening) {
+          _stopListening();
+        } else {
+          _startListening();
+        }
+      },
       child: AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (context, child) {
