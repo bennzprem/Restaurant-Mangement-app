@@ -2,7 +2,12 @@ import os
 import json
 import requests
 from datetime import datetime, timezone, timedelta
-from groq import Groq
+
+# Gracefully handle missing groq package so the backend can still start
+try:
+    from groq import Groq  # type: ignore
+except Exception:  # ImportError or any other import-time issue
+    Groq = None  # Fallback so ByteBot can operate in degraded mode
 
 class ByteBot:
     """
@@ -23,6 +28,11 @@ class ByteBot:
     def _configure_model(self):
         """Configures and returns the Groq AI model client."""
         try:
+            # If the groq package is unavailable, run in fallback mode
+            if Groq is None:
+                print("✗ WARNING: 'groq' package not installed. ByteBot will use fallback recommendation.")
+                return None
+
             # CHANGE: Look for GROQ_API_KEY now
             api_key = os.environ.get("GROQ_API_KEY")
             if not api_key:

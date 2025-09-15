@@ -69,175 +69,172 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
       width: double.infinity,
       height: double.infinity,
       padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Staff Management',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.customBlack,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Staff Management',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.customBlack,
                 ),
-                ElevatedButton.icon(
-                  onPressed: widget.isLoading ? null : widget.onStaffUpdated,
-                  icon: widget.isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(widget.isLoading ? 'Loading...' : 'Refresh'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: AppTheme.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Search and Filter
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search staff by name, email, or role...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                                color: AppTheme.grey.withOpacity(0.3)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: AppTheme.primaryColor, width: 2),
-                          ),
-                          filled: true,
-                          fillColor: AppTheme.customLightGrey.withOpacity(0.3),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 120),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          border:
-                              Border.all(color: AppTheme.grey.withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(12),
-                          color: AppTheme.customLightGrey.withOpacity(0.3),
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedRole,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedRole = value!;
-                              _filterStaff();
-                            });
-                          },
-                          items: [
-                            'All',
-                            'admin',
-                            'manager',
-                            'employee',
-                            'delivery',
-                            'kitchen',
-                          ].map((role) {
-                            return DropdownMenuItem<String>(
-                              value: role,
-                              child: Text(role == 'All'
-                                  ? 'All Roles'
-                                  : role.toUpperCase()),
-                            );
-                          }).toList(),
-                          underline: Container(),
-                          isExpanded: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Staff Count
-            Text(
-              '${_filteredStaff.length} staff members found',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.customGrey,
               ),
-            ),
-            const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: widget.isLoading ? null : widget.onStaffUpdated,
+                icon: widget.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(widget.isLoading ? 'Loading...' : 'Refresh'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: AppTheme.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
 
-            // Staff List
-            Expanded(
-              child: widget.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredStaff.isEmpty
-                      ? Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: AppTheme.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'No staff members found',
-                                style: TextStyle(
-                                    fontSize: 18, color: AppTheme.grey),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: widget.onStaffUpdated,
-                                child: const Text('Refresh Data'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _filteredStaff.length,
-                          itemBuilder: (context, index) {
-                            return _buildStaffCard(_filteredStaff[index]);
-                          },
+          // Search and Filter
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search staff by name, email, or role...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              BorderSide(color: AppTheme.grey.withOpacity(0.3)),
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: AppTheme.primaryColor, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: AppTheme.customLightGrey.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 120),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: AppTheme.grey.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.customLightGrey.withOpacity(0.3),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedRole,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedRole = value!;
+                            _filterStaff();
+                          });
+                        },
+                        items: [
+                          'All',
+                          'admin',
+                          'manager',
+                          'employee',
+                          'delivery',
+                          'kitchen',
+                        ].map((role) {
+                          return DropdownMenuItem<String>(
+                            value: role,
+                            child: Text(role == 'All'
+                                ? 'All Roles'
+                                : role.toUpperCase()),
+                          );
+                        }).toList(),
+                        underline: Container(),
+                        isExpanded: true,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Staff Count
+          Text(
+            '${_filteredStaff.length} staff members found',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.customGrey,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+
+          // Staff List (let ListView handle scrolling; no SingleChildScrollView above)
+          Expanded(
+            child: widget.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredStaff.isEmpty
+                    ? Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: AppTheme.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'No staff members found',
+                              style:
+                                  TextStyle(fontSize: 18, color: AppTheme.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: widget.onStaffUpdated,
+                              child: const Text('Refresh Data'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredStaff.length,
+                        itemBuilder: (context, index) {
+                          return _buildStaffCard(_filteredStaff[index]);
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }

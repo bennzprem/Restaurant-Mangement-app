@@ -21,10 +21,12 @@ class ApiService {
 
   Future<List<String>> fetchCategories() async {
     final response = await http.get(Uri.parse('$baseUrl/categories'));
-    
+
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
-      return body.map((dynamic item) => item['category_name'] as String).toList();
+      return body
+          .map((dynamic item) => item['category_name'] as String)
+          .toList();
     } else {
       throw Exception('Failed to load categories');
     }
@@ -509,6 +511,68 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception('Failed to close session: ${response.body}');
     }
+  }
+
+  // Fetch all tables with occupancy info
+  Future<List<Map<String, dynamic>>> getTables() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/tables'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('Failed to load tables: ${response.body}');
+  }
+
+  // Toggle occupancy for a table
+  Future<Map<String, dynamic>> toggleTable(dynamic tableId,
+      {String? sessionCode}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/tables/$tableId/toggle'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        if (sessionCode != null && sessionCode.isNotEmpty)
+          'session_code': sessionCode,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to toggle table: ${response.body}');
+  }
+
+  // Create a new table (optionally with a session code)
+  Future<Map<String, dynamic>> createTable({
+    required int tableNumber,
+    int capacity = 4,
+    String? locationPreference,
+    String? sessionCode,
+  }) async {
+    final payload = <String, dynamic>{
+      'table_number': tableNumber,
+      'capacity': capacity,
+    };
+    if (locationPreference != null && locationPreference.isNotEmpty) {
+      payload['location_preference'] = locationPreference;
+    }
+    if (sessionCode != null && sessionCode.isNotEmpty) {
+      payload['session_code'] = sessionCode.toUpperCase();
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/tables'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(payload),
+    );
+
+    if (response.statusCode == 201) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    }
+
+    final body = json.decode(response.body);
+    throw Exception(body['error'] ?? 'Failed to create table');
   }
 
   // Claim a table session for a waiter by session code
