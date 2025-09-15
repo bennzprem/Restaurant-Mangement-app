@@ -32,9 +32,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Future<List<MenuCategory>>? _menuFuture;
   int _selectedCategoryIndex = 0;
   bool _isVegOnly = false;
-  bool _isVegan = false;
-  bool _isGlutenFree = false;
-  bool _isNutsFree = false;
+  bool _isBestseller = false;
+  bool _isChefSpl = false;
+  bool _isSeasonal = false;
   String _searchQuery = '';
   Timer? _debounce;
   bool _isSearching = false;
@@ -117,9 +117,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       _menuFuture = _apiService
           .fetchMenu(
             vegOnly: _isVegOnly,
-            veganOnly: _isVegan,
-            glutenFreeOnly: _isGlutenFree,
-            nutsFree: _isNutsFree,
+            veganOnly: false,
+            glutenFreeOnly: false,
+            nutsFree: false,
+            isBestseller: _isBestseller ? true : null,
+            isChefSpl: _isChefSpl ? true : null,
+            isSeasonal: _isSeasonal ? true : null,
             searchQuery: _searchQuery,
           )
           .then((categories) async {
@@ -1439,7 +1442,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'Dietary Filters',
+                    'Menu Filters',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1465,35 +1468,35 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Vegan',
-                      subtitle: 'Show only vegan dishes',
-                      icon: Icons.spa,
-                      value: _isVegan,
+                      title: 'Bestseller',
+                      subtitle: 'Show only bestseller dishes',
+                      icon: Icons.star,
+                      value: _isBestseller,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isVegan = value;
+                          _isBestseller = value;
                         });
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Gluten-Free',
-                      subtitle: 'Show only gluten-free dishes',
-                      icon: Icons.grain,
-                      value: _isGlutenFree,
+                      title: 'Chef Special',
+                      subtitle: 'Show only chef special dishes',
+                      icon: Icons.restaurant_menu,
+                      value: _isChefSpl,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isGlutenFree = value;
+                          _isChefSpl = value;
                         });
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Nuts-Free',
-                      subtitle: 'Show only nuts-free dishes',
-                      icon: Icons.no_food,
-                      value: _isNutsFree,
+                      title: 'Seasonal',
+                      subtitle: 'Show only seasonal dishes',
+                      icon: Icons.wb_sunny,
+                      value: _isSeasonal,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isNutsFree = value;
+                          _isSeasonal = value;
                         });
                       },
                     ),

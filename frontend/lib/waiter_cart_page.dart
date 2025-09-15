@@ -106,7 +106,7 @@ class _WaiterCartList extends StatelessWidget {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => WaiterOrderStatusPage(
-                                      orderId: orderId,
+                                      orderId: int.parse(orderId),
                                     ),
                                   ),
                                 );

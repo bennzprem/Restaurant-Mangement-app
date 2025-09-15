@@ -279,20 +279,11 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
-  int _currentScrollIndex = 0;
+  int _currentScrollIndex = 0; // mapped to original categories length
   int _hoveredIndex = -1;
+  static const double _itemExtent = 160.0; // 140 width + 20 separator
 
-  final Map<String, String> categoryIcons = {
-    'Appetizers': '🍽️',
-    'Soups & Salads': '🥗',
-    'Pizzas (11-inch)': '🍕',
-    'Pasta': '🍝',
-    'Sandwiches & Wraps': '🥪',
-    'Main Course - Indian': '🥘',
-    'Main Course - Global': '🌍',
-    'Desserts': '🍰',
-    'Beverages': '🥤',
-  };
+  // Removed emoji mapping - using animated arrows instead
 
   @override
   void initState() {
@@ -339,6 +330,12 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
         categories = fetchedCategories;
         _isLoading = false;
       });
+      // Center the list to the middle block to enable seamless infinite loop
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients && categories.isNotEmpty) {
+          _scrollController.jumpTo(categories.length * _itemExtent);
+        }
+      });
     } catch (e) {
       // Fallback to default categories if API fails
       setState(() {
@@ -354,6 +351,11 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
           MenuCategory(id: -1, name: 'Beverages', items: const []),
         ];
         _isLoading = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients && categories.isNotEmpty) {
+          _scrollController.jumpTo(categories.length * _itemExtent);
+        }
       });
     }
   }
@@ -372,71 +374,76 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
   }
 
   void _autoScrollToNext() {
-    if (_scrollController.hasClients) {
-      // Move to the next category in circular motion
-      _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
+    if (_scrollController.hasClients && categories.isNotEmpty) {
+      final double current = _scrollController.offset;
+      double target = current + _itemExtent;
 
-      // Calculate the target offset for smooth scrolling
-      double targetOffset;
-
-      if (_currentScrollIndex == 0) {
-        // When we reach the end, smoothly scroll back to the beginning
-        targetOffset = 0;
-      } else {
-        targetOffset =
-            _currentScrollIndex * 160.0; // 140 (width) + 20 (separator)
+      // If we're near the far right end of the tripled list, jump back by one block
+      final double rightThreshold = (categories.length * 2 - 2) * _itemExtent;
+      if (target > rightThreshold) {
+        // Jump back by one full block (length * itemExtent) before animating
+        final double jumped = current - (categories.length * _itemExtent);
+        _scrollController.jumpTo(jumped);
+        target = jumped + _itemExtent;
       }
 
-      // Ensure smooth circular scrolling
       _scrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 1500),
+        target,
+        duration: const Duration(milliseconds: 1000),
         curve: Curves.easeInOutCubic,
       );
+
+      // Update mapped index to the base categories list
+      final int virtualIndex = (target / _itemExtent).round();
+      _currentScrollIndex = virtualIndex % categories.length;
     }
   }
 
   void scrollLeft() {
-    if (_scrollController.hasClients) {
-      _currentScrollIndex =
-          (_currentScrollIndex - 1 + categories.length) % categories.length;
+    if (_scrollController.hasClients && categories.isNotEmpty) {
+      final double current = _scrollController.offset;
+      double target = current - _itemExtent;
 
-      // Calculate the target offset for smooth circular scrolling
-      double targetOffset;
-      if (_currentScrollIndex == categories.length - 1) {
-        // When going left from first item, smoothly scroll to the end
-        targetOffset = (categories.length - 1) * 160.0;
-      } else {
-        targetOffset = _currentScrollIndex * 160.0;
+      // If we're near the far left, jump forward by one block before animating
+      final double leftThreshold = (_itemExtent * 1);
+      if (target < leftThreshold) {
+        final double jumped = current + (categories.length * _itemExtent);
+        _scrollController.jumpTo(jumped);
+        target = jumped - _itemExtent;
       }
 
       _scrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 800),
+        target,
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
+
+      final int virtualIndex = (target / _itemExtent).round();
+      _currentScrollIndex = (virtualIndex % categories.length + categories.length) % categories.length;
     }
     _resetAutoScrollTimer();
   }
 
   void scrollRight() {
-    if (_scrollController.hasClients) {
-      _currentScrollIndex = (_currentScrollIndex + 1) % categories.length;
+    if (_scrollController.hasClients && categories.isNotEmpty) {
+      final double current = _scrollController.offset;
+      double target = current + _itemExtent;
 
-      // Calculate the target offset for smooth circular scrolling
-      double targetOffset;
-      if (_currentScrollIndex == 0) {
-        // When we reach the end, smoothly scroll back to the beginning
-        targetOffset = 0;
-      } else {
-        targetOffset = _currentScrollIndex * 160.0;
+      final double rightThreshold = (categories.length * 2 - 2) * _itemExtent;
+      if (target > rightThreshold) {
+        final double jumped = current - (categories.length * _itemExtent);
+        _scrollController.jumpTo(jumped);
+        target = jumped + _itemExtent;
       }
 
       _scrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 800),
+        target,
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
+
+      final int virtualIndex = (target / _itemExtent).round();
+      _currentScrollIndex = virtualIndex % categories.length;
     }
     _resetAutoScrollTimer();
   }
@@ -477,7 +484,6 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                       separatorBuilder: (_, __) => const SizedBox(width: 20),
                       itemBuilder: (context, index) {
                         final name = categories[index].name;
-                        final emoji = categoryIcons[name] ?? '🍴';
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -494,14 +500,14 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             duration: const Duration(milliseconds: 400),
                             decoration: BoxDecoration(
                               color: _hoveredIndex == index
-                                  ? const Color(0xFFDAE952).withOpacity(0.2)
+                                  ? Theme.of(context).primaryColor.withOpacity(0.2)
                                   : (isDark
                                       ? Colors.white.withOpacity(0.06)
                                       : Colors.white.withOpacity(0.7)),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: _hoveredIndex == index
-                                    ? const Color(0xFFDAE952)
+                                    ? Theme.of(context).primaryColor
                                     : Colors.white
                                         .withOpacity(isDark ? 0.12 : 0.2),
                                 width: _hoveredIndex == index ? 2 : 1,
@@ -509,7 +515,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                               boxShadow: [
                                 BoxShadow(
                                   color: _hoveredIndex == index
-                                      ? const Color(0xFFDAE952).withOpacity(0.3)
+                                      ? Theme.of(context).primaryColor.withOpacity(0.3)
                                       : Colors.black
                                           .withOpacity(isDark ? 0.5 : 0.06),
                                   blurRadius: 18,
@@ -519,16 +525,24 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                             ),
                             child: Container(
                               width: 140,
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    emoji,
-                                    style: const TextStyle(fontSize: 36),
+                                  // Animated arrow icon instead of emoji
+                                  AnimatedRotation(
+                                    duration: const Duration(milliseconds: 300),
+                                    turns: _hoveredIndex == index ? 0.25 : 0.0,
+                                    child: Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 32,
+                                      color: _hoveredIndex == index
+                                          ? Colors.black
+                                          : Theme.of(context).primaryColor,
+                                    ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
                                   Text(
                                     name,
                                     textAlign: TextAlign.center,
@@ -542,9 +556,6 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                               : Colors.black),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  const Icon(Icons.arrow_forward,
-                                      color: Color(0xFFDAE952), size: 20),
                                 ],
                               ),
                             ),

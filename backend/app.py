@@ -397,6 +397,14 @@ def get_menu():
             filters.append("menu_items.is_gluten_free=eq.true")
         if request.args.get('nuts_free', 'false').lower() == 'true':
              filters.append("menu_items.contains_nuts=eq.false")
+        
+        # Handle the new boolean filters
+        if request.args.get('is_bestseller', 'false').lower() == 'true':
+            filters.append("menu_items.is_bestseller=eq.true")
+        if request.args.get('is_chef_spl', 'false').lower() == 'true':
+            filters.append("menu_items.is_chef_spl=eq.true")
+        if request.args.get('is_seasonal', 'false').lower() == 'true':
+            filters.append("menu_items.is_seasonal=eq.true")
 
         # Handle search query
         search_term = request.args.get('search')
