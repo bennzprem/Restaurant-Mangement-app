@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async'; // Added for Timer
 import 'dart:ui'; // Added for ImageFilter
+import '../auth_provider.dart';
+import '../book_table_page.dart';
+import '../order_from_table_page.dart';
 
 //updated
 class HeroSection extends StatefulWidget {
@@ -196,102 +200,186 @@ class _HeroSectionState extends State<HeroSection> {
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Icon
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDAE952).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(50),
-                                border: Border.all(
-                                  color: const Color(0xFFDAE952),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.person_add_rounded,
-                                size: 32,
-                                color: const Color(0xFFDAE952),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Title
-                            Text(
-                              'Join ByteEat Today!',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-                            // Subtitle
-                            Text(
-                              'Discover amazing food experiences\nand exclusive offers',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white70,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 32),
-                            // Sign Up Button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Navigate to SignUp page
-                                  Navigator.pushNamed(context, '/signup');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFDAE952),
-                                  foregroundColor: Colors.black,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 24,
+                        child: Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            if (authProvider.isLoggedIn) {
+                              // Show welcome message for logged in users
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Welcome Icon
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDAE952).withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(
+                                        color: const Color(0xFFDAE952),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 32,
+                                      color: const Color(0xFFDAE952),
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                  const SizedBox(height: 20),
+                                  // Welcome Title
+                                  Text(
+                                    'Welcome back, ${authProvider.user?.name ?? 'User'}!',
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 1.2,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  elevation: 4,
-                                ),
-                                child: const Text(
-                                  'Sign Up Now',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                  const SizedBox(height: 12),
+                                  // Subtitle
+                                  Text(
+                                    'Ready to explore our delicious menu?\nLet\'s get started!',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white70,
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Login Link
-                            TextButton(
-                              onPressed: () {
-                                // Navigate to Login page
-                                Navigator.pushNamed(context, '/login');
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white70,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 24,
-                                ),
-                              ),
-                              child: const Text(
-                                'Already have an account? Login',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
+                                  const SizedBox(height: 32),
+                                  // Explore Menu Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Navigate to Menu page
+                                        Navigator.pushNamed(context, '/menu');
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFDAE952),
+                                        foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 24,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        elevation: 4,
+                                      ),
+                                      child: const Text(
+                                        'Explore Menu',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              // Show signup/login for non-logged in users
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Icon
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDAE952).withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(
+                                        color: const Color(0xFFDAE952),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.person_add_rounded,
+                                      size: 32,
+                                      color: const Color(0xFFDAE952),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  // Title
+                                  Text(
+                                    'Join ByteEat Today!',
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 1.2,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Subtitle
+                                  Text(
+                                    'Discover amazing food experiences\nand exclusive offers',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white70,
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 32),
+                                  // Sign Up Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Navigate to SignUp page
+                                        Navigator.pushNamed(context, '/signup');
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFDAE952),
+                                        foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 24,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        elevation: 4,
+                                      ),
+                                      child: const Text(
+                                        'Sign Up Now',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Login Link
+                                  TextButton(
+                                    onPressed: () {
+                                      // Navigate to Login page
+                                      Navigator.pushNamed(context, '/login');
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.white70,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 24,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Already have an account? Login',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                          },
                         ),
                       ),
                     ),
@@ -417,6 +505,9 @@ class _HeroSectionState extends State<HeroSection> {
                         child: _DynamicActionButtons(
                           key: ValueKey(selected['title']),
                           mode: selected['title']!,
+                          onOrderNow: widget.onOrderNow,
+                          onExplore: widget.onExplore,
+                          onPickup: widget.onPickup,
                         ),
                       ),
                     ],
@@ -449,7 +540,17 @@ class _HeroSectionState extends State<HeroSection> {
 
 class _DynamicActionButtons extends StatefulWidget {
   final String mode;
-  const _DynamicActionButtons({super.key, required this.mode});
+  final VoidCallback onOrderNow;
+  final VoidCallback onExplore;
+  final VoidCallback onPickup;
+  
+  const _DynamicActionButtons({
+    super.key, 
+    required this.mode,
+    required this.onOrderNow,
+    required this.onExplore,
+    required this.onPickup,
+  });
 
   @override
   State<_DynamicActionButtons> createState() => _DynamicActionButtonsState();
@@ -510,17 +611,27 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         {
           'label': 'Reserve a Table',
           'icon': Icons.event_seat,
-          'onTap': () {/*todo*/}
+          'onTap': () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BookTablePage()),
+            );
+          }
         },
         {
           'label': 'Order from Table',
           'icon': Icons.table_restaurant,
-          'onTap': () {/*todo*/}
+          'onTap': () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OrderFromTablePage()),
+            );
+          }
         },
         {
           'label': 'Explore Menu',
           'icon': Icons.menu_book,
-          'onTap': () {/*todo*/}
+          'onTap': widget.onExplore
         },
       ];
     } else if (widget.mode == 'Delivery') {
@@ -528,7 +639,7 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         {
           'label': 'Order Now',
           'icon': Icons.delivery_dining,
-          'onTap': () {/*todo*/}
+          'onTap': widget.onOrderNow
         },
         {
           'label': 'Meal Subscription',
@@ -546,7 +657,7 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
         {
           'label': 'Pickup Option',
           'icon': Icons.shopping_bag,
-          'onTap': () {/*todo*/}
+          'onTap': widget.onPickup
         },
         {'label': 'Pre Order', 'icon': Icons.timer, 'onTap': () {/*todo*/}},
         {
