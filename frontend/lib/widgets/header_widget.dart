@@ -14,7 +14,7 @@ enum HeaderActive { none, home, menu, about, contact, login, signup }
 // This makes the navigation bar easier to manage and update.
 const _navItems = [
   {'label': 'Home', 'route': '/', 'active': HeaderActive.home},
-  {'label': 'Menu', 'route': '/menu', 'active': HeaderActive.menu},
+  {'label': 'Menu', 'route': '/explore-menu', 'active': HeaderActive.menu},
   {'label': 'About', 'route': '/about', 'active': HeaderActive.about},
   {'label': 'Contact', 'route': '/contact', 'active': HeaderActive.contact},
 ];

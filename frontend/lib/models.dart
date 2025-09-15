@@ -28,11 +28,13 @@ class MenuItem {
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      price: (json['price'] as num).toDouble(),
-      imageUrl: json['image_url'],
+      id: json['id'] ?? -1,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: (json['price'] is num)
+          ? (json['price'] as num).toDouble()
+          : double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
+      imageUrl: json['image_url']?.toString() ?? '',
       isAvailable: json['is_available'] ?? true,
       isVegan: json['is_vegan'] ?? false, // <-- ADD THIS
       isGlutenFree: json['is_gluten_free'] ?? false, // <-- ADD THIS
@@ -50,13 +52,13 @@ class MenuCategory {
   MenuCategory({required this.id, required this.name, required this.items});
 
   factory MenuCategory.fromJson(Map<String, dynamic> json) {
-    var itemsList = json['items'] as List;
+    var itemsList = (json['items'] as List?) ?? const [];
     List<MenuItem> menuItems =
         itemsList.map((i) => MenuItem.fromJson(i)).toList();
 
     return MenuCategory(
-      id: json['category_id'],
-      name: json['category_name'],
+      id: (json['category_id'] as int?) ?? (json['id'] as int?) ?? -1,
+      name: (json['category_name'] ?? json['name'] ?? '').toString(),
       items: menuItems,
     );
   }

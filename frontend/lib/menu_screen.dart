@@ -38,6 +38,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   String _searchQuery = '';
   Timer? _debounce;
   bool _isSearching = false;
+  bool _didJumpToInitialCategory = false;
   
   // --- NEW SCROLL & KEY VARIABLES ---
   final ScrollController _menuScrollController = ScrollController();
@@ -113,13 +114,29 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   void _loadMenu() {
     setState(() {
-      _menuFuture = _apiService.fetchMenu(
-        vegOnly: _isVegOnly,
-        veganOnly: _isVegan,
-        glutenFreeOnly: _isGlutenFree,
-        nutsFree: _isNutsFree,
-        searchQuery: _searchQuery,
-      );
+      _menuFuture = _apiService
+          .fetchMenu(
+            vegOnly: _isVegOnly,
+            veganOnly: _isVegan,
+            glutenFreeOnly: _isGlutenFree,
+            nutsFree: _isNutsFree,
+            searchQuery: _searchQuery,
+          )
+          .then((categories) async {
+        // Merge in any categories that exist in the DB but currently have no items
+        try {
+          final rawCats = await _apiService.getCategories();
+          final existingNames = categories.map((c) => c.name.toLowerCase()).toSet();
+          for (final c in rawCats) {
+            final name = (c['name'] ?? c['category_name'] ?? '').toString();
+            if (name.isEmpty) continue;
+            if (!existingNames.contains(name.toLowerCase())) {
+              categories.add(MenuCategory(id: c['id'] is int ? c['id'] as int : -1, name: name, items: const []));
+            }
+          }
+        } catch (_) {}
+        return categories;
+      });
       _selectedCategoryIndex = 0;
     });
   }
@@ -146,6 +163,15 @@ Widget build(BuildContext context) {
               }
 
               final menuCategories = snapshot.data!;
+              if (widget.initialCategory != null && !_didJumpToInitialCategory) {
+                final idx = menuCategories.indexWhere((c) => c.name.toLowerCase() == widget.initialCategory!.toLowerCase());
+                if (idx != -1 && idx != _selectedCategoryIndex) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToCategory(idx);
+                  });
+                  _didJumpToInitialCategory = true;
+                }
+              }
               for (int i = 0; i < menuCategories.length; i++) {
                 _categoryKeys.putIfAbsent(i, () => GlobalKey());
                 _leftCategoryKeys.putIfAbsent(i, () => GlobalKey());
@@ -312,7 +338,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
+                              color: Theme.of(context).primaryColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
@@ -471,7 +497,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor,
+                          color: Theme.of(context).primaryColor,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         constraints:
@@ -515,6 +541,13 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
             ),
           ),
         ),
+        if (i < categories.length - 1)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
+              child: _buildCategorySeparator(),
+            ),
+          ),
       ],
       const SliverToBoxAdapter(child: SizedBox(height: 50)),
     ],
@@ -556,7 +589,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
   return Container(
     margin: const EdgeInsets.only(bottom: 4), // Reduced margin from 8 to 4
     decoration: BoxDecoration(
-      color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+      color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
     ),
     child: Material(
@@ -624,10 +657,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                         height: 160,
                         color: AppTheme.primaryLight,
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: Icon(
                           Icons.restaurant,
                           size: 50,
-                          color: AppTheme.primaryColor,
+                          color: Theme.of(context).primaryColor,
                         ),
                       );
                     },
@@ -735,10 +768,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                         children: [
                           Text(
                             '₹${item.price.toStringAsFixed(0)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
+                              color: Theme.of(context).primaryColor,
                             ),
                           ),
                           Consumer<CartProvider>(
@@ -770,7 +803,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                         onPressed: () => _showAddToCartOptions(item),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
-                                              AppTheme.primaryColor,
+                                              Theme.of(context).primaryColor,
                                           foregroundColor: Colors.black,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
@@ -804,6 +837,51 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
       ),
         ),
       ),
+    );
+  }
+
+  // Decorative, thin and modern animated separator between categories
+  Widget _buildCategorySeparator() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color base = isDark ? Colors.white24 : Colors.black12;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value.clamp(0.0, 1.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FractionallySizedBox(
+              widthFactor: value.clamp(0.0, 1.0),
+              child: Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      base,
+                      Theme.of(context).primaryColor,
+                      base,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).primaryColor.withOpacity(0.18),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -864,10 +942,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                 height: 200,
                                 color: AppTheme.primaryLight,
                                 alignment: Alignment.center,
-                                child: const Icon(
+                                child: Icon(
                                   Icons.restaurant,
                                   size: 50,
-                                  color: AppTheme.primaryColor,
+                                  color: Theme.of(context).primaryColor,
                                 ),
                               );
                             },
@@ -897,10 +975,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     ),
                                     Text(
                                       '₹${item.price.toStringAsFixed(0)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
-                                        color: AppTheme.primaryColor,
+                                        color: Theme.of(context).primaryColor,
                                       ),
                                     ),
                                   ],
@@ -1098,7 +1176,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                               _showAddToCartOptions(item);
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppTheme.primaryColor,
+                                              backgroundColor: Theme.of(context).primaryColor,
                                               foregroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(8),
@@ -1191,9 +1269,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryColor),
+        border: Border.all(color: Theme.of(context).primaryColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1201,7 +1279,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
+              icon: Icon(Icons.remove, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.removeSingleItem(item.id),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -1221,7 +1299,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+              icon: Icon(Icons.add, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.addItem(item),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -1240,7 +1318,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(50),
             ),
             child: const CircularProgressIndicator(
@@ -1350,7 +1428,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDAE952),
+                      color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1436,7 +1514,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDAE952),
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1466,11 +1544,11 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: value
-            ? const Color(0xFFDAE952).withOpacity(0.1)
+            ? Theme.of(context).primaryColor.withOpacity(0.1)
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: value ? const Color(0xFFDAE952) : Colors.grey.shade200,
+          color: value ? Theme.of(context).primaryColor : Colors.grey.shade200,
           width: 1,
         ),
       ),
@@ -1479,7 +1557,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           children: [
             Icon(
               icon,
-              color: value ? const Color(0xFFDAE952) : Colors.grey.shade600,
+              color: value ? Theme.of(context).primaryColor : Colors.grey.shade600,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -1506,13 +1584,13 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
         onChanged: onChanged,
         thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
-            return const Color(0xFF9EAD3A); // Darker green for the toggle dot
+            return Theme.of(context).primaryColor; // Theme color for the toggle dot
           }
           return Colors.grey.shade400; // Default grey for untoggled state
         }),
         trackColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
-            return const Color(0xFFDAE952).withOpacity(0.5);
+            return Theme.of(context).primaryColor.withOpacity(0.5);
           }
           return Colors.grey.shade300;
         }),
@@ -1584,10 +1662,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                 ),
                                 Text(
                                   '₹${item.price.toStringAsFixed(0)}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
+                                    color: Theme.of(context).primaryColor,
                                   ),
                                 ),
                               ],
@@ -1622,7 +1700,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     onChanged: (v) {
                                       setSheetState(() => selectedPortion = v!);
                                     },
-                                    activeColor: const Color(0xFF9EAD3A),
+                                    activeColor: Theme.of(context).primaryColor,
                                     title: Row(
                                       children: [
                                         Icon(Icons.local_dining,
@@ -1643,7 +1721,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     onChanged: (v) {
                                       setSheetState(() => selectedPortion = v!);
                                     },
-                                    activeColor: const Color(0xFF9EAD3A),
+                                    activeColor: Theme.of(context).primaryColor,
                                     title: Row(
                                       children: [
                                         Icon(Icons.local_dining_outlined,
@@ -1702,7 +1780,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     Navigator.of(context).pop();
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryColor,
+                                    backgroundColor: Theme.of(context).primaryColor,
                                     foregroundColor: Colors.black,
                                     padding: const EdgeInsets.symmetric(vertical: 14),
                                     shape: RoundedRectangleBorder(
@@ -1785,7 +1863,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDAE952),
+                      color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1866,7 +1944,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDAE952),
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1995,7 +2073,7 @@ void showLoginPrompt(BuildContext context) {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFDAE952),
+              color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -2032,7 +2110,7 @@ void showLoginPrompt(BuildContext context) {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFDAE952),
+            backgroundColor: Theme.of(context).primaryColor,
             foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
