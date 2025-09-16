@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
-class SubscriptionComboSection extends StatelessWidget {
-  const SubscriptionComboSection({super.key});
+class AllDayPicksSection extends StatelessWidget {
+  const AllDayPicksSection({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Time-Based Menus (Breakfast, Lunch, Snacks, Dinner)
     final items = [
-      ('Smart Saver', Icons.calendar_view_week, 'Save more with weekly smart plans'),
-      ('Hassle-Free Month', Icons.calendar_month, 'One-click meals for the whole month'),
-      ('Family Feast', Icons.family_restroom, 'Big portions made for sharing'),
-      ('Workday Fuel', Icons.business_center, 'Quick combos to power busy days'),
+      ('Breakfast Delights', Icons.free_breakfast, 'Wholesome starts for fresh mornings'),
+      ('Lunch Favorites', Icons.lunch_dining, 'Hearty plates to power your day'),
+      ('Evening Snacks', Icons.emoji_food_beverage, 'Crunchy, chatpata pick-me-ups'),
+      ('Dinner Specials', Icons.restaurant, 'Slow-cooked comfort for cosy nights'),
     ];
+
     return SizedBox(
       height: 140,
       child: ListView.separated(
@@ -19,26 +21,27 @@ class SubscriptionComboSection extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final (title, icon, subtitle) = items[index];
-          return _ComboCard(title: title, icon: icon, subtitle: subtitle);
+          return _TimeMenuCard(title: title, subtitle: subtitle, icon: icon);
         },
       ),
     );
   }
 }
 
-class _ComboCard extends StatelessWidget {
+class _TimeMenuCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  const _ComboCard({required this.title, required this.subtitle, required this.icon});
+  const _TimeMenuCard({required this.title, required this.subtitle, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HoverableCard(
-      width: 240,
       onTap: () => Navigator.pushNamed(context, '/menu', arguments: {'initialCategory': title}),
+      borderRadius: 14,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 36,
@@ -49,15 +52,17 @@ class _ComboCard extends StatelessWidget {
             ),
             child: Icon(icon, color: Theme.of(context).primaryColor),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
+                Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
               ],
             ),
           ),
@@ -71,8 +76,8 @@ class _ComboCard extends StatelessWidget {
 class _HoverableCard extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-  final double width;
-  const _HoverableCard({required this.child, required this.onTap, this.width = 240});
+  final double borderRadius;
+  const _HoverableCard({required this.child, required this.onTap, this.borderRadius = 12});
 
   @override
   State<_HoverableCard> createState() => _HoverableCardState();
@@ -90,12 +95,12 @@ class _HoverableCardState extends State<_HoverableCard> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: widget.width,
+        width: 220,
         padding: const EdgeInsets.all(14),
         transform: _hovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
         decoration: BoxDecoration(
           color: isDark ? Colors.white10 : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(color: _hovered ? Theme.of(context).primaryColor : (isDark ? Colors.white12 : Colors.black12)),
           boxShadow: _hovered
               ? [
@@ -111,7 +116,7 @@ class _HoverableCardState extends State<_HoverableCard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
             splashColor: Theme.of(context).primaryColor.withOpacity(0.15),
             child: widget.child,
           ),

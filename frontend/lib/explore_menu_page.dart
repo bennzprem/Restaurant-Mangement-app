@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
 import 'widgets/explore_sections/explore_by_category_section.dart';
-import 'widgets/explore_sections/special_dietary_section.dart';
+import 'widgets/explore_sections/all_day_picks_section.dart';
 import 'widgets/explore_sections/fitness_categories_section.dart';
 import 'widgets/explore_sections/subscription_combo_section.dart';
 
@@ -25,7 +25,7 @@ class ExploreMenuPage extends StatelessWidget {
               children: const [
                 _SectionWrapper(title: 'Explore by Category', route: '/menu', child: ExploreByCategorySection()),
                 SizedBox(height: 20),
-                _SectionWrapper(title: 'Special Dietary Categories', route: '/explore/special-diet', child: SpecialDietarySection()),
+                _SectionWrapper(title: 'All-Day Picks', route: '/explore/special-diet', child: AllDayPicksSection()),
                 SizedBox(height: 20),
                 _SectionWrapper(title: 'Fitness Categories', route: '/explore/fitness', child: FitnessCategoriesSection()),
                 SizedBox(height: 20),
