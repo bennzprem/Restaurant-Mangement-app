@@ -3,14 +3,32 @@ import 'package:flutter/material.dart';
 class FitnessCategoriesSection extends StatelessWidget {
   const FitnessCategoriesSection({super.key});
 
+  final List<Map<String, dynamic>> items = const [
+    {
+      "title": "Muscle Fuel",
+      "icon": Icons.fitness_center,
+      "subtitle": "High-protein picks to build strength"
+    },
+    {
+      "title": "Light & Lean",
+      "icon": Icons.directions_run,
+      "subtitle": "Low-cal choices for active days"
+    },
+    {
+      "title": "Daily Balance",
+      "icon": Icons.self_improvement,
+      "subtitle": "Nutritious staples for every day"
+    },
+    {
+      "title": "Power Gain",
+      "icon": Icons.sports_mma,
+      "subtitle": "Energy-dense meals for training"
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('Muscle Fuel', Icons.fitness_center, 'High-protein picks to build strength'),
-      ('Light & Lean', Icons.directions_run, 'Low-cal choices for active days'),
-      ('Daily Balance', Icons.self_improvement, 'Nutritious staples for every day'),
-      ('Power Gain', Icons.sports_mma, 'Energy-dense meals for training'),
-    ];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       height: 140,
       child: ListView.separated(
@@ -18,55 +36,54 @@ class FitnessCategoriesSection extends StatelessWidget {
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final (title, icon, subtitle) = items[index];
-          return _FitnessCard(title: title, icon: icon, subtitle: subtitle);
+          final item = items[index];
+          return _HoverableCard(
+            width: 240,
+            onTap: () => Navigator.pushNamed(context, '/explore/fitness', arguments: {'initialCategory': item['title']}),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(item['icon'], color: Theme.of(context).primaryColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        item['title'],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item['subtitle'],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
   }
 }
-
-class _FitnessCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  const _FitnessCard({required this.title, required this.subtitle, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _HoverableCard(
-      width: 240,
-      onTap: () => Navigator.pushNamed(context, '/menu', arguments: {'initialCategory': title}),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Theme.of(context).primaryColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 
 class _HoverableCard extends StatefulWidget {
   final Widget child;
@@ -120,5 +137,4 @@ class _HoverableCardState extends State<_HoverableCard> {
     );
   }
 }
-
 
