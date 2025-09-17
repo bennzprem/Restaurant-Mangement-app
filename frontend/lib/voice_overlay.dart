@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
 import 'cart_provider.dart'; // <-- CORRECTED
-import 'models.dart';      // <-- CORRECTED
 
 enum VoiceState { idle, listening, processing, responding }
 
@@ -15,18 +14,20 @@ class VoiceInteractionOverlay extends StatefulWidget {
   const VoiceInteractionOverlay({super.key});
 
   @override
-  State<VoiceInteractionOverlay> createState() => _VoiceInteractionOverlayState();
+  State<VoiceInteractionOverlay> createState() =>
+      _VoiceInteractionOverlayState();
 }
 
-class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with SingleTickerProviderStateMixin {
+class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
+    with SingleTickerProviderStateMixin {
   final SpeechToText _speechToText = SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
-  
+
   VoiceState _currentState = VoiceState.idle;
   String _lastWords = "";
   String _aiResponse = "";
   Map<String, dynamic> _conversationContext = {};
-  
+
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
 
@@ -96,7 +97,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
-      
+
       final url = Uri.parse('http://127.0.0.1:5000/voice-command');
 
       final response = await http.post(
@@ -134,11 +135,11 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
             Navigator.of(context).pushNamed('/login'); // Navigate to login page
           }
         }
-        
-        if (cartData != null && cartData is List && mounted) {
-          Provider.of<CartProvider>(context, listen: false).updateCartFromVoice(cartData);
-        }
 
+        if (cartData != null && cartData is List && mounted) {
+          Provider.of<CartProvider>(context, listen: false)
+              .updateCartFromVoice(cartData);
+        }
       } else {
         throw Exception('Failed to get response from server.');
       }
@@ -147,7 +148,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
         _aiResponse = "Sorry, I'm having trouble connecting. Please try again.";
         _currentState = VoiceState.responding;
       });
-       await _flutterTts.speak(_aiResponse);
+      await _flutterTts.speak(_aiResponse);
     }
   }
 
@@ -221,23 +222,26 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
         animation: _pulseAnimation,
         builder: (context, child) {
           return Transform.scale(
-            scale: _currentState == VoiceState.listening ? _pulseAnimation.value : 1.0,
+            scale: _currentState == VoiceState.listening
+                ? _pulseAnimation.value
+                : 1.0,
             child: child,
           );
         },
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentState == VoiceState.listening ? Color(0xFFDAE952) : Colors.white.withOpacity(0.9),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFFDAE952).withOpacity(0.5),
-                blurRadius: _currentState == VoiceState.listening ? 30 : 10,
-                spreadRadius: _currentState == VoiceState.listening ? 10 : 2,
-              )
-            ]
-          ),
+              shape: BoxShape.circle,
+              color: _currentState == VoiceState.listening
+                  ? Color(0xFFDAE952)
+                  : Colors.white.withOpacity(0.9),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFFDAE952).withOpacity(0.5),
+                  blurRadius: _currentState == VoiceState.listening ? 30 : 10,
+                  spreadRadius: _currentState == VoiceState.listening ? 10 : 2,
+                )
+              ]),
           child: Icon(
             Icons.android, // Bot Icon
             color: Colors.black,
@@ -247,7 +251,8 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay> with 
       ),
     );
   }
-   Widget _buildCloseButton() {
+
+  Widget _buildCloseButton() {
     return TextButton(
       onPressed: () => Navigator.of(context).pop(),
       child: const Text(
