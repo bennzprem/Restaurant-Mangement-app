@@ -18,6 +18,7 @@ from dotenv import load_dotenv  # <-- ADD THIS LINE
 # Import your existing ByteBot class and the new VoiceAssistant class
 from bytebot import ByteBot
 from voice_assistant import VoiceAssistant
+import random
 load_dotenv()
 
 # --- CONFIGURATION: FILL IN YOUR CREDENTIALS HERE ---
@@ -117,34 +118,67 @@ headers = {
 }
 
 
-@app.route('/bytebot-recommendation', methods=['GET'])
-def get_bytebot_recommendation():
-    """Endpoint to get a real-time AI dish recommendation."""
+@app.route('/bytebot-recommendation/<string:user_id>', methods=['POST'])
+def bytebot_recommendation(user_id):
     try:
-        response_data, status_code = bytebot_instance.get_recommendation()
-        # Ensure UI always loads by downgrading unexpected errors to 200 with placeholder
-        if status_code != 200:
-            return jsonify({
-                "dish": {
-                    "name": "Chef's Special",
-                    "description": "A delightful seasonal pick while ByteBot warms up.",
-                    "image_url": "https://via.placeholder.com/600x400.png?text=Chef%27s%20Special",
-                    "tags": ["popular", "seasonal"]
-                },
-                "reason": "Temporary recommendation shown while AI initializes."
-            }), 200
-        return jsonify(response_data), 200
-    except Exception as e:
+        data = request.get_json() or {}
+        taste_pref = data.get("taste_preference")
+
+        # --- 1. If user entered custom preference → Pinecone ---
+        if taste_pref:
+            results = byte_bot_service.semantic_search(taste_pref)
+            if results and results.matches:
+                top_hit = results.matches[0].metadata
+                return jsonify({
+                    "dish": top_hit,
+                    "reason": f"Matched your preference: {taste_pref}"
+                }), 200
+
+        # --- 2. Check user order history ---
+        orders = supabase.table("orders").select("id").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
+
+        if not orders.data:
+            # --- No history → Trending dish ---
+            trending = requests.get(
+                f"{SUPABASE_URL}/rest/v1/order_items?select=menu_item_id,count:menu_item_id(id)&group=menu_item_id&order=count.desc&limit=1",
+                headers=SUPABASE_HEADERS
+            ).json()
+            if trending:
+                item_id = trending[0]["menu_item_id"]
+                dish = supabase.table("menu_items").select("*").eq("id", item_id).single().execute().data
+                return jsonify({
+                    "dish": dish,
+                    "reason": "Trending pick loved by many customers."
+                }), 200
+
+        else:
+            # --- User has history → recommend from same category ---
+            last_order_id = orders.data[0]["id"]
+            last_item = supabase.table("order_items").select("menu_item_id").eq("order_id", last_order_id).limit(1).execute().data[0]
+            last_item_details = supabase.table("menu_items").select("*").eq("id", last_item["menu_item_id"]).single().execute().data
+
+            same_cat = supabase.table("menu_items").select("*").eq("category_id", last_item_details["category_id"]).neq("id", last_item_details["id"]).limit(1).execute()
+
+            if same_cat.data:
+                return jsonify({
+                    "dish": same_cat.data[0],
+                    "reason": f"Based on your taste in {last_item_details['name']}."
+                }), 200
+
         return jsonify({
             "dish": {
                 "name": "Chef's Special",
-                "description": "A delightful seasonal pick while ByteBot warms up.",
+                "description": "Fallback recommendation while ByteBot thinks.",
                 "image_url": "https://via.placeholder.com/600x400.png?text=Chef%27s%20Special",
                 "tags": ["popular", "seasonal"]
             },
-            "reason": "Temporary recommendation shown while AI initializes.",
-            "note": f"server note: {str(e)}"
+            "reason": "Fallback shown due to no data."
         }), 200
+
+    except Exception as e:
+        print(f"Error in recommendation: {e}")
+        return jsonify({"error": str(e)}), 500
+
 '''# --- HELPER FUNCTIONS ---
 def hash_password(password):
     salt = bcrypt.gensalt()
@@ -806,6 +840,8 @@ def upload_profile_picture(user_id):
 
 # --- CORS PREFLIGHT HANDLERS (Very Important) ---
 
+# --- CORS PREFLIGHT HANDLERS (Very Important) ---
+
 @app.route('/users/<string:user_id>', methods=['OPTIONS'])
 def handle_user_preflight(user_id):
     return _build_cors_preflight_response()
@@ -824,6 +860,10 @@ def handle_menu_item_preflight(item_id):
 
 @app.route('/menu/<int:item_id>/availability', methods=['OPTIONS'])
 def handle_menu_availability_preflight(item_id):
+    return _build_cors_preflight_response()
+
+@app.route('/recommendation/<string:user_id>', methods=['OPTIONS'])
+def handle_recommendation_preflight(user_id):
     return _build_cors_preflight_response()
 
 def _build_cors_preflight_response():
@@ -1649,6 +1689,89 @@ def toggle_table_occupancy(table_id):
 
     except Exception as e:
         print(f"Error toggling table occupancy: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/recommendation/<string:user_id>', methods=['POST'])
+def personalized_recommendation(user_id):
+    try:
+        data = request.get_json() or {}
+        taste_pref = data.get("taste_preference")
+
+        # 1. If user provides a specific taste preference, use semantic search (Pinecone)
+        if taste_pref:
+            try:
+                search_results = byte_bot_service.semantic_search(taste_pref)
+                if search_results and search_results['matches']:
+                    top_hit = search_results['matches'][0]['metadata']
+                    # Ensure price is a number, not a string
+                    if isinstance(top_hit.get('price'), str):
+                        top_hit['price'] = float(top_hit['price'])
+                    return jsonify({
+                        "dish": top_hit,
+                        "reason": f"Because you're looking for something '{taste_pref.lower()}'."
+                    }), 200
+            except Exception as e:
+                print(f"Pinecone search failed, falling back: {e}")
+                # If Pinecone fails, we'll proceed to the next logic steps
+        
+        # This function will be our fallback for guests or when other logic fails
+        def get_fallback_recommendation():
+            # First, try to get a random bestseller that is available
+            bestseller_res = supabase.table("menu_items").select("*").eq("is_bestseller", True).eq("is_available", True).execute()
+            if bestseller_res.data:
+                dish = random.choice(bestseller_res.data)
+                return jsonify({
+                    "dish": dish,
+                    "reason": "This is a trending pick, loved by many of our customers!"
+                }), 200
+
+            # If no bestsellers, try a random available chef special
+            chef_spl_res = supabase.table("menu_items").select("*").eq("is_chef_spl", True).eq("is_available", True).execute()
+            if chef_spl_res.data:
+                dish = random.choice(chef_spl_res.data)
+                return jsonify({
+                    "dish": dish,
+                    "reason": "A special recommendation from our chef you might enjoy."
+                }), 200
+            
+            # Absolute fallback if no items are tagged
+            return jsonify({"error": "Could not determine a suitable recommendation."}), 404
+
+        # 2. If user is logged in, check their order history
+        if user_id != 'guest':
+            # Fetch the most recent order for the user
+            orders_res = supabase.table("orders").select("id").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
+            
+            if orders_res.data:
+                last_order_id = orders_res.data[0]["id"]
+                # Get an item from their last order
+                last_items_res = supabase.table("order_items").select("menu_item_id").eq("order_id", last_order_id).limit(1).execute()
+                
+                if last_items_res.data:
+                    last_item_id = last_items_res.data[0]["menu_item_id"]
+                    # Get the category of the last item
+                    last_item_details_res = supabase.table("menu_items").select("category_id, name").eq("id", last_item_id).maybe_single().execute()
+                    
+                    if last_item_details_res.data:
+                        last_item_details = last_item_details_res.data
+                        # Find other available items in the same category, excluding the last item ordered
+                        similar_items_res = supabase.table("menu_items").select("*").eq("category_id", last_item_details["category_id"]).eq("is_available", True).neq("id", last_item_id).execute()
+                        
+                        if similar_items_res.data:
+                            # Recommend a random item from that category
+                            dish = random.choice(similar_items_res.data)
+                            return jsonify({
+                                "dish": dish,
+                                "reason": f"Since you enjoyed '{last_item_details['name']}', you might also like this!"
+                            }), 200
+
+        # 3. If the user is a guest, has no history, or history-based logic fails, get a fallback.
+        return get_fallback_recommendation()
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Fatal error in personalized_recommendation: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
