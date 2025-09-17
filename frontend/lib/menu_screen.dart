@@ -321,11 +321,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                 },
                 icon: Icon(_isSearching ? Icons.close : Icons.search),
               ),
-              IconButton(
-                onPressed: () => _showFilterDialog(context),
-                icon: const Icon(Icons.filter_list),
-              ),
-               // Cart Icon (reusing your existing logic)
+              // Filter button moved to the left panel header
+              // Cart Icon (reusing your existing logic)
               Consumer<CartProvider>(
                 builder: (context, cartProvider, child) {
                   return Stack(
@@ -372,11 +369,21 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Categories',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Categories',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            IconButton(
+              tooltip: 'Filters',
+              onPressed: () => _showFilterDialog(context),
+              icon: const Icon(Icons.filter_list),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -480,10 +487,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
             },
             icon: Icon(_isSearching ? Icons.close : Icons.search),
           ),
-          IconButton(
-            onPressed: () => _showFilterDialog(context),
-            icon: const Icon(Icons.filter_list),
-          ),
+          // Filter button moved to the left panel header
+          // Cart Icon (reusing your existing logic)
           Consumer<CartProvider>(
             builder: (context, cartProvider, child) {
               return Stack(

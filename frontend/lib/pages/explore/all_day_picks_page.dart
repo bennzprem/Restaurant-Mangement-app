@@ -16,6 +16,10 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
   int _selectedCategoryIndex = 0;
   final ApiService _apiService = ApiService();
   Future<List<MenuCategory>>? _menuFuture;
+  String? _selectedRightCategoryName;
+  final GlobalKey _headerTitleKey = GlobalKey();
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, dynamic>> categories = const [
     {
@@ -40,6 +44,21 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
     },
   ];
 
+  String _currentMealTimeKey() {
+    // Maps the left list selection to DB meal_time values
+    switch (_selectedCategoryIndex) {
+      case 0:
+        return 'breakfast';
+      case 1:
+        return 'lunch';
+      case 2:
+        return 'snacks';
+      case 3:
+      default:
+        return 'dinner';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +69,12 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _handleInitialCategory();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _handleInitialCategory() {
@@ -72,9 +97,11 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
         veganOnly: false,
         glutenFreeOnly: false,
         nutsFree: false,
+        mealTime: _currentMealTimeKey(),
       );
       setState(() {
         _menuFuture = Future.value(menu);
+        _selectedRightCategoryName = menu.isNotEmpty ? menu.first.name : null;
       });
     } catch (e) {
       setState(() {
@@ -150,24 +177,44 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
     );
   }
 
-  Widget _buildGlassContainer({
-    required Widget child,
-    required EdgeInsets margin,
-    bool dense = false,
-  }) {
+  Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, bool dense = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: margin,
-      decoration: BoxDecoration(
-        color: isDark ? Colors.black.withOpacity(0.35) : Colors.white.withOpacity(0.65),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.hardEdge,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: child,
+          filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: dense
+                  ? (isDark
+                      ? Colors.black.withOpacity(0.72)
+                      : Colors.white.withOpacity(0.97))
+                  : (isDark
+                      ? Colors.white.withOpacity(0.35)
+                      : Colors.white.withOpacity(0.9)),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: dense
+                    ? (isDark
+                        ? Colors.white.withOpacity(0.35)
+                        : Colors.white.withOpacity(0.45))
+                    : (isDark
+                        ? Colors.white.withOpacity(0.22)
+                        : Colors.white.withOpacity(0.3)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: child,
+          ),
         ),
       ),
     );
@@ -181,11 +228,21 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'All-Day Picks',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'All-Day Picks',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Filters',
+                onPressed: () => Navigator.pushNamed(context, '/menu'),
+                icon: const Icon(Icons.filter_list),
+              )
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -198,7 +255,12 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
                   category,
                   index,
                   isSelected: index == _selectedCategoryIndex,
-                  onTap: () => setState(() => _selectedCategoryIndex = index),
+                  onTap: () async {
+                    setState(() {
+                      _selectedCategoryIndex = index;
+                    });
+                    await _loadMenu();
+                  },
                 );
               },
             ),
@@ -261,9 +323,14 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
   Widget _buildRightMenuList(List<MenuCategory> menuCategories) {
     final selectedCategory = categories[_selectedCategoryIndex];
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Filter menu items based on selected category
-    final filteredItems = _filterMenuItemsByCategory(menuCategories, selectedCategory['title']);
+    final availableCategoryNames = menuCategories.map((c) => c.name).toList();
+    final selectedRightName = _selectedRightCategoryName ?? (availableCategoryNames.isNotEmpty ? availableCategoryNames.first : null);
+    final filteredItems = selectedRightName == null
+        ? <MenuItem>[]
+        : (menuCategories.firstWhere(
+                (c) => c.name == selectedRightName,
+                orElse: () => MenuCategory(id: -1, name: selectedRightName, items: const []))
+            .items);
 
     return CustomScrollView(
       slivers: [
@@ -273,6 +340,47 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           toolbarHeight: 100,
+          actions: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: _isSearching ? 240 : 0,
+              child: _isSearching
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search items...',
+                          filled: true,
+                          fillColor: Theme.of(context).scaffoldBackgroundColor,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    )
+                  : null,
+            ),
+            IconButton(
+              tooltip: _isSearching ? 'Close search' : 'Search',
+              onPressed: () {
+                setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) _searchController.clear();
+                });
+              },
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+            ),
+            IconButton(
+              tooltip: 'Cart',
+              onPressed: () => Navigator.pushNamed(context, '/cart'),
+              icon: const Icon(Icons.shopping_cart_outlined),
+            ),
+            const SizedBox(width: 8),
+          ],
           flexibleSpace: ClipRect(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -299,23 +407,59 @@ class _AllDayPicksPageState extends State<AllDayPicksPage> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Row(
                           children: [
-                            Text(
-                              selectedCategory['title'],
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (selectedRightName != null) {
+                                    Navigator.pushNamed(context, '/menu', arguments: {'initialCategory': selectedRightName});
+                                  }
+                                },
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 200),
+                                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                  child: Container(
+                                    key: _headerTitleKey,
+                                    child: Text(selectedRightName ?? 'Select Category'),
+                                  ),
+                                ),
                               ),
                             ),
-                            Text(
-                              selectedCategory['subtitle'],
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: isDark ? Colors.white70 : Colors.black54,
+                            const SizedBox(width: 8),
+                            if (availableCategoryNames.isNotEmpty)
+                              IconButton(
+                                tooltip: 'Change category',
+                                onPressed: () async {
+                                  // Position the menu right below the category name
+                                  final RenderBox? box = _headerTitleKey.currentContext?.findRenderObject() as RenderBox?;
+                                  final Offset pos = box?.localToGlobal(Offset.zero) ?? const Offset(200, 140);
+                                  final Size size = box?.size ?? const Size(200, 24);
+                                  final selected = await showMenu<String>(
+                                    context: context,
+                                    position: RelativeRect.fromLTRB(
+                                      pos.dx,
+                                      pos.dy + size.height + 6,
+                                      pos.dx + size.width,
+                                      0,
+                                    ),
+                                    items: [
+                                      for (final name in availableCategoryNames)
+                                        PopupMenuItem<String>(value: name, child: Text(name)),
+                                    ],
+                                  );
+                                  if (selected != null) {
+                                    setState(() {
+                                      _selectedRightCategoryName = selected;
+                                    });
+                                  }
+                                },
+                                icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).primaryColor),
                               ),
-                            ),
                           ],
                         ),
                       ),

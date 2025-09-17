@@ -41,6 +41,12 @@ class ApiService {
     bool? isChefSpl,
     bool? isSeasonal,
     String? searchQuery,
+    String? mealTime, // breakfast | lunch | snacks | dinner
+    bool? isHighProtein,
+    bool? isLowCarb,
+    bool? isBalanced,
+    bool? isBulkUp,
+    String? subscriptionType, // weekly, monthly, family_pack, office_lunch
   }) async {
     final queryParameters = {
       'veg_only': vegOnly.toString(),
@@ -51,13 +57,19 @@ class ApiService {
       if (isChefSpl != null) 'is_chef_spl': isChefSpl.toString(),
       if (isSeasonal != null) 'is_seasonal': isSeasonal.toString(),
       if (searchQuery != null && searchQuery.isNotEmpty) 'search': searchQuery,
+      if (mealTime != null && mealTime.isNotEmpty) 'meal_time': mealTime,
+      if (isHighProtein != null) 'is_high_protein': isHighProtein.toString(),
+      if (isLowCarb != null) 'is_low_carb': isLowCarb.toString(),
+      if (isBalanced != null) 'is_balanced': isBalanced.toString(),
+      if (isBulkUp != null) 'is_bulk_up': isBulkUp.toString(),
+      if (subscriptionType != null && subscriptionType.isNotEmpty) 'subscription_type': subscriptionType,
     };
 
     // Remove old filter parameters that are 'false' to keep the URL clean
     // But keep the new boolean filter parameters even if they're false
     queryParameters.removeWhere((key, value) => 
       value == 'false' && 
-      !['is_bestseller', 'is_chef_spl', 'is_seasonal'].contains(key)
+      !['is_bestseller', 'is_chef_spl', 'is_seasonal', 'is_high_protein', 'is_low_carb', 'is_balanced', 'is_bulk_up'].contains(key)
     );
 
     final uri = Uri.parse(
