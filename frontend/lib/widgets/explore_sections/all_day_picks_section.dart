@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 
-class SubscriptionComboSection extends StatelessWidget {
-  const SubscriptionComboSection({super.key});
+class AllDayPicksSection extends StatelessWidget {
+  const AllDayPicksSection({super.key});
 
   final List<Map<String, dynamic>> items = const [
     {
-      "title": "Smart Saver",
-      "icon": Icons.calendar_view_week,
-      "subtitle": "Save more with weekly smart plans"
+      "title": "Breakfast Delights",
+      "icon": Icons.free_breakfast,
+      "subtitle": "Wholesome starts for fresh mornings"
     },
     {
-      "title": "Hassle-Free Month",
-      "icon": Icons.calendar_month,
-      "subtitle": "One-click meals for the whole month"
+      "title": "Lunch Favorites",
+      "icon": Icons.lunch_dining,
+      "subtitle": "Hearty plates to power your day"
     },
     {
-      "title": "Family Feast",
-      "icon": Icons.family_restroom,
-      "subtitle": "Big portions made for sharing"
+      "title": "Evening Snacks",
+      "icon": Icons.emoji_food_beverage,
+      "subtitle": "Crunchy, chatpata pick-me-ups"
     },
     {
-      "title": "Workday Fuel",
-      "icon": Icons.business_center,
-      "subtitle": "Quick combos to power busy days"
+      "title": "Dinner Specials",
+      "icon": Icons.restaurant,
+      "subtitle": "Slow-cooked comfort for cosy nights"
     },
   ];
 
@@ -38,9 +38,10 @@ class SubscriptionComboSection extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return _HoverableCard(
-            width: 240,
-            onTap: () => Navigator.pushNamed(context, '/explore/subscription-combo', arguments: {'initialCategory': item['title']}),
+            onTap: () => Navigator.pushNamed(context, '/explore/special-diet', arguments: {'initialCategory': item['title']}),
+            borderRadius: 14,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: 36,
@@ -51,7 +52,7 @@ class SubscriptionComboSection extends StatelessWidget {
                   ),
                   child: Icon(item['icon'], color: Theme.of(context).primaryColor),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +90,8 @@ class _HoverableCard extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
   final double width;
-  const _HoverableCard({required this.child, required this.onTap, this.width = 240});
+  final double borderRadius;
+  const _HoverableCard({required this.child, required this.onTap, this.width = 220, this.borderRadius = 12});
 
   @override
   State<_HoverableCard> createState() => _HoverableCardState();
@@ -112,7 +114,7 @@ class _HoverableCardState extends State<_HoverableCard> {
         transform: _hovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
         decoration: BoxDecoration(
           color: isDark ? Colors.white10 : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(color: _hovered ? Theme.of(context).primaryColor : (isDark ? Colors.white12 : Colors.black12)),
           boxShadow: _hovered
               ? [
@@ -128,7 +130,7 @@ class _HoverableCardState extends State<_HoverableCard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
             splashColor: Theme.of(context).primaryColor.withOpacity(0.15),
             child: widget.child,
           ),

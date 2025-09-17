@@ -55,7 +55,7 @@ class _ExploreByCategorySectionState extends State<ExploreByCategorySection> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      height: 140,
+      height: 150,
       child: FutureBuilder<List<String>>(
         future: _futureNames,
         builder: (context, snapshot) {
@@ -76,7 +76,7 @@ class _ExploreByCategorySectionState extends State<ExploreByCategorySection> {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final label = names[index];
-                  return _CategoryCard(label: label, icon: Icons.category);
+                  return _CategoryCard(label: label, icon: Icons.category, subtitle: 'Discover popular ${label.toLowerCase()} picks');
                 },
               ),
               Align(
@@ -103,31 +103,72 @@ class _ExploreByCategorySectionState extends State<ExploreByCategorySection> {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
+class _CategoryCard extends StatefulWidget {
   final String label;
   final IconData icon;
-  const _CategoryCard({required this.label, required this.icon});
+  final String subtitle;
+  const _CategoryCard({required this.label, required this.icon, required this.subtitle});
+
+  @override
+  State<_CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<_CategoryCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: () => Navigator.pushNamed(context, '/menu', arguments: {'initialCategory': label}),
-      child: Container(
-        width: 180,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white10 : Colors.white,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.pushNamed(context, '/menu', arguments: {'initialCategory': widget.label}),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 28),
-            const Spacer(),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-          ],
+          splashColor: Theme.of(context).primaryColor.withOpacity(0.15),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 260,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white10 : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _hovered ? Theme.of(context).primaryColor : (isDark ? Colors.white12 : Colors.black12)),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(widget.icon, color: Theme.of(context).primaryColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(widget.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(widget.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

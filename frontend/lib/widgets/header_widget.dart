@@ -137,15 +137,15 @@ class HeaderWidget extends StatelessWidget {
                           : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: const Color(0xFFDAE952),
+                        color: Theme.of(context).primaryColor,
                         width: 2,
                       ),
                     ),
                     child: IconButton(
                       onPressed: () => _showVoiceOverlay(context),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.android,
-                        color: Color(0xFFDAE952),
+                        color: Theme.of(context).primaryColor,
                         size: 20,
                       ),
                       tooltip: 'Talk to ByteBot',
@@ -165,7 +165,7 @@ class HeaderWidget extends StatelessWidget {
                           : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: const Color(0xFFDAE952),
+                        color: Theme.of(context).primaryColor,
                         width: 2,
                       ),
                     ),
@@ -177,7 +177,7 @@ class HeaderWidget extends StatelessWidget {
                         themeProvider.isDarkMode
                             ? Icons.light_mode
                             : Icons.dark_mode,
-                        color: const Color(0xFFDAE952),
+                        color: Theme.of(context).primaryColor,
                         size: 20,
                       ),
                       style: IconButton.styleFrom(
@@ -199,7 +199,7 @@ class HeaderWidget extends StatelessWidget {
                               : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: const Color(0xFFDAE952),
+                            color: Theme.of(context).primaryColor,
                             width: 2,
                           ),
                         ),
@@ -211,9 +211,9 @@ class HeaderWidget extends StatelessWidget {
                               ),
                             );
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.person_outline,
-                            color: Color(0xFFDAE952),
+                            color: Theme.of(context).primaryColor,
                             size: 20,
                           ),
                         ),

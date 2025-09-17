@@ -397,11 +397,39 @@ def get_menu():
             filters.append("menu_items.is_gluten_free=eq.true")
         if request.args.get('nuts_free', 'false').lower() == 'true':
              filters.append("menu_items.contains_nuts=eq.false")
+        
+        # Handle the new boolean filters
+        if request.args.get('is_bestseller', 'false').lower() == 'true':
+            filters.append("menu_items.is_bestseller=eq.true")
+        if request.args.get('is_chef_spl', 'false').lower() == 'true':
+            filters.append("menu_items.is_chef_spl=eq.true")
+        if request.args.get('is_seasonal', 'false').lower() == 'true':
+            filters.append("menu_items.is_seasonal=eq.true")
 
         # Handle search query
         search_term = request.args.get('search')
         if search_term:
             filters.append(f"menu_items.name=ilike.%{search_term}%")
+
+        # NEW: meal_time filtering (e.g., breakfast, lunch, snacks, dinner)
+        meal_time = request.args.get('meal_time')
+        if meal_time:
+            filters.append(f"menu_items.meal_time=eq.{meal_time}")
+
+        # NEW: fitness filters
+        if request.args.get('is_high_protein', 'false').lower() == 'true':
+            filters.append("menu_items.is_high_protein=eq.true")
+        if request.args.get('is_low_carb', 'false').lower() == 'true':
+            filters.append("menu_items.is_low_carb=eq.true")
+        if request.args.get('is_balanced', 'false').lower() == 'true':
+            filters.append("menu_items.is_balanced=eq.true")
+        if request.args.get('is_bulk_up', 'false').lower() == 'true':
+            filters.append("menu_items.is_bulk_up=eq.true")
+
+        # NEW: subscription/combo filter (column: subscription_type)
+        subscription_type = request.args.get('subscription_type')
+        if subscription_type:
+            filters.append(f"menu_items.subscription_type=eq.{subscription_type}")
         
         api_url = f"{SUPABASE_URL}/rest/v1/categories?{select_query}"
         if filters:

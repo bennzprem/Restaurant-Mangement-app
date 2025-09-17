@@ -37,18 +37,40 @@ class ApiService {
     required bool veganOnly,
     required bool glutenFreeOnly,
     required bool nutsFree,
+    bool? isBestseller,
+    bool? isChefSpl,
+    bool? isSeasonal,
     String? searchQuery,
+    String? mealTime, // breakfast | lunch | snacks | dinner
+    bool? isHighProtein,
+    bool? isLowCarb,
+    bool? isBalanced,
+    bool? isBulkUp,
+    String? subscriptionType, // weekly, monthly, family_pack, office_lunch
   }) async {
     final queryParameters = {
       'veg_only': vegOnly.toString(),
       'is_vegan': veganOnly.toString(),
       'is_gluten_free': glutenFreeOnly.toString(),
       'nuts_free': nutsFree.toString(),
+      if (isBestseller != null) 'is_bestseller': isBestseller.toString(),
+      if (isChefSpl != null) 'is_chef_spl': isChefSpl.toString(),
+      if (isSeasonal != null) 'is_seasonal': isSeasonal.toString(),
       if (searchQuery != null && searchQuery.isNotEmpty) 'search': searchQuery,
+      if (mealTime != null && mealTime.isNotEmpty) 'meal_time': mealTime,
+      if (isHighProtein != null) 'is_high_protein': isHighProtein.toString(),
+      if (isLowCarb != null) 'is_low_carb': isLowCarb.toString(),
+      if (isBalanced != null) 'is_balanced': isBalanced.toString(),
+      if (isBulkUp != null) 'is_bulk_up': isBulkUp.toString(),
+      if (subscriptionType != null && subscriptionType.isNotEmpty) 'subscription_type': subscriptionType,
     };
 
-    // Remove filters that are 'false' to keep the URL clean
-    queryParameters.removeWhere((key, value) => value == 'false');
+    // Remove old filter parameters that are 'false' to keep the URL clean
+    // But keep the new boolean filter parameters even if they're false
+    queryParameters.removeWhere((key, value) => 
+      value == 'false' && 
+      !['is_bestseller', 'is_chef_spl', 'is_seasonal', 'is_high_protein', 'is_low_carb', 'is_balanced', 'is_bulk_up'].contains(key)
+    );
 
     final uri = Uri.parse(
       '$baseUrl/menu',
@@ -316,10 +338,9 @@ class ApiService {
     required String time,
     required int partySize,
   }) async {
-    final url =
-        '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
+    final url = '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
     print('🌐 API Call: $url');
-
+    
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -336,14 +357,12 @@ class ApiService {
 
         // We map over the dynamic list, create a Table object for each item,
         // and then call .toList() to convert the result into a List<app_models.Table>
-        final tables =
-            data.map((json) => app_models.Table.fromJson(json)).toList();
+        final tables = data.map((json) => app_models.Table.fromJson(json)).toList();
         print('✅ Successfully created ${tables.length} Table objects');
         return tables;
       } else {
         print('❌ API Error: ${response.statusCode} - ${response.body}');
-        throw Exception(
-            'Failed to fetch available tables: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to fetch available tables: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('❌ Network/Parse Error: $e');
@@ -409,21 +428,19 @@ class ApiService {
       print('🔍 Checking for existing bookings...');
       print('   Date: $date');
       print('   Time: $time');
-
+      
       final reservations = await getReservations(authToken);
-
+      
       // Check if any reservation matches the same date and time
       final hasConflict = reservations.any((reservation) {
-        final reservationDate =
-            DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
-        final reservationTime =
-            DateFormat('HH:mm').format(reservation.reservationTime);
-
+        final reservationDate = DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
+        final reservationTime = DateFormat('HH:mm').format(reservation.reservationTime);
+        
         print('   Checking reservation: $reservationDate at $reservationTime');
-
+        
         return reservationDate == date && reservationTime == time;
       });
-
+      
       print('✅ Existing booking check result: $hasConflict');
       return hasConflict;
     } catch (e) {
@@ -1114,4 +1131,8 @@ class ApiService {
       throw 'Failed to delete category: $e';
     }
   }
+
+  // Kitchen dashboard methods (duplicate removed)
+
+  // Table management methods (duplicates removed; using the API-prefixed implementations above)
 }

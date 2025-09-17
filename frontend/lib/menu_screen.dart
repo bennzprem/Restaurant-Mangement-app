@@ -31,9 +31,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Future<List<MenuCategory>>? _menuFuture;
   int _selectedCategoryIndex = 0;
   bool _isVegOnly = false;
-  bool _isVegan = false;
-  bool _isGlutenFree = false;
-  bool _isNutsFree = false;
+  bool _isBestseller = false;
+  bool _isChefSpl = false;
+  bool _isSeasonal = false;
   String _searchQuery = '';
   Timer? _debounce;
   bool _isSearching = false;
@@ -112,9 +112,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       _menuFuture = _apiService
           .fetchMenu(
         vegOnly: _isVegOnly,
-        veganOnly: _isVegan,
-        glutenFreeOnly: _isGlutenFree,
-        nutsFree: _isNutsFree,
+        veganOnly: false,
+        glutenFreeOnly: false,
+        nutsFree: false,
+        isBestseller: _isBestseller ? true : null,
+        isChefSpl: _isChefSpl ? true : null,
+        isSeasonal: _isSeasonal ? true : null,
         searchQuery: _searchQuery,
       )
           .then((categories) async {
@@ -324,10 +327,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 },
                 icon: Icon(_isSearching ? Icons.close : Icons.search),
               ),
-              IconButton(
-                onPressed: () => _showFilterDialog(context),
-                icon: const Icon(Icons.filter_list),
-              ),
+              // Filter button moved to the left panel header
               // Cart Icon (reusing your existing logic)
               Consumer<CartProvider>(
                 builder: (context, cartProvider, child) {
@@ -377,11 +377,21 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Categories',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Categories',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              IconButton(
+                tooltip: 'Filters',
+                onPressed: () => _showFilterDialog(context),
+                icon: const Icon(Icons.filter_list),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -485,10 +495,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               },
               icon: Icon(_isSearching ? Icons.close : Icons.search),
             ),
-            IconButton(
-              onPressed: () => _showFilterDialog(context),
-              icon: const Icon(Icons.filter_list),
-            ),
+            // Filter button moved to the left panel header
+            // Cart Icon (reusing your existing logic)
             Consumer<CartProvider>(
               builder: (context, cartProvider, child) {
                 return Stack(
@@ -537,7 +545,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 maxCrossAxisExtent: 320,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                mainAxisExtent: 300,
+                mainAxisExtent: 340,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -578,7 +586,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         maxCrossAxisExtent: 320,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        mainAxisExtent: 300,
+        mainAxisExtent: 420,
       ),
       itemCount: filteredItems.length,
       itemBuilder: (context, index) {
@@ -629,216 +637,371 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white10 : Colors.white.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(isDark ? 0.12 : 0.25),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image section
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    item.isAvailable ? Colors.transparent : Colors.grey,
-                    BlendMode.saturation,
-                  ),
-                  child: Image.network(
-                    item.imageUrl,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 160,
-                        color: AppTheme.primaryLight,
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 50,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      );
-                    },
-                  ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showMenuItemDetails(item),
+            splashColor: Theme.of(context).primaryColor.withOpacity(0.15),
+            highlightColor: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(isDark ? 0.12 : 0.25),
                 ),
               ),
-
-              // Content section
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image section with veg/non-veg badge
+                  Stack(
                     children: [
-                      // Title row with favorite button
-                      Row(
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        child: ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            item.isAvailable ? Colors.transparent : Colors.grey,
+                            BlendMode.saturation,
+                          ),
+                          child: Image.network(
+                            item.imageUrl,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 160,
+                                color: AppTheme.primaryLight,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.restaurant,
+                                  size: 50,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 10,
+                        top: 10,
+                        child: _buildVegBadge(item),
+                      ),
+                    ],
+                  ),
+
+                  // Content section
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Title row with favorite button
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Consumer<FavoritesProvider>(
+                                builder: (context, favoritesProvider, child) {
+                                  final isFavorited =
+                                      favoritesProvider.isFavorite(item.id);
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: IconButton(
+                                        padding: const EdgeInsets.all(8),
+                                        iconSize: 18,
+                                        icon: Icon(
+                                          isFavorited
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: isFavorited
+                                              ? Colors.red
+                                              : Colors.grey.shade600,
+                                        ),
+                                        onPressed: () {
+                                          final authProvider =
+                                              Provider.of<AuthProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                          if (authProvider.isLoggedIn) {
+                                            Provider.of<FavoritesProvider>(
+                                              context,
+                                              listen: false,
+                                            ).toggleFavorite(item);
+                                          } else {
+                                            showLoginPrompt(context);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+
+                          // Tags are shown only inside the details dialog
+
+                          const SizedBox(height: 4),
+
+                          // Description
                           Expanded(
                             child: Text(
-                              item.name,
+                              item.description,
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 12,
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.grey.shade600,
+                                height: 1.3,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Consumer<FavoritesProvider>(
-                            builder: (context, favoritesProvider, child) {
-                              final isFavorited =
-                                  favoritesProvider.isFavorite(item.id);
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
+
+                          const SizedBox(height: 12),
+
+                          // Price and action
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '₹${item.price.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).primaryColor,
                                 ),
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: IconButton(
-                                    padding: const EdgeInsets.all(8),
-                                    iconSize: 18,
-                                    icon: Icon(
-                                      isFavorited
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: isFavorited
-                                          ? Colors.red
-                                          : Colors.grey.shade600,
-                                    ),
-                                    onPressed: () {
-                                      final authProvider =
-                                          Provider.of<AuthProvider>(
-                                        context,
-                                        listen: false,
-                                      );
-                                      if (authProvider.isLoggedIn) {
-                                        Provider.of<FavoritesProvider>(
-                                          context,
-                                          listen: false,
-                                        ).toggleFavorite(item);
-                                      } else {
-                                        showLoginPrompt(context);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // Description
-                      Expanded(
-                        child: Text(
-                          item.description,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                isDark ? Colors.white70 : Colors.grey.shade600,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Price and action
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '₹${item.price.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                          Consumer<CartProvider>(
-                            builder: (context, cart, child) {
-                              if (!item.isAvailable) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    'Unavailable',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                );
-                              }
-
-                              final quantity = cart.getItemQuantity(item.id);
-                              return quantity == 0
-                                  ? MouseRegion(
-                                      cursor: SystemMouseCursors.click,
-                                      child: ElevatedButton(
-                                        onPressed: () => cart.addItem(item),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              Theme.of(context).primaryColor,
-                                          foregroundColor: Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 6),
-                                          elevation: 0,
-                                        ),
-                                        child: const Text(
-                                          'Add',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 12,
-                                          ),
+                              ),
+                              Consumer<CartProvider>(
+                                builder: (context, cart, child) {
+                                  if (!item.isAvailable) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text(
+                                        'Unavailable',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                    )
-                                  : _buildQuantityCounter(item);
-                            },
+                                    );
+                                  }
+
+                                  final quantity =
+                                      cart.getItemQuantity(item.id);
+                                  return quantity == 0
+                                      ? MouseRegion(
+                                          cursor: SystemMouseCursors.click,
+                                          child: ElevatedButton(
+                                            onPressed: () => cart.addItem(item),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Theme.of(context)
+                                                  .primaryColor,
+                                              foregroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6),
+                                              elevation: 0,
+                                            ),
+                                            child: const Text(
+                                              'Add',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : _buildQuantityCounter(item);
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildVegBadge(MenuItem item) {
+    final bool veg = item.isVegan || item.isVegetarian;
+    final Color color =
+        veg ? Colors.greenAccent.shade400 : Colors.redAccent.shade200;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 7, color: color),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionChips(MenuItem item) {
+    final String name = item.name.toLowerCase();
+    final int seed = (item.name.hashCode & 0x7fffffff);
+
+    int rand(int base, int spread, int offset) {
+      return base + ((seed + offset) % spread);
+    }
+
+    // Baselines by category
+    int protein;
+    int carbs;
+    int fat;
+    int calories;
+
+    if (name.contains('salad')) {
+      protein = rand(4, 6, 3);
+      carbs = rand(10, 15, 7);
+      fat = rand(4, 6, 11);
+      calories = rand(120, 60, 13);
+    } else if (name.contains('soup')) {
+      protein = rand(3, 5, 3);
+      carbs = rand(8, 12, 7);
+      fat = rand(2, 4, 11);
+      calories = rand(110, 50, 13);
+    } else if (name.contains('pizza')) {
+      protein = rand(9, 8, 3);
+      carbs = rand(48, 20, 7);
+      fat = rand(12, 10, 11);
+      calories = rand(420, 120, 13);
+    } else if (name.contains('pasta')) {
+      protein = rand(8, 6, 3);
+      carbs = rand(55, 18, 7);
+      fat = rand(10, 8, 11);
+      calories = rand(390, 100, 13);
+    } else if (name.contains('biryani')) {
+      protein = rand(12, 8, 3);
+      carbs = rand(60, 20, 7);
+      fat = rand(14, 10, 11);
+      calories = rand(520, 140, 13);
+    } else if (name.contains('kebab') ||
+        name.contains('tikka') ||
+        name.contains('skewer')) {
+      protein = rand(16, 10, 3);
+      carbs = rand(6, 8, 7);
+      fat = rand(12, 8, 11);
+      calories = rand(280, 80, 13);
+    } else if (name.contains('wrap') ||
+        name.contains('sandwich') ||
+        name.contains('burger')) {
+      protein = rand(14, 8, 3);
+      carbs = rand(40, 18, 7);
+      fat = rand(12, 10, 11);
+      calories = rand(450, 120, 13);
+    } else if (name.contains('noodle')) {
+      protein = rand(10, 6, 3);
+      carbs = rand(58, 18, 7);
+      fat = rand(9, 8, 11);
+      calories = rand(420, 110, 13);
+    } else if (name.contains('roll') ||
+        name.contains('fry') ||
+        name.contains('fried')) {
+      protein = rand(6, 6, 3);
+      carbs = rand(30, 16, 7);
+      fat = rand(15, 12, 11);
+      calories = rand(360, 110, 13);
+    } else {
+      protein = rand(8, 8, 3);
+      carbs = rand(35, 20, 7);
+      fat = rand(9, 10, 11);
+      calories = rand(320, 120, 13);
+    }
+
+    // Vegetarian items slightly adjust macros
+    if (item.isVegetarian) {
+      protein = (protein * 0.9).round();
+      fat = (fat * 0.9).round();
+      carbs = (carbs * 1.05).round();
+    }
+
+    Widget chip(String label, Color color) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.7)),
+        ),
+        child: Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        chip('Protein: ${protein}g', Colors.teal),
+        chip('Carbs: ${carbs}g', Colors.indigo),
+        chip('Fat: ${fat}g', Colors.orange),
+        chip('~${calories} kcal', Colors.pinkAccent),
+      ],
     );
   }
 
@@ -887,22 +1050,353 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
+  // Builds a richer, AI-like long description that varies per item.
   String _getEnhancedDescription(MenuItem item) {
-    // AI-enhanced descriptions for better user experience
-    final enhancedDescriptions = {
-      'Spicy Pepperoni Pizza':
-          'A fiery masterpiece featuring premium pepperoni slices with a perfect blend of spices, topped with extra mozzarella cheese on our signature crispy crust. Each bite delivers an explosion of flavors that will satisfy your craving for authentic Italian-American cuisine.',
-      'Mushroom & Truffle Oil Pizza':
-          'An elegant fusion of earthy mushrooms and luxurious truffle oil, creating a sophisticated flavor profile. This gourmet pizza features a medley of wild mushrooms, creamy cheese, and aromatic truffle oil drizzled over our artisanal crust.',
-      'Paneer Tikka Skewers':
-          'Tender cubes of fresh paneer marinated in a rich blend of yogurt, aromatic spices, and herbs, then grilled to perfection alongside colorful bell peppers. These skewers offer a perfect balance of smoky flavors and creamy texture, making them an ideal appetizer or main course.',
-      'Crispy Chilli Baby Corn':
-          'Golden-fried baby corn tossed in a tangy and spicy sauce with fresh bell peppers and onions. This popular Indo-Chinese dish offers the perfect combination of crunch and flavor, with a delightful balance of sweet, sour, and spicy notes.',
-      'Spicy Prawn Aglio Olio':
-          'Succulent prawns sautéed with garlic, chili flakes, and fresh herbs in extra virgin olive oil, served over perfectly al dente pasta. This classic Italian dish delivers bold flavors with a hint of heat, showcasing the natural sweetness of fresh prawns.',
+    final String name = item.name.toLowerCase();
+    final int seed = (item.name.hashCode & 0x7fffffff);
+
+    String pick(List<String> options, int offset) {
+      final int idx = (seed + offset) % options.length;
+      return options[idx];
+    }
+
+    String type;
+    if (name.contains('soup'))
+      type = 'soup';
+    else if (name.contains('pizza'))
+      type = 'pizza';
+    else if (name.contains('pasta'))
+      type = 'pasta';
+    else if (name.contains('biryani'))
+      type = 'biryani';
+    else if (name.contains('curry'))
+      type = 'curry';
+    else if (name.contains('salad'))
+      type = 'salad';
+    else if (name.contains('wrap') || name.contains('sandwich'))
+      type = 'sandwich';
+    else if (name.contains('kebab') ||
+        name.contains('tikka') ||
+        name.contains('skewer'))
+      type = 'tandoor';
+    else if (name.contains('roll') || name.contains('spring'))
+      type = 'fried_snack';
+    else if (name.contains('noodle'))
+      type = 'noodles';
+    else if (name.contains('burger'))
+      type = 'burger';
+    else if (name.contains('dessert') ||
+        name.contains('brownie') ||
+        name.contains('cake') ||
+        name.contains('ice cream'))
+      type = 'dessert';
+    else
+      type = 'general';
+
+    final openings = {
+      'soup': [
+        'A comforting bowl with ',
+        'A steaming ladle of ',
+        'A soul-warming serving of '
+      ],
+      'pizza': [
+        'An artisanal base crowned with ',
+        'Hand-tossed and stone-baked, showcasing ',
+        'Crisp-edged crust layered with '
+      ],
+      'pasta': [
+        'Al dente pasta coated in ',
+        'A trattoria-style plate with ',
+        'Silky sauce embracing '
+      ],
+      'biryani': [
+        'Fragrant basmati layered with ',
+        'Slow-cooked rice perfumed by ',
+        'Dum-style grains infused with '
+      ],
+      'curry': [
+        'A slow-simmered curry boasting ',
+        'Creamy gravy enriched with ',
+        'A hearty preparation with '
+      ],
+      'salad': [
+        'A bright, garden-fresh medley of ',
+        'Crisp, refreshing greens with ',
+        'A light, zesty bowl highlighting '
+      ],
+      'sandwich': [
+        'A generously-stacked bite with ',
+        'Toasted layers bringing together ',
+        'A café-style classic packed with '
+      ],
+      'tandoor': [
+        'Char-smoked and spice-marinated, featuring ',
+        'Tandoor-kissed notes of ',
+        'Flame-grilled skewers with '
+      ],
+      'fried_snack': [
+        'Golden-fried and crisp, delivering ',
+        'A crunchy, addictive snack with ',
+        'Light yet indulgent bites featuring '
+      ],
+      'noodles': [
+        'Wok-tossed noodles scented with ',
+        'Street-style stir-fry built on ',
+        'A lively toss of noodles with '
+      ],
+      'burger': [
+        'A juicy, stacked burger with ',
+        'Griddle-seared patty paired with ',
+        'Soft buns embracing '
+      ],
+      'dessert': [
+        'A decadent finale of ',
+        'An indulgent dessert showcasing ',
+        'A sweet treat layered with '
+      ],
+      'general': [
+        'A thoughtfully prepared plate celebrating ',
+        'A restaurant-style creation highlighting ',
+        'A balanced preparation built around '
+      ],
     };
 
-    return enhancedDescriptions[item.name] ?? item.description;
+    final flavor = {
+      'soup': ['peppery warmth', 'ginger–garlic depth', 'umami richness'],
+      'pizza': [
+        'slow-cooked tomato brightness',
+        'wood-fired aromas',
+        'balanced cheese savouriness'
+      ],
+      'pasta': [
+        'silky, well-seasoned sauce',
+        'buttery richness',
+        'herb-lifted creaminess'
+      ],
+      'biryani': [
+        'layered spices and saffron perfume',
+        'caramelized onions and warm aromatics',
+        'cardamom and bay depth'
+      ],
+      'curry': [
+        'rounded spices with gentle heat',
+        'slow-simmered complexity',
+        'comforting warmth'
+      ],
+      'salad': [
+        'zesty dressing and fresh herbs',
+        'citrus lift with clean crunch',
+        'light vinaigrette notes'
+      ],
+      'sandwich': [
+        'tangy condiments and balanced seasoning',
+        'melty, savoury layers',
+        'peppery bite with creamy undertones'
+      ],
+      'tandoor': [
+        'smoky spice and yoghurt tenderness',
+        'charred edges with aromatic masalas',
+        'bright spices with a hint of lemon'
+      ],
+      'fried_snack': [
+        'crackling crunch and savoury spice',
+        'light batter with bold seasoning',
+        'crisp exterior and juicy centre'
+      ],
+      'noodles': [
+        'soy–garlic umami and chilli heat',
+        'wok hei smokiness',
+        'tangy-savoury balance'
+      ],
+      'burger': [
+        'juicy savouriness and tangy sauces',
+        'smoky sear with creamy balance',
+        'pickled brightness and melty cheese'
+      ],
+      'dessert': [
+        'rich sweetness and aromatic notes',
+        'cocoa depth with a silky finish',
+        'buttery warmth and gentle vanilla'
+      ],
+      'general': [
+        'balanced seasoning and clean flavours',
+        'aromatic spices with rounded heat',
+        'fresh herbs and savoury depth'
+      ],
+    };
+
+    final texture = {
+      'soup': [
+        'light, steamy broth',
+        'velvety body',
+        'hearty, sip-friendly texture'
+      ],
+      'pizza': [
+        'crisp yet airy crust',
+        'chewy centre with crisp edges',
+        'thin, crackly base'
+      ],
+      'pasta': [
+        'al dente bite',
+        'silky coating',
+        'creamy cling on each strand'
+      ],
+      'biryani': [
+        'fluffy, separate grains',
+        'tender layers',
+        'aromatic, well-steamed rice'
+      ],
+      'curry': [
+        'velvety gravy',
+        'rich, spoon-coating texture',
+        'homestyle thickness'
+      ],
+      'salad': ['crisp leaves', 'juicy bites', 'light crunch'],
+      'sandwich': ['toasty bite', 'generous layering', 'soft crunch'],
+      'tandoor': [
+        'char-kissed surface',
+        'succulent interior',
+        'grill-seared juiciness'
+      ],
+      'fried_snack': [
+        'shatteringly crisp shell',
+        'light crunch',
+        'golden, airy batter'
+      ],
+      'noodles': ['springy noodles', 'bouncy strands', 'tender chew'],
+      'burger': ['soft buns', 'juicy centre', 'satisfying stack'],
+      'dessert': ['soft crumb', 'silky mouthfeel', 'creamy indulgence'],
+      'general': ['pleasing bite', 'well-balanced body', 'comforting feel'],
+    };
+
+    final finishes = {
+      'soup': [
+        'a clean, appetising finish',
+        'gentle warmth that lingers',
+        'a soothing aftertaste'
+      ],
+      'pizza': [
+        'an authentic pizzeria-style finish',
+        'a satisfying, cheesy finish',
+        'an aromatic close'
+      ],
+      'pasta': [
+        'a bright, clean finish',
+        'a buttery, comforting close',
+        'a satisfying, saucy finale'
+      ],
+      'biryani': [
+        'an irresistible dum aroma',
+        'a regal, celebratory finish',
+        'lingering warmth'
+      ],
+      'curry': [
+        'a homely, satisfying finish',
+        'a round, mellow aftertaste',
+        'comforting warmth'
+      ],
+      'salad': [
+        'a refreshing finale',
+        'a crisp, clean finish',
+        'an uplifting close'
+      ],
+      'sandwich': [
+        'a snack-perfect finish',
+        'a café-style close',
+        'a hearty finale'
+      ],
+      'tandoor': [
+        'a smoky, zesty finish',
+        'a lemony, uplifting close',
+        'a festive grill note'
+      ],
+      'fried_snack': [
+        'a craveable finish',
+        'a light, moreish close',
+        'a snackable finale'
+      ],
+      'noodles': [
+        'a lively street-style finish',
+        'a savoury, umami close',
+        'a peppery finale'
+      ],
+      'burger': [
+        'a diner-style finish',
+        'a saucy, satisfying close',
+        'a hearty finale'
+      ],
+      'dessert': [
+        'a decadent finale',
+        'a sweet, satisfying close',
+        'a gentle, creamy finish'
+      ],
+      'general': [
+        'a balanced finish',
+        'a flavourful close',
+        'a satisfying finale'
+      ],
+    };
+
+    final String open = pick(openings[type]!, 1);
+    final String flav = pick(flavor[type]!, 7);
+    final String text = pick(texture[type]!, 13);
+    final String end = pick(finishes[type]!, 29);
+
+    final String vegNote = item.isVegetarian
+        ? 'vegetarian preparation'
+        : 'non‑vegetarian specialty';
+    final List<String> badges = [];
+    if (item.isBestseller) badges.add('bestseller');
+    if (item.isChefSpecial) badges.add('chef special');
+    if (item.isSeasonal) badges.add('seasonal');
+    final String tag = badges.isEmpty ? '' : ' • ' + badges.join(' • ');
+
+    final String lead = item.description.isNotEmpty
+        ? item.description
+        : 'A thoughtfully prepared ${item.name}.';
+
+    return '$lead\n\n$open$flav, $text, and $end — a $vegNote$tag.';
+  }
+
+  List<Widget> _buildTagChips(MenuItem item) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final textStyle = TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w700,
+      color: isDark ? Colors.black : Colors.black,
+    );
+
+    List<Widget> chips = [];
+    Widget buildChip(String label, Color color, IconData icon) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: Colors.black),
+            const SizedBox(width: 4),
+            Text(label, style: textStyle),
+          ],
+        ),
+      );
+    }
+
+    if (item.isBestseller) {
+      chips.add(
+          buildChip('Bestseller', Colors.amber, Icons.local_fire_department));
+    }
+    if (item.isChefSpecial) {
+      chips.add(buildChip(
+          'Chef Special', Colors.lightBlueAccent, Icons.restaurant_menu));
+    }
+    if (item.isSeasonal) {
+      chips.add(buildChip('Seasonal', Colors.lightGreenAccent, Icons.wb_sunny));
+    }
+    return chips;
   }
 
   void _showMenuItemDetails(MenuItem item) {
@@ -966,7 +1460,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Title and Price
+                                // Title, Tags and Price
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -993,6 +1487,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8),
+                                if (item.isBestseller ||
+                                    item.isChefSpecial ||
+                                    item.isSeasonal)
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    children: _buildTagChips(item),
+                                  ),
                                 const SizedBox(height: 16),
                                 // Enhanced Description
                                 Text(
@@ -1006,7 +1509,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-                                // Serving info and dietary info
+                                // Serving info and dietary info (simplified to veg/non-veg)
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
@@ -1053,7 +1556,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        'Dietary Information',
+                                        'Dietary Preference',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -1065,101 +1568,61 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          Icon(
-                                            item.isVegan
-                                                ? Icons.eco
-                                                : Icons.eco_outlined,
-                                            size: 16,
-                                            color: item.isVegan
-                                                ? Colors.green
-                                                : Colors.grey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            item.isVegan
-                                                ? 'Vegan'
-                                                : 'Vegetarian',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.black54,
-                                              fontWeight: item.isVegan
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: (item.isVegetarian
+                                                      ? Colors.greenAccent
+                                                      : Colors.redAccent)
+                                                  .withOpacity(0.15),
+                                              border: Border.all(
+                                                  color: item.isVegetarian
+                                                      ? Colors.greenAccent
+                                                      : Colors.redAccent,
+                                                  width: 1.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.circle,
+                                                    size: 10,
+                                                    color: item.isVegetarian
+                                                        ? Colors.greenAccent
+                                                        : Colors.redAccent),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  item.isVegetarian
+                                                      ? 'Vegetarian'
+                                                      : 'Non-Vegetarian',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black87,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
                                       ),
-                                      if (item.isGlutenFree) ...[
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.grain,
-                                              size: 16,
-                                              color: Colors.blue,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Gluten Free',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isDark
-                                                    ? Colors.white70
-                                                    : Colors.black54,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
+                                      const SizedBox(height: 14),
+                                      Text(
+                                        'Estimated Nutrition (per serving)',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                         ),
-                                      ],
-                                      if (item.containsNuts) ...[
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.warning,
-                                              size: 16,
-                                              color: Colors.orange,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Contains Nuts',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isDark
-                                                    ? Colors.white70
-                                                    : Colors.black54,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                      if (!item.containsNuts) ...[
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.check_circle,
-                                              size: 16,
-                                              color: Colors.green,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Nuts Free',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isDark
-                                                    ? Colors.white70
-                                                    : Colors.black54,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildNutritionChips(item),
                                     ],
                                   ),
                                 ),
@@ -1494,7 +1957,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'Dietary Filters',
+                    'Menu Filters',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1520,35 +1983,35 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Vegan',
-                      subtitle: 'Show only vegan dishes',
-                      icon: Icons.spa,
-                      value: _isVegan,
+                      title: 'Bestseller',
+                      subtitle: 'Show only bestseller dishes',
+                      icon: Icons.star,
+                      value: _isBestseller,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isVegan = value;
+                          _isBestseller = value;
                         });
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Gluten-Free',
-                      subtitle: 'Show only gluten-free dishes',
-                      icon: Icons.grain,
-                      value: _isGlutenFree,
+                      title: 'Chef Special',
+                      subtitle: 'Show only chef special dishes',
+                      icon: Icons.restaurant_menu,
+                      value: _isChefSpl,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isGlutenFree = value;
+                          _isChefSpl = value;
                         });
                       },
                     ),
                     _buildFilterTile(
-                      title: 'Nuts-Free',
-                      subtitle: 'Show only nuts-free dishes',
-                      icon: Icons.no_food,
-                      value: _isNutsFree,
+                      title: 'Seasonal',
+                      subtitle: 'Show only seasonal dishes',
+                      icon: Icons.wb_sunny,
+                      value: _isSeasonal,
                       onChanged: (value) {
                         setDialogState(() {
-                          _isNutsFree = value;
+                          _isSeasonal = value;
                         });
                       },
                     ),

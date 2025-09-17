@@ -71,7 +71,9 @@ import 'cart_screen.dart';
 import 'favorites_screen.dart';
 import 'services/payment_service.dart';
 import 'explore_menu_page.dart';
-import 'pages/explore/coming_soon_page.dart';
+import 'pages/explore/all_day_picks_page.dart';
+import 'pages/explore/fitness_categories_page.dart';
+import 'pages/explore/subscription_combo_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -145,11 +147,10 @@ class MyApp extends StatelessWidget {
               '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
               '/cart': (context) => const CartScreen(),
               '/favorites': (context) => const FavoritesScreen(),
-              // Explore section detail placeholders
-              '/explore/categories': (context) => const ComingSoonPage(title: 'Explore by Category'),
-              '/explore/special-diet': (context) => const ComingSoonPage(title: 'Special Dietary Categories'),
-              '/explore/fitness': (context) => const ComingSoonPage(title: 'Fitness Categories'),
-              '/explore/subscription-combo': (context) => const ComingSoonPage(title: 'Subscription & Combo Categories'),
+              // Explore section detail pages
+              '/explore/special-diet': (context) => const AllDayPicksPage(),
+              '/explore/fitness': (context) => const FitnessCategoriesPage(),
+              '/explore/subscription-combo': (context) => const SubscriptionComboPage(),
             },
           );
         },

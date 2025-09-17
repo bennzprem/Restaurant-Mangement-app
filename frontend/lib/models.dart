@@ -9,9 +9,13 @@ class MenuItem {
   final String imageUrl;
   final bool isAvailable;
   final bool isVegan; // <-- ADD THIS
+  final bool isVegetarian; // <-- NEW: explicitly vegetarian (non-vegan)
   final bool isGlutenFree; // <-- ADD THIS
   final bool containsNuts; // <-- ADD THIS
   final int? categoryId; // <-- ADD THIS
+  final bool isBestseller;
+  final bool isChefSpecial;
+  final bool isSeasonal;
 
   MenuItem({
     required this.id,
@@ -21,9 +25,13 @@ class MenuItem {
     required this.imageUrl,
     required this.isAvailable,
     required this.isVegan, // <-- ADD THIS
+    this.isVegetarian = false,
     required this.isGlutenFree, // <-- ADD THIS
     required this.containsNuts, // <-- ADD THIS
     this.categoryId, // <-- ADD THIS
+    this.isBestseller = false,
+    this.isChefSpecial = false,
+    this.isSeasonal = false,
   });
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
@@ -37,9 +45,13 @@ class MenuItem {
       imageUrl: json['image_url']?.toString() ?? '',
       isAvailable: json['is_available'] ?? true,
       isVegan: json['is_vegan'] ?? false, // <-- ADD THIS
+      isVegetarian: (json['is_veg'] ?? json['is_vegetarian']) ?? false,
       isGlutenFree: json['is_gluten_free'] ?? false, // <-- ADD THIS
       containsNuts: json['contains_nuts'] ?? false, // <-- ADD THIS
       categoryId: json['category_id'] as int?, // <-- ADD THIS
+      isBestseller: json['is_bestseller'] ?? false,
+      isChefSpecial: (json['is_chef_spl'] ?? json['is_chef_special']) ?? false,
+      isSeasonal: json['is_seasonal'] ?? false,
     );
   }
 }
