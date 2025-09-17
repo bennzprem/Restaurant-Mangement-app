@@ -10,7 +10,6 @@ import 'favorites_provider.dart';
 import 'models.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
-import 'widgets/footer_widget.dart';
 
 import 'auth_provider.dart';
 
@@ -39,7 +38,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   Timer? _debounce;
   bool _isSearching = false;
   bool _didJumpToInitialCategory = false;
-  
+
   // --- NEW SCROLL & KEY VARIABLES ---
   final ScrollController _menuScrollController = ScrollController();
   final Map<int, GlobalKey> _categoryKeys = {};
@@ -54,7 +53,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
   // Animation controllers (can be simplified later if not needed)
   late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
 
   final Map<String, String> categoryIcons = {
     'Appetizers': '🍽️',
@@ -75,9 +73,6 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
     _fadeController.forward();
 
@@ -116,22 +111,26 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     setState(() {
       _menuFuture = _apiService
           .fetchMenu(
-            vegOnly: _isVegOnly,
-            veganOnly: _isVegan,
-            glutenFreeOnly: _isGlutenFree,
-            nutsFree: _isNutsFree,
-            searchQuery: _searchQuery,
-          )
+        vegOnly: _isVegOnly,
+        veganOnly: _isVegan,
+        glutenFreeOnly: _isGlutenFree,
+        nutsFree: _isNutsFree,
+        searchQuery: _searchQuery,
+      )
           .then((categories) async {
         // Merge in any categories that exist in the DB but currently have no items
         try {
           final rawCats = await _apiService.getCategories();
-          final existingNames = categories.map((c) => c.name.toLowerCase()).toSet();
+          final existingNames =
+              categories.map((c) => c.name.toLowerCase()).toSet();
           for (final c in rawCats) {
             final name = (c['name'] ?? c['category_name'] ?? '').toString();
             if (name.isEmpty) continue;
             if (!existingNames.contains(name.toLowerCase())) {
-              categories.add(MenuCategory(id: c['id'] is int ? c['id'] as int : -1, name: name, items: const []));
+              categories.add(MenuCategory(
+                  id: c['id'] is int ? c['id'] as int : -1,
+                  name: name,
+                  items: const []));
             }
           }
         } catch (_) {}
@@ -141,129 +140,134 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     });
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    body: Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 75),
-          child: FutureBuilder<List<MenuCategory>>(
-            future: _menuFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return _buildLoadingState();
-              }
-              if (snapshot.hasError) {
-                return _buildErrorState(snapshot.error.toString());
-              }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              final menuCategories = snapshot.data!;
-              if (widget.initialCategory != null && !_didJumpToInitialCategory) {
-                final idx = menuCategories.indexWhere((c) => c.name.toLowerCase() == widget.initialCategory!.toLowerCase());
-                if (idx != -1 && idx != _selectedCategoryIndex) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToCategory(idx);
-                  });
-                  _didJumpToInitialCategory = true;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 75),
+            child: FutureBuilder<List<MenuCategory>>(
+              future: _menuFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingState();
                 }
-              }
-              for (int i = 0; i < menuCategories.length; i++) {
-                _categoryKeys.putIfAbsent(i, () => GlobalKey());
-                _leftCategoryKeys.putIfAbsent(i, () => GlobalKey());
-              }
+                if (snapshot.hasError) {
+                  return _buildErrorState(snapshot.error.toString());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildEmptyState();
+                }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ## CHANGE 1: Left panel is now wrapped in the glass container ##
-                  _buildGlassContainer(
-                    margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                    dense: true,
-                    child: _buildLeftCategoryList(menuCategories),
-                  ),
-                  
-                  // ## CHANGE 2: Right panel is also wrapped in the glass container ##
-                  Expanded(
-                    child: _buildGlassContainer(
-                      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                final menuCategories = snapshot.data!;
+                if (widget.initialCategory != null &&
+                    !_didJumpToInitialCategory) {
+                  final idx = menuCategories.indexWhere((c) =>
+                      c.name.toLowerCase() ==
+                      widget.initialCategory!.toLowerCase());
+                  if (idx != -1 && idx != _selectedCategoryIndex) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToCategory(idx);
+                    });
+                    _didJumpToInitialCategory = true;
+                  }
+                }
+                for (int i = 0; i < menuCategories.length; i++) {
+                  _categoryKeys.putIfAbsent(i, () => GlobalKey());
+                  _leftCategoryKeys.putIfAbsent(i, () => GlobalKey());
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ## CHANGE 1: Left panel is now wrapped in the glass container ##
+                    _buildGlassContainer(
+                      margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
                       dense: true,
-                      child: _searchQuery.length >= 3
-                          ? _buildSearchResults(menuCategories)
-                          : _buildRightMenuList(menuCategories),
+                      child: _buildLeftCategoryList(menuCategories),
                     ),
-                  ),
-                ],
-              );
-            },
+
+                    // ## CHANGE 2: Right panel is also wrapped in the glass container ##
+                    Expanded(
+                      child: _buildGlassContainer(
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        dense: true,
+                        child: _searchQuery.length >= 3
+                            ? _buildSearchResults(menuCategories)
+                            : _buildRightMenuList(menuCategories),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
-        ),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: HeaderWidget(
-            active: HeaderActive.menu,
-            showBack: true,
-            onBack: () {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              } else {
-                Navigator.of(context).pushReplacementNamed('/');
-              }
-            },
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: HeaderWidget(
+              active: HeaderActive.menu,
+              showBack: true,
+              onBack: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
+              },
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, bool dense = false}) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return Container(
-    margin: margin,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.hardEdge,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: dense
-                ? (isDark
-                    ? Colors.black.withOpacity(0.72)
-                    : Colors.white.withOpacity(0.97))
-                : (isDark
-                    ? Colors.white.withOpacity(0.35)
-                    : Colors.white.withOpacity(0.9)),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassContainer(
+      {required Widget child, required EdgeInsets margin, bool dense = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: margin,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.hardEdge,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
+          child: Container(
+            decoration: BoxDecoration(
               color: dense
                   ? (isDark
-                      ? Colors.white.withOpacity(0.35)
-                      : Colors.white.withOpacity(0.45))
+                      ? Colors.black.withOpacity(0.72)
+                      : Colors.white.withOpacity(0.97))
                   : (isDark
-                      ? Colors.white.withOpacity(0.22)
-                      : Colors.white.withOpacity(0.3)),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
+                      ? Colors.white.withOpacity(0.35)
+                      : Colors.white.withOpacity(0.9)),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: dense
+                    ? (isDark
+                        ? Colors.white.withOpacity(0.35)
+                        : Colors.white.withOpacity(0.45))
+                    : (isDark
+                        ? Colors.white.withOpacity(0.22)
+                        : Colors.white.withOpacity(0.3)),
               ),
-            ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // A new method to encapsulate the header/search bar
   Widget _buildHeader() {
@@ -285,8 +289,10 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('Menu',
-              style:
-                  Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 24)),
+              style: Theme.of(context)
+                  .textTheme
+                  .displayLarge
+                  ?.copyWith(fontSize: 24)),
           Row(
             children: [
               // Search Field
@@ -322,7 +328,7 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                 onPressed: () => _showFilterDialog(context),
                 icon: const Icon(Icons.filter_list),
               ),
-               // Cart Icon (reusing your existing logic)
+              // Cart Icon (reusing your existing logic)
               Consumer<CartProvider>(
                 builder: (context, cartProvider, child) {
                   return Stack(
@@ -341,10 +347,12 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                               color: Theme.of(context).primaryColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            constraints: const BoxConstraints(
+                                minWidth: 16, minHeight: 16),
                             child: Text(
                               '${cartProvider.items.length}',
-                              style: const TextStyle(color: Colors.black, fontSize: 10),
+                              style: const TextStyle(
+                                  color: Colors.black, fontSize: 10),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -362,197 +370,197 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
 
   // Builds the scrollable category list on the left
   Widget _buildLeftCategoryList(List<MenuCategory> categories) {
-  return Container(
-    width: 280,
-    color: Colors.transparent, // Changed from Theme.of(context).cardColor
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Categories',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: ListView.builder(
-            controller: _leftCategoryScrollController,
-            padding: EdgeInsets.zero,
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              return Container(
-                key: _leftCategoryKeys[index],
-                child: _buildCategoryItem(
-                  category,
-                  index,
-                  isSelected: index == _selectedCategoryIndex,
-                  onTap: () => _scrollToCategory(index),
+    return Container(
+      width: 280,
+      color: Colors.transparent, // Changed from Theme.of(context).cardColor
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Categories',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              controller: _leftCategoryScrollController,
+              padding: EdgeInsets.zero,
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                return Container(
+                  key: _leftCategoryKeys[index],
+                  child: _buildCategoryItem(
+                    category,
+                    index,
+                    isSelected: index == _selectedCategoryIndex,
+                    onTap: () => _scrollToCategory(index),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // Builds the main scrollable menu on the right, grouped by category
   Widget _buildRightMenuList(List<MenuCategory> categories) {
-  // ## FIX: Corrected the variable name here ##
-  final selectedCategory = categories[_selectedCategoryIndex];
+    // ## FIX: Corrected the variable name here ##
+    final selectedCategory = categories[_selectedCategoryIndex];
 
-  final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-  return CustomScrollView(
-    controller: _menuScrollController,
-    slivers: [
-      SliverAppBar(
-        pinned: true,
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 60,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: (isDark
-                        ? Colors.black.withOpacity(0.35)
-                        : Colors.white.withOpacity(0.65)),
-                border: Border(
-                  bottom: BorderSide(
-                    color: (isDark
-                            ? Colors.white.withOpacity(0.08)
-                            : Colors.black.withOpacity(0.06)),
-                    width: 1,
+    return CustomScrollView(
+      controller: _menuScrollController,
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 60,
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: (isDark
+                      ? Colors.black.withOpacity(0.35)
+                      : Colors.white.withOpacity(0.65)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: (isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.06)),
+                      width: 1,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        title: Text(
-          selectedCategory.name,
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-            fontSize: 22,
+          title: Text(
+            selectedCategory.name,
+            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 22,
+                ),
           ),
-        ),
-        titleSpacing: 24,
-        actions: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: _isSearching ? 250 : 0,
-            child: _isSearching
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Search in menu...',
-                        filled: true,
-                        fillColor: (isDark
-                            ? Colors.white.withOpacity(0.08)
-                            : Colors.white.withOpacity(0.85)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() => _isSearching = !_isSearching);
-              if (!_isSearching) _searchController.clear();
-            },
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-          ),
-          IconButton(
-            onPressed: () => _showFilterDialog(context),
-            icon: const Icon(Icons.filter_list),
-          ),
-          Consumer<CartProvider>(
-            builder: (context, cartProvider, child) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pushNamed(context, '/cart'),
-                    icon: const Icon(Icons.shopping_cart_outlined),
-                  ),
-                  if (cartProvider.items.isNotEmpty)
-                    Positioned(
-                      right: 4,
-                      top: 10,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints:
-                            const BoxConstraints(minWidth: 16, minHeight: 16),
-                        child: Text(
-                          '${cartProvider.items.length}',
-                          style: const TextStyle(
-                              color: Colors.black, fontSize: 10),
-                          textAlign: TextAlign.center,
+          titleSpacing: 24,
+          actions: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: _isSearching ? 250 : 0,
+              child: _isSearching
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search in menu...',
+                          filled: true,
+                          fillColor: (isDark
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.white.withOpacity(0.85)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 16),
                         ),
                       ),
-                    ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-
-      for (int i = 0; i < categories.length; i++) ...[
-        SliverToBoxAdapter(
-          key: _categoryKeys[i],
-          child: Container(height: 0.1),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 320,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              mainAxisExtent: 300,
+                    )
+                  : null,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = categories[i].items[index];
-                return _buildMenuItemCard(item);
+            IconButton(
+              onPressed: () {
+                setState(() => _isSearching = !_isSearching);
+                if (!_isSearching) _searchController.clear();
               },
-              childCount: categories[i].items.length,
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
             ),
-          ),
+            IconButton(
+              onPressed: () => _showFilterDialog(context),
+              icon: const Icon(Icons.filter_list),
+            ),
+            Consumer<CartProvider>(
+              builder: (context, cartProvider, child) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pushNamed(context, '/cart'),
+                      icon: const Icon(Icons.shopping_cart_outlined),
+                    ),
+                    if (cartProvider.items.isNotEmpty)
+                      Positioned(
+                        right: 4,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints:
+                              const BoxConstraints(minWidth: 16, minHeight: 16),
+                          child: Text(
+                            '${cartProvider.items.length}',
+                            style: const TextStyle(
+                                color: Colors.black, fontSize: 10),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(width: 16),
+          ],
         ),
-        if (i < categories.length - 1)
+        for (int i = 0; i < categories.length; i++) ...[
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
-              child: _buildCategorySeparator(),
+            key: _categoryKeys[i],
+            child: Container(height: 0.1),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 320,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 300,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final item = categories[i].items[index];
+                  return _buildMenuItemCard(item);
+                },
+                childCount: categories[i].items.length,
+              ),
             ),
           ),
+          if (i < categories.length - 1)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
+                child: _buildCategorySeparator(),
+              ),
+            ),
+        ],
+        const SliverToBoxAdapter(child: SizedBox(height: 50)),
       ],
-      const SliverToBoxAdapter(child: SizedBox(height: 50)),
-    ],
-  );
-}
+    );
+  }
+
   // Builds the view for search results
   Widget _buildSearchResults(List<MenuCategory> allCategories) {
     final allItems = allCategories.expand((c) => c.items).toList();
@@ -580,40 +588,40 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
   }
 
   Widget _buildCategoryItem(
-  MenuCategory category,
-  int index, {
-  required bool isSelected,
-  required VoidCallback onTap,
-}) {
-  final bool isDark = Theme.of(context).brightness == Brightness.dark;
-  return Container(
-    margin: const EdgeInsets.only(bottom: 4), // Reduced margin from 8 to 4
-    decoration: BoxDecoration(
-      color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+    MenuCategory category,
+    int index, {
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4), // Reduced margin from 8 to 4
+      decoration: BoxDecoration(
+        color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(
-            category.name,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected
-                  ? (isDark ? Colors.black : Colors.black87)
-                  : (isDark ? Colors.white70 : Colors.black54),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              category.name,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected
+                    ? (isDark ? Colors.black : Colors.black87)
+                    : (isDark ? Colors.white70 : Colors.black54),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMenuItemCard(MenuItem item) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -831,8 +839,6 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           ),
         ),
       ),
-        ),
-      ),
     );
   }
 
@@ -884,13 +890,18 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
   String _getEnhancedDescription(MenuItem item) {
     // AI-enhanced descriptions for better user experience
     final enhancedDescriptions = {
-      'Spicy Pepperoni Pizza': 'A fiery masterpiece featuring premium pepperoni slices with a perfect blend of spices, topped with extra mozzarella cheese on our signature crispy crust. Each bite delivers an explosion of flavors that will satisfy your craving for authentic Italian-American cuisine.',
-      'Mushroom & Truffle Oil Pizza': 'An elegant fusion of earthy mushrooms and luxurious truffle oil, creating a sophisticated flavor profile. This gourmet pizza features a medley of wild mushrooms, creamy cheese, and aromatic truffle oil drizzled over our artisanal crust.',
-      'Paneer Tikka Skewers': 'Tender cubes of fresh paneer marinated in a rich blend of yogurt, aromatic spices, and herbs, then grilled to perfection alongside colorful bell peppers. These skewers offer a perfect balance of smoky flavors and creamy texture, making them an ideal appetizer or main course.',
-      'Crispy Chilli Baby Corn': 'Golden-fried baby corn tossed in a tangy and spicy sauce with fresh bell peppers and onions. This popular Indo-Chinese dish offers the perfect combination of crunch and flavor, with a delightful balance of sweet, sour, and spicy notes.',
-      'Spicy Prawn Aglio Olio': 'Succulent prawns sautéed with garlic, chili flakes, and fresh herbs in extra virgin olive oil, served over perfectly al dente pasta. This classic Italian dish delivers bold flavors with a hint of heat, showcasing the natural sweetness of fresh prawns.',
+      'Spicy Pepperoni Pizza':
+          'A fiery masterpiece featuring premium pepperoni slices with a perfect blend of spices, topped with extra mozzarella cheese on our signature crispy crust. Each bite delivers an explosion of flavors that will satisfy your craving for authentic Italian-American cuisine.',
+      'Mushroom & Truffle Oil Pizza':
+          'An elegant fusion of earthy mushrooms and luxurious truffle oil, creating a sophisticated flavor profile. This gourmet pizza features a medley of wild mushrooms, creamy cheese, and aromatic truffle oil drizzled over our artisanal crust.',
+      'Paneer Tikka Skewers':
+          'Tender cubes of fresh paneer marinated in a rich blend of yogurt, aromatic spices, and herbs, then grilled to perfection alongside colorful bell peppers. These skewers offer a perfect balance of smoky flavors and creamy texture, making them an ideal appetizer or main course.',
+      'Crispy Chilli Baby Corn':
+          'Golden-fried baby corn tossed in a tangy and spicy sauce with fresh bell peppers and onions. This popular Indo-Chinese dish offers the perfect combination of crunch and flavor, with a delightful balance of sweet, sour, and spicy notes.',
+      'Spicy Prawn Aglio Olio':
+          'Succulent prawns sautéed with garlic, chili flakes, and fresh herbs in extra virgin olive oil, served over perfectly al dente pasta. This classic Italian dish delivers bold flavors with a hint of heat, showcasing the natural sweetness of fresh prawns.',
     };
-    
+
     return enhancedDescriptions[item.name] ?? item.description;
   }
 
@@ -957,7 +968,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                               children: [
                                 // Title and Price
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -965,7 +977,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                         style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                         ),
                                       ),
                                     ),
@@ -985,7 +999,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                   _getEnhancedDescription(item),
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: isDark ? Colors.white70 : Colors.black54,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black54,
                                     height: 1.6,
                                   ),
                                 ),
@@ -994,18 +1010,23 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: isDark ? Colors.white10 : Colors.grey.shade50,
+                                    color: isDark
+                                        ? Colors.white10
+                                        : Colors.grey.shade50,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Details',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                         ),
                                       ),
                                       const SizedBox(height: 12),
@@ -1014,14 +1035,18 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                           Icon(
                                             Icons.people,
                                             size: 16,
-                                            color: isDark ? Colors.white70 : Colors.black54,
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             'Serves 1',
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: isDark ? Colors.white70 : Colors.black54,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.black54,
                                             ),
                                           ),
                                         ],
@@ -1032,24 +1057,36 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
                                           Icon(
-                                            item.isVegan ? Icons.eco : Icons.eco_outlined,
+                                            item.isVegan
+                                                ? Icons.eco
+                                                : Icons.eco_outlined,
                                             size: 16,
-                                            color: item.isVegan ? Colors.green : Colors.grey,
+                                            color: item.isVegan
+                                                ? Colors.green
+                                                : Colors.grey,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            item.isVegan ? 'Vegan' : 'Vegetarian',
+                                            item.isVegan
+                                                ? 'Vegan'
+                                                : 'Vegetarian',
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: isDark ? Colors.white70 : Colors.black54,
-                                              fontWeight: item.isVegan ? FontWeight.w600 : FontWeight.normal,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.black54,
+                                              fontWeight: item.isVegan
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
                                             ),
                                           ),
                                         ],
@@ -1068,7 +1105,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                               'Gluten Free',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: isDark ? Colors.white70 : Colors.black54,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black54,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -1089,7 +1128,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                               'Contains Nuts',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: isDark ? Colors.white70 : Colors.black54,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black54,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -1110,7 +1151,9 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                               'Nuts Free',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: isDark ? Colors.white70 : Colors.black54,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black54,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -1128,7 +1171,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                         // Fixed footer to complete the card bottom
                         Container(
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                            color:
+                                isDark ? const Color(0xFF1A1A1A) : Colors.white,
                             borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(20),
                               bottomRight: Radius.circular(20),
@@ -1149,10 +1193,12 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                   builder: (context, cart, child) {
                                     if (!item.isAvailable) {
                                       return Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12),
                                         decoration: BoxDecoration(
                                           color: Colors.grey.shade200,
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: const Text(
                                           'Unavailable',
@@ -1165,19 +1211,24 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                         ),
                                       );
                                     }
-                                    final quantity = cart.getItemQuantity(item.id);
+                                    final quantity =
+                                        cart.getItemQuantity(item.id);
                                     return quantity == 0
                                         ? ElevatedButton(
                                             onPressed: () {
                                               _showAddToCartOptions(item);
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Theme.of(context).primaryColor,
+                                              backgroundColor: Theme.of(context)
+                                                  .primaryColor,
                                               foregroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 12),
                                             ),
                                             child: const Text(
                                               'Add to Cart',
@@ -1194,10 +1245,12 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                               const SizedBox(width: 12),
                               Consumer<FavoritesProvider>(
                                 builder: (context, favoritesProvider, child) {
-                                  final isFavorited = favoritesProvider.isFavorite(item.id);
+                                  final isFavorited =
+                                      favoritesProvider.isFavorite(item.id);
                                   return IconButton(
                                     onPressed: () {
-                                      final authProvider = Provider.of<AuthProvider>(
+                                      final authProvider =
+                                          Provider.of<AuthProvider>(
                                         context,
                                         listen: false,
                                       );
@@ -1208,8 +1261,12 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                       }
                                     },
                                     icon: Icon(
-                                      isFavorited ? Icons.favorite : Icons.favorite_border,
-                                      color: isFavorited ? Colors.red : Colors.grey,
+                                      isFavorited
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isFavorited
+                                          ? Colors.red
+                                          : Colors.grey,
                                       size: 28,
                                     ),
                                   );
@@ -1275,7 +1332,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: Icon(Icons.remove, size: 16, color: Theme.of(context).primaryColor),
+              icon: Icon(Icons.remove,
+                  size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.removeSingleItem(item.id),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -1295,7 +1353,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: Icon(Icons.add, size: 16, color: Theme.of(context).primaryColor),
+              icon: Icon(Icons.add,
+                  size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.addItem(item),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -1553,7 +1612,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
           children: [
             Icon(
               icon,
-              color: value ? Theme.of(context).primaryColor : Colors.grey.shade600,
+              color:
+                  value ? Theme.of(context).primaryColor : Colors.grey.shade600,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -1580,7 +1640,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
         onChanged: onChanged,
         thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
-            return Theme.of(context).primaryColor; // Theme color for the toggle dot
+            return Theme.of(context)
+                .primaryColor; // Theme color for the toggle dot
           }
           return Colors.grey.shade400; // Default grey for untoggled state
         }),
@@ -1683,10 +1744,14 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                             const SizedBox(height: 12),
                             Container(
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.white10 : Colors.grey.shade50,
+                                color: isDark
+                                    ? Colors.white10
+                                    : Colors.grey.shade50,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                    color: isDark ? Colors.white12 : Colors.grey.shade200),
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.grey.shade200),
                               ),
                               child: Column(
                                 children: [
@@ -1700,14 +1765,17 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     title: Row(
                                       children: [
                                         Icon(Icons.local_dining,
-                                            color: onSurface.withOpacity(0.8), size: 18),
+                                            color: onSurface.withOpacity(0.8),
+                                            size: 18),
                                         const SizedBox(width: 10),
                                         Text('Half',
                                             style: TextStyle(
-                                                color: onSurface, fontWeight: FontWeight.w600)),
+                                                color: onSurface,
+                                                fontWeight: FontWeight.w600)),
                                       ],
                                     ),
-                                    secondary: Text('₹${(item.price * 0.8).round()}',
+                                    secondary: Text(
+                                        '₹${(item.price * 0.8).round()}',
                                         style: TextStyle(color: subText)),
                                   ),
                                   const Divider(height: 0),
@@ -1721,14 +1789,17 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                     title: Row(
                                       children: [
                                         Icon(Icons.local_dining_outlined,
-                                            color: onSurface.withOpacity(0.8), size: 18),
+                                            color: onSurface.withOpacity(0.8),
+                                            size: 18),
                                         const SizedBox(width: 10),
                                         Text('Full',
                                             style: TextStyle(
-                                                color: onSurface, fontWeight: FontWeight.w600)),
+                                                color: onSurface,
+                                                fontWeight: FontWeight.w600)),
                                       ],
                                     ),
-                                    secondary: Text('₹${item.price.toStringAsFixed(0)}',
+                                    secondary: Text(
+                                        '₹${item.price.toStringAsFixed(0)}',
                                         style: TextStyle(color: subText)),
                                   ),
                                 ],
@@ -1771,14 +1842,17 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                                 flex: 2,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    Provider.of<CartProvider>(context, listen: false)
+                                    Provider.of<CartProvider>(context,
+                                            listen: false)
                                         .addItem(item);
                                     Navigator.of(context).pop();
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).primaryColor,
+                                    backgroundColor:
+                                        Theme.of(context).primaryColor,
                                     foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -1936,7 +2010,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                     // This would involve creating a new MenuItem with customization options
                     // and adding it to the cart.
                     // For now, we'll just add it as is.
-                    Provider.of<CartProvider>(context, listen: false).addItem(item);
+                    Provider.of<CartProvider>(context, listen: false)
+                        .addItem(item);
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
@@ -1945,7 +2020,8 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                   child: const Text(
                     'Add to Cart',
@@ -1959,84 +2035,86 @@ Widget _buildGlassContainer({required Widget child, required EdgeInsets margin, 
       },
     );
   }
+
   // ...WITH THIS NEW, CORRECTED METHOD
-void _onMenuScroll() {
-  // If we are scrolling because a category was clicked, don't interfere.
-  if (_isScrollingProgrammatically) return;
+  void _onMenuScroll() {
+    // If we are scrolling because a category was clicked, don't interfere.
+    if (_isScrollingProgrammatically) return;
 
-  // Determine which category header's top offset is currently at/above the viewport top.
-  // This method is robust across slivers because it uses getOffsetToReveal.
-  const threshold = kToolbarHeight + 10; // account for the pinned app bar
-  final double currentOffset = _menuScrollController.offset + threshold;
+    // Determine which category header's top offset is currently at/above the viewport top.
+    // This method is robust across slivers because it uses getOffsetToReveal.
+    const threshold = kToolbarHeight + 10; // account for the pinned app bar
+    final double currentOffset = _menuScrollController.offset + threshold;
 
-  int? newIndex;
-  for (final entry in _categoryKeys.entries) {
-    final key = entry.value;
-    final ctx = key.currentContext;
-    if (ctx == null) continue;
-    final renderObject = ctx.findRenderObject();
-    if (renderObject == null) continue;
-
-    final viewport = RenderAbstractViewport.of(renderObject);
-    if (viewport == null) continue;
-
-    final reveal = viewport.getOffsetToReveal(renderObject, 0.0).offset;
-    if (reveal <= currentOffset) {
-      newIndex = entry.key;
-    }
-  }
-
-  // If the scroll position has resulted in a new category being at the top,
-  // update the state to rebuild the UI.
-  if (newIndex != null && newIndex != _selectedCategoryIndex) {
-    setState(() {
-      _selectedCategoryIndex = newIndex!;
-    });
-    _scrollLeftListToIndex(_selectedCategoryIndex);
-  }
-}
-
-  void _scrollToCategory(int index) {
-  // Prevent the scroll listener from firing while we animate
-  _isScrollingProgrammatically = true;
-  setState(() {
-    _selectedCategoryIndex = index;
-  });
-
-  final key = _categoryKeys[index];
-
-  // This ensures the scrolling happens AFTER the screen has had a chance to update.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (key?.currentContext != null) {
-      final ctx = key!.currentContext!;
+    int? newIndex;
+    for (final entry in _categoryKeys.entries) {
+      final key = entry.value;
+      final ctx = key.currentContext;
+      if (ctx == null) continue;
       final renderObject = ctx.findRenderObject();
-      if (renderObject != null) {
-        final viewport = RenderAbstractViewport.of(renderObject);
-        if (viewport != null) {
-          final targetOffset = viewport.getOffsetToReveal(renderObject, 0.0).offset;
-          _menuScrollController.animateTo(
-            targetOffset,
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOutCubic,
-          );
-        } else {
-          Scrollable.ensureVisible(
-            ctx,
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOutCubic,
-            alignment: 0,
-          );
-        }
+      if (renderObject == null) continue;
+
+      final viewport = RenderAbstractViewport.of(renderObject);
+      if (viewport == null) continue;
+
+      final reveal = viewport.getOffsetToReveal(renderObject, 0.0).offset;
+      if (reveal <= currentOffset) {
+        newIndex = entry.key;
       }
     }
-  });
-  _scrollLeftListToIndex(index);
-  
-  // Allow the listener to resume after the scroll animation
-  Future.delayed(const Duration(milliseconds: 700), () {
-    _isScrollingProgrammatically = false;
-  });
-}
+
+    // If the scroll position has resulted in a new category being at the top,
+    // update the state to rebuild the UI.
+    if (newIndex != null && newIndex != _selectedCategoryIndex) {
+      setState(() {
+        _selectedCategoryIndex = newIndex!;
+      });
+      _scrollLeftListToIndex(_selectedCategoryIndex);
+    }
+  }
+
+  void _scrollToCategory(int index) {
+    // Prevent the scroll listener from firing while we animate
+    _isScrollingProgrammatically = true;
+    setState(() {
+      _selectedCategoryIndex = index;
+    });
+
+    final key = _categoryKeys[index];
+
+    // This ensures the scrolling happens AFTER the screen has had a chance to update.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (key?.currentContext != null) {
+        final ctx = key!.currentContext!;
+        final renderObject = ctx.findRenderObject();
+        if (renderObject != null) {
+          final viewport = RenderAbstractViewport.of(renderObject);
+          if (viewport != null) {
+            final targetOffset =
+                viewport.getOffsetToReveal(renderObject, 0.0).offset;
+            _menuScrollController.animateTo(
+              targetOffset,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutCubic,
+            );
+          } else {
+            Scrollable.ensureVisible(
+              ctx,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutCubic,
+              alignment: 0,
+            );
+          }
+        }
+      }
+    });
+    _scrollLeftListToIndex(index);
+
+    // Allow the listener to resume after the scroll animation
+    Future.delayed(const Duration(milliseconds: 700), () {
+      _isScrollingProgrammatically = false;
+    });
+  }
 
   void _scrollLeftListToIndex(int index) {
     final key = _leftCategoryKeys[index];
