@@ -204,112 +204,95 @@ class _BookTablePageState extends State<BookTablePage>
     return Scaffold(
       backgroundColor:
           isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: isDark ? Colors.white : AppTheme.darkTextColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Book a Table',
-              style: TextStyle(
-                color: isDark ? Colors.white : AppTheme.darkTextColor,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Bengaluru, Karnataka',
-              style: TextStyle(
-                color: isDark ? Colors.grey[400] : AppTheme.lightTextColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Stack(
+      appBar: null,
+      body: Column(
         children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [const Color(0xFF0F0F10), const Color(0xFF1A1A1A)]
-                    : [const Color(0xFFF8F9FA), const Color(0xFFE9ECEF)],
-              ),
-            ),
+          // Header with back button
+          HeaderWidget(
+            showBack: true,
+            onBack: () => Navigator.pop(context),
           ),
           // Main content
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _buildModernGuestSelector(),
-                    const SizedBox(height: 24),
-                    _buildModernDateSelector(),
-                    const SizedBox(height: 24),
-                    _buildModernTimeSelector(),
-                    const SizedBox(height: 24),
-                    _buildSpecialOccasionSelector(),
-                    const SizedBox(
-                        height: 100), // Space for the floating button
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Loading overlay
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
+          Expanded(
+            child: Stack(
+              children: [
+                // Background gradient
+                Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: isDark
+                          ? [const Color(0xFF0F0F10), const Color(0xFF1A1A1A)]
+                          : [const Color(0xFFF8F9FA), const Color(0xFFE9ECEF)],
+                    ),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            AppTheme.primaryColor),
+                ),
+                // Main content
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          _buildModernGuestSelector(),
+                          const SizedBox(height: 24),
+                          _buildModernDateSelector(),
+                          const SizedBox(height: 24),
+                          _buildModernTimeSelector(),
+                          const SizedBox(height: 24),
+                          _buildSpecialOccasionSelector(),
+                          const SizedBox(
+                              height: 100), // Space for the floating button
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Checking availability...',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppTheme.darkTextColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                // Loading overlay
+                if (_isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.primaryColor),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Checking availability...',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : AppTheme.darkTextColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+              ],
             ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(

@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../theme.dart'; // Make sure you have your AppTheme import
+import '../menu_screen.dart';
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -151,8 +153,9 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
                 _buildRecommendationCard(
                   imageUrl: dishToDisplay['image_url'] ?? '',
                   dishName: dishToDisplay['name'] ?? 'No Name',
-                  reason: reasonToDisplay ?? 'Our special pick.',
+                  reason: dishToDisplay['description'] ?? reasonToDisplay ?? 'Our special pick.',
                   price: dishToDisplay['price']?.toDouble() ?? 0.0,
+                  dishId: dishToDisplay['id'],
                 )
               else if (_searchError != null)
                  Text(_searchError!, style: const TextStyle(color: Colors.red, fontSize: 16)),
@@ -210,71 +213,542 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     required String dishName,
     required String reason,
     required double price,
+    int? dishId,
   }) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return _AnimatedFoodCard(
+      imageUrl: imageUrl,
+      dishName: dishName,
+      reason: reason,
+      price: price,
+      dishId: dishId,
+    );
+  }
+}
+
+class _AnimatedFoodCard extends StatefulWidget {
+  final String imageUrl;
+  final String dishName;
+  final String reason;
+  final double price;
+  final int? dishId;
+
+  const _AnimatedFoodCard({
+    required this.imageUrl,
+    required this.dishName,
+    required this.reason,
+    required this.price,
+    this.dishId,
+  });
+
+  @override
+  State<_AnimatedFoodCard> createState() => _AnimatedFoodCardState();
+}
+
+class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
+    with TickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _floatingController;
+  late AnimationController _flipController;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _floatingAnimation;
+  late Animation<double> _flipAnimation;
+
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    );
+    
+    _floatingController = AnimationController(
+      duration: const Duration(milliseconds: 2600),
+      vsync: this,
+    );
+    
+    _flipController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_rotationController);
+
+    _floatingAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_floatingController);
+    
+    _flipAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _flipController,
+      curve: Curves.easeInOut,
+    ));
+
+    _rotationController.repeat();
+    _floatingController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _floatingController.dispose();
+    _flipController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _flipController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _flipController.reverse();
+      },
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to menu page with specific dish
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MenuScreen(
+                initialCategory: widget.dishName,
+              ),
+            ),
+          );
+        },
+        child: SizedBox(
+          width: 250,
+          height: 350,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_rotationAnimation, _floatingAnimation, _flipAnimation]),
+          builder: (context, child) {
+            return AnimatedBuilder(
+              animation: _flipAnimation,
+              builder: (context, child) {
+                final isFlipped = _flipAnimation.value > 0.5;
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(_flipAnimation.value * 3.14159),
+                  child: isFlipped ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..scale(-1.0, 1.0),
+                    child: _buildBackCard(),
+                  ) : _buildFrontCard(),
+                );
+              },
+            );
+          },
+        ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrontCard() {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1D21) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF151515),
+        borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 10,
+            offset: const Offset(0, 0),
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Expanded(
-            flex: 2,
-            child: AspectRatio(
-              aspectRatio: 1, // Makes the image container a square
+          // Animated circles background
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Stack(
+              children: [
+                // Circle 1
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: AnimatedBuilder(
+                    animation: _floatingAnimation,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, _floatingAnimation.value * 10),
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFBB66),
+                            shape: BoxShape.circle,
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFBB66).withOpacity(0.3),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Circle 2 (bottom)
+                Positioned(
+                  top: 0,
+                  left: 50,
+                  child: AnimatedBuilder(
+                    animation: _floatingAnimation,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, (_floatingAnimation.value - 0.3) * 10),
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF8866),
+                            shape: BoxShape.circle,
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF8866).withOpacity(0.3),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Circle 3 (right)
+                Positioned(
+                  top: -80,
+                  left: 160,
+                  child: AnimatedBuilder(
+                    animation: _floatingAnimation,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, (_floatingAnimation.value - 0.7) * 10),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF2233),
+                            shape: BoxShape.circle,
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF2233).withOpacity(0.3),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Food image
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(5),
               child: Image.network(
-                imageUrl,
+                widget.imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: AppTheme.primaryLight,
-                    child: const Icon(Icons.restaurant_menu, size: 60, color: AppTheme.primaryColor),
+                    color: const Color(0xFF151515),
+                    child: const Icon(Icons.restaurant_menu, size: 60, color: Colors.white),
                   );
                 },
               ),
             ),
           ),
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
+          // Top left badge
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                "OUR SUGGESTION",
+                style: TextStyle(
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          // Content overlay
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(5),
+                  bottomRight: Radius.circular(5),
+                ),
+              ),
+              child: Text(
+                widget.dishName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF151515),
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 10,
+            offset: const Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Blurred dish image background
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Image.network(
+                  widget.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFF151515),
+                      child: const Icon(Icons.restaurant_menu, size: 60, color: Colors.white),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          // Dark overlay for better text readability
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          // Content
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Top section with badge and favorite
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          "OUR SUGGESTION",
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.favorite_border,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Dish name
                   Text(
-                    "OUR SUGGESTION",
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
+                    widget.dishName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
+                      height: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Description
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      widget.reason, // This is the actual description from the database
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 10,
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    dishName,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                  
                   const SizedBox(height: 12),
-                  Text(
-                    reason,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600, height: 1.5),
+                  
+                  // Price
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '₹${widget.price.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '₹${price.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Add to cart button
+                  Container(
+                    width: double.infinity,
+                    height: 36,
+                    decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.w700,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () {
+                          // Add to cart logic would go here
+                          // This preserves the existing functionality
+                        },
+                        child: const Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_shopping_cart,
+                                color: Colors.black,
+                                size: 16,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                "Add to Cart",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
