@@ -74,6 +74,8 @@ import 'explore_menu_page.dart';
 import 'pages/explore/all_day_picks_page.dart';
 import 'pages/explore/fitness_categories_page.dart';
 import 'pages/explore/subscription_combo_page.dart';
+import 'book_table_page.dart';
+import 'order_from_table_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -151,6 +153,9 @@ class MyApp extends StatelessWidget {
               '/explore/special-diet': (context) => const AllDayPicksPage(),
               '/explore/fitness': (context) => const FitnessCategoriesPage(),
               '/explore/subscription-combo': (context) => const SubscriptionComboPage(),
+              // Table booking and ordering pages
+              '/reserve-table': (context) => const BookTablePage(),
+              '/order-from-table': (context) => const OrderFromTablePage(),
             },
           );
         },

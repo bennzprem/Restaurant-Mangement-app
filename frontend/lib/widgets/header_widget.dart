@@ -189,37 +189,45 @@ class HeaderWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Consumer<AuthProvider>(
-                    builder: (context, auth, child) {
-                      if (!auth.isLoggedIn) return const SizedBox.shrink();
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 2,
-                          ),
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const UserDashboardPage(),
-                              ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.person_outline,
-                            color: Theme.of(context).primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  // Replace the code above with this new Consumer widget
+Consumer<AuthProvider>(
+  builder: (context, auth, child) {
+    // This logic now handles both logged-in and logged-out states
+    bool isLoggedIn = auth.isLoggedIn;
+    IconData iconData =
+        isLoggedIn ? Icons.person_outline : Icons.person_add_alt_1_rounded;
+    String tooltip = isLoggedIn ? 'My Dashboard' : 'Sign Up';
+    VoidCallback onPressed = isLoggedIn
+        ? () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const UserDashboardPage(),
+              ),
+            )
+        : () => Navigator.of(context).pushNamed('/signup'); // Navigates to signup page
+
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode
+            ? Colors.grey.shade800
+            : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(context).primaryColor,
+          width: 2,
+        ),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        icon: Icon(
+          iconData,
+          color: Theme.of(context).primaryColor,
+          size: 20,
+        ),
+      ),
+    );
+  },
+),
                 ],
               ),
             ),

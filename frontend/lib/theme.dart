@@ -362,7 +362,7 @@ class ThemeProvider extends ChangeNotifier {
       brightness: Brightness.light,
       primaryColor: const Color(0xFF689F38), // Shade 8
       scaffoldBackgroundColor:
-          const Color(0xFFF1F8E9), // Using Shade 1 for a light background
+          Colors.white, // Entire app background white in light mode
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 1,
@@ -424,9 +424,9 @@ class ThemeProvider extends ChangeNotifier {
       brightness: Brightness.dark,
       primaryColor: const Color(0xFF8BC34A), // Shade 6
       scaffoldBackgroundColor:
-          const Color(0xFF121212), // Standard dark background
+          Colors.black, // Entire app background black in dark mode
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1E1E1E), // Slightly lighter dark surface
+        backgroundColor: Colors.black, // Match app background
         elevation: 1,
         shadowColor: Colors.black26,
         iconTheme: IconThemeData(color: Color(0xFFDCEDC8)), // Shade 2

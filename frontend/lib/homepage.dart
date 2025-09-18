@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen.dart';
@@ -64,32 +65,35 @@ class _HomePageState extends State<HomePage> {
                 : constraints.maxWidth < 1100
                     ? 20
                     : 0;
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: horizontalPadding,
-                  right: horizontalPadding,
-                  top: 0, // No top padding - content starts immediately after header
-                ),
-                child: Column(
-                  children: [
-                    HeroSection(
-                      onOrderNow: () => _handleNavigation(context, 'Delivery'),
-                      onExplore: () => _handleNavigation(context, 'Dine-In'),
-                      onPickup: () => _handleNavigation(context, 'Takeaway'),
-                    ),
-                    if (authProvider.isLoggedIn) _RoleQuickAccess(),
+            // REPLACE THE OLD SingleChildScrollView WIDGET WITH THIS NEW ONE
+return SingleChildScrollView(
+  child: Padding(
+    padding: EdgeInsets.only(
+      left: horizontalPadding,
+      right: horizontalPadding,
+      // CHANGED: Added top padding to push content below the header.
+      // The header is about 88px tall, so 100px provides nice spacing.
+      top: 100, 
+    ),
+    child: Column(
+      children: [
+        ServiceSelectionCarousel(
+          onOrderNow: () => _handleNavigation(context, 'Delivery'),
+          onExplore: () => _handleNavigation(context, 'Dine-In'),
+          onPickup: () => _handleNavigation(context, 'Takeaway'),
+        ),
+        if (authProvider.isLoggedIn) _RoleQuickAccess(),
 
-                    // Continuing the home_screen.dart sections
-                    _MenuCategoryCarousel(),
-                    AboutSection(),
-                    AiCulinaryCuratorSection(),
-                    CulinaryPhilosophySection(),
-                    FooterWidget(),
-                  ],
-                ),
-              ),
-            );
+        // Continuing the home_screen.dart sections
+        _MenuCategoryCarousel(),
+        AboutSection(),
+        AiCulinaryCuratorSection(),
+        CulinaryPhilosophySection(),
+        FooterWidget(),
+      ],
+    ),
+  ),
+);
           }),
 
           // Fixed header with integrated navigation at the very top
@@ -460,6 +464,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
               style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
+                  fontFamily: 'Nunito',
                   color: isDark ? AppTheme.white : AppTheme.black)),
           const SizedBox(height: 24),
           if (_isLoading)
@@ -549,6 +554,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      fontFamily: 'Nunito',
                                       color: _hoveredIndex == index
                                           ? Colors.black
                                           : (isDark
@@ -572,6 +578,359 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                 onPressed: scrollRight,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+// REPLACE the entire old ServiceSelectionCarousel class with this new one.
+
+class ServiceSelectionCarousel extends StatefulWidget {
+  final VoidCallback onOrderNow;
+  final VoidCallback onExplore;
+  final VoidCallback onPickup;
+
+  const ServiceSelectionCarousel({
+    super.key,
+    required this.onOrderNow,
+    required this.onExplore,
+    required this.onPickup,
+  });
+
+  @override
+  State<ServiceSelectionCarousel> createState() =>
+      _ServiceSelectionCarouselState();
+}
+
+class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
+  int _selectedIndex = 1;
+  Timer? _autoScrollTimer;
+
+  late final List<Map<String, dynamic>> _cardData;
+
+  // This helper method is no longer needed as we are adding real navigation.
+  // void _showPlaceholderSnackBar(...) { ... }
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // CHANGED: All button actions are now mapped to navigation calls.
+    // The original logic for the 3 main buttons is retained.
+    _cardData = [
+      // Delivery Card Data
+      {
+        'id': 0,
+        'icon': Icons.delivery_dining_rounded,
+        'title': 'Delivery',
+        'buttons': [
+          {
+            'text': 'Order Now',
+            'action': widget.onOrderNow, // Original logic retained
+          },
+          {
+            'text': 'Meal Subscription',
+            'action': () => Navigator.pushNamed(context, '/meal-subscription')
+          },
+          {
+            'text': 'Track Order',
+            'action': () => Navigator.pushNamed(context, '/track-order')
+          },
+        ]
+      },
+      // Dine-In Card Data
+      {
+        'id': 1,
+        'icon': Icons.restaurant_menu_rounded,
+        'title': 'Dine-In',
+        'buttons': [
+          {
+            'text': 'Reserve Table',
+            'action': () => Navigator.pushNamed(context, '/reserve-table')
+          },
+          {
+            'text': 'Order from Table',
+            'action': () => Navigator.pushNamed(context, '/order-from-table')
+          },
+          {
+            'text': 'Explore Menu',
+            'action': widget.onExplore, // Original logic retained
+          },
+        ]
+      },
+      // Takeaway Card Data
+      {
+        'id': 2,
+        'icon': Icons.shopping_bag_rounded,
+        'title': 'Takeaway',
+        'buttons': [
+          {
+            'text': 'Pickup',
+            'action': widget.onPickup, // Original logic retained
+          },
+          {
+            'text': 'Pre-Order',
+            'action': () => Navigator.pushNamed(context, '/pre-order')
+          },
+          {
+            'text': 'Favorites',
+            'action': () => Navigator.pushNamed(context, '/favorites')
+          },
+        ]
+      }
+    ];
+    
+    // Start auto-scroll timer
+    _startAutoScroll();
+  }
+  
+  @override
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    super.dispose();
+  }
+  
+  void _startAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        _autoScrollToNext();
+      }
+    });
+  }
+  
+  void _autoScrollToNext() {
+    setState(() {
+      _selectedIndex = (_selectedIndex + 1) % _cardData.length;
+    });
+  }
+  
+  void _onCardTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    
+    // Reset auto-scroll timer when user interacts
+    _startAutoScroll();
+  }
+
+  Matrix4 _getTransform(int index, double screenWidth) {
+    final double horizontalTranslation = screenWidth * 0.4;
+    const double scale = 0.8;
+    const double rotation = 0.05; // Small rotation for depth effect
+
+    // Sequential/rotational transition logic based on the CSS pattern
+    if (_selectedIndex == 0) { // Delivery selected
+      if (index == 0) { // Current card (Delivery)
+        return Matrix4.identity()
+          ..scale(1.0)
+          ..rotateZ(0.0);
+      } else if (index == 1) { // Next card (Dine-In) - moves to right
+        return Matrix4.identity()
+          ..translate(horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(rotation);
+      } else { // Previous card (Takeaway) - moves to left
+        return Matrix4.identity()
+          ..translate(-horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(-rotation);
+      }
+    } else if (_selectedIndex == 1) { // Dine-In selected
+      if (index == 1) { // Current card (Dine-In)
+        return Matrix4.identity()
+          ..scale(1.0)
+          ..rotateZ(0.0);
+      } else if (index == 2) { // Next card (Takeaway) - moves to right
+        return Matrix4.identity()
+          ..translate(horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(rotation);
+      } else { // Previous card (Delivery) - moves to left
+        return Matrix4.identity()
+          ..translate(-horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(-rotation);
+      }
+    } else { // Takeaway selected
+      if (index == 2) { // Current card (Takeaway)
+        return Matrix4.identity()
+          ..scale(1.0)
+          ..rotateZ(0.0);
+      } else if (index == 0) { // Next card (Delivery) - moves to right
+        return Matrix4.identity()
+          ..translate(horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(rotation);
+      } else { // Previous card (Dine-In) - moves to left
+        return Matrix4.identity()
+          ..translate(-horizontalTranslation)
+          ..scale(scale)
+          ..rotateZ(-rotation);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    const double headerHeight = 135;
+
+    return Container(
+      height: screenHeight - headerHeight,
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_cardData.length, (index) {
+              final bool isSelected = _selectedIndex == index;
+              final data = _cardData[index];
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedIndex = index),
+                    child: Text(
+                      data['title'],
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 28,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 30),
+          Expanded(
+            child: SizedBox(
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.center,
+                children: List.generate(_cardData.length, (index) {
+                  final card = _cardData[index];
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeInOutCubic,
+                    transform: _getTransform(index, screenWidth),
+                    transformAlignment: Alignment.center,
+                    child: GestureDetector(
+                      onTap: () => _onCardTap(index),
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 800),
+                            opacity: index == _selectedIndex ? 1.0 : 0.4,
+                        child: SizedBox(
+                          width: screenWidth * 0.5,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: theme.cardColor,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: index == _selectedIndex
+                                    ? theme.primaryColor
+                                    : Colors.transparent,
+                                width: 2.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                )
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                AnimatedScale(
+                                  scale: index == _selectedIndex ? 1.1 : 0.9,
+                                  duration: const Duration(milliseconds: 800),
+                                  child: AnimatedRotation(
+                                    turns: index == _selectedIndex ? 0.0 : 0.05,
+                                    duration: const Duration(milliseconds: 1000),
+                                    child: Icon(card['icon'], size: 48, color: theme.primaryColor),
+                                  ),
+                                ),
+                                AnimatedScale(
+                                  scale: index == _selectedIndex ? 1.0 : 0.9,
+                                  duration: const Duration(milliseconds: 800),
+                                  child: Text(
+                                    card['title'],
+                                    style: theme.textTheme.displayLarge?.copyWith(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Nunito',
+                                    ),
+                                  ),
+                                ),
+                                Column(
+                                  children: (card['buttons'] as List<Map<String, dynamic>>)
+                                  .map((buttonData) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 8.0),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton(
+                                          onPressed: buttonData['action'] as VoidCallback,
+                                          style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                              const EdgeInsets.symmetric(vertical: 12)
+                                            ),
+                                            shape: MaterialStateProperty.all(
+                                              RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                                              if (states.contains(MaterialState.hovered)) {
+                                                return theme.primaryColor; 
+                                              }
+                                              return Colors.transparent;
+                                            }),
+                                            foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                                              if (states.contains(MaterialState.hovered)) {
+                                                return isDark ? Colors.black : Colors.white;
+                                              }
+                                              return theme.primaryColor;
+                                            }),
+                                            side: MaterialStateProperty.all(
+                                              BorderSide(color: theme.primaryColor, width: 1.5)
+                                            ),
+                                          ),
+                                          child: Text(
+                                            buttonData['text'],
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
         ],
       ),
