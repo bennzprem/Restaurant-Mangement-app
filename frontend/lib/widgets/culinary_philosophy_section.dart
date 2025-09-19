@@ -7,13 +7,12 @@ class CulinaryPhilosophySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark ? const Color(0xFF14181C) : const Color(0xFFF8FAFF);
     final Color titleColor = isDark ? Colors.white : const Color(0xFF1D2A39);
     final Color textColor = isDark ? Colors.white70 : Colors.black54;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
-      color: bgColor,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
           RichText(

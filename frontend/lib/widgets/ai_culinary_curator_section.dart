@@ -2,9 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth_provider.dart';
-import '../theme.dart'; // Make sure you have your AppTheme import
+import '../theme.dart';
 import '../menu_screen.dart';
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -12,72 +11,46 @@ class AiCulinaryCuratorSection extends StatefulWidget {
   const AiCulinaryCuratorSection({super.key});
 
   @override
-  State<AiCulinaryCuratorSection> createState() => _AiCulinaryCuratorSectionState();
+  State<AiCulinaryCuratorSection> createState() =>
+      _AiCulinaryCuratorSectionState();
 }
 
 class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
-  // State for the recommendation loaded initially
-  Map<String, dynamic>? _initialDish;
-  String? _initialReason;
-  bool _isLoadingInitial = true;
-
-  // State for the user's custom search
-  Map<String, dynamic>? _searchedDish;
-  String? _searchedReason;
+  // State for recommendations
+  List<Map<String, dynamic>> _dishes = [];
+  String? _reason;
+  bool _isLoading = true;
   bool _isSearching = false;
   String? _searchError;
 
   final TextEditingController _prefController = TextEditingController();
+  // REMOVED: PageController and _currentPage are no longer needed.
 
   @override
   void initState() {
     super.initState();
-    // Use a post-frame callback to ensure context is available
+    // REMOVED: PageController listener is gone.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchInitialRecommendation();
     });
   }
-
-  Future<void> _fetchInitialRecommendation() async {
-    // This is called once when the widget loads
-    final authProvider = context.read<AuthProvider>();
-    final userId = authProvider.user?.id ?? "guest";
-
-    try {
-      final response = await http.post(
-        Uri.parse("http://127.0.0.1:5000/recommendation/$userId"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"taste_preference": null}), // No preference, so backend uses history/trending
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _initialDish = data["dish"];
-          _initialReason = data["reason"];
-        });
-      } else {
-        setState(() {
-          _searchError = "Could not load a suggestion right now.";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _searchError = "Server connection error.";
-      });
-    } finally {
-      setState(() {
-        _isLoadingInitial = false;
-      });
-    }
+  
+  @override
+  void dispose() {
+    // REMOVED: PageController is no longer disposed.
+    _prefController.dispose();
+    super.dispose();
   }
 
-  Future<void> _fetchCustomRecommendation() async {
-    // This is called when the user clicks the button
-    if (_prefController.text.isEmpty) return;
-
+  Future<void> _fetchRecommendations({String? tastePreference}) async {
+    final bool isCustomSearch = tastePreference != null;
+    
     setState(() {
-      _isSearching = true;
+      if (isCustomSearch) {
+        _isSearching = true;
+      } else {
+        _isLoading = true;
+      }
       _searchError = null;
     });
 
@@ -88,30 +61,43 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
       final response = await http.post(
         Uri.parse("http://127.0.0.1:5000/recommendation/$userId"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"taste_preference": _prefController.text}),
+        body: jsonEncode({"taste_preference": tastePreference}),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _searchedDish = data["dish"];
-          _searchedReason = data["reason"];
+          _dishes = List<Map<String, dynamic>>.from(data["dishes"]);
+          _reason = data["reason"];
         });
       } else {
         final errorData = jsonDecode(response.body);
         setState(() {
-          _searchError = errorData['error'] ?? 'Could not find a match.';
-          _searchedDish = null; // Clear previous search result on error
+          _searchError = errorData['error'] ?? 'Could not find any matches.';
+          _dishes = [];
         });
       }
     } catch (e) {
       setState(() {
-        _searchError = "Server error: $e";
-        _searchedDish = null;
+        _searchError = "Server connection error.";
+        _dishes = [];
+      });
+    } finally {
+      setState(() {
+        if (isCustomSearch) {
+          _isSearching = false;
+        } else {
+          _isLoading = false;
+        }
       });
     }
+  }
 
-    setState(() => _isSearching = false);
+  void _fetchInitialRecommendation() => _fetchRecommendations();
+  void _fetchCustomRecommendation() {
+    if (_prefController.text.isNotEmpty) {
+      _fetchRecommendations(tastePreference: _prefController.text);
+    }
   }
 
   @override
@@ -120,91 +106,132 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     final Color bgColor = isDark ? const Color(0xFF1A1D21) : Colors.white;
     final Color titleColor = isDark ? Colors.white : const Color(0xFF1D2A39);
 
-    // Determine which dish and reason to display
-    final Map<String, dynamic>? dishToDisplay = _searchedDish ?? _initialDish;
-    final String? reasonToDisplay = _searchedReason ?? _initialReason;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
-      color: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            children: [
-              Text(
-                "AI Culinary Curator",
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: titleColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Get a personalized dish recommendation just for you.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 48),
-              if (_isLoadingInitial)
-                const Center(child: CircularProgressIndicator())
-              else if (dishToDisplay != null)
-                _buildRecommendationCard(
-                  imageUrl: dishToDisplay['image_url'] ?? '',
-                  dishName: dishToDisplay['name'] ?? 'No Name',
-                  reason: dishToDisplay['description'] ?? reasonToDisplay ?? 'Our special pick.',
-                  price: dishToDisplay['price']?.toDouble() ?? 0.0,
-                  dishId: dishToDisplay['id'],
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withOpacity(0.4) : Colors.grey.withOpacity(0.15),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 10),
                 )
-              else if (_searchError != null)
-                 Text(_searchError!, style: const TextStyle(color: Colors.red, fontSize: 16)),
-
-              const SizedBox(height: 40),
-
-              // Search Section
-              Text(
-                "Or, Find Your Own Craving",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: titleColor),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _prefController,
-                      decoration: const InputDecoration(
-                        labelText: "e.g., 'Something spicy but healthy'",
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (_) => _fetchCustomRecommendation(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _isSearching ? null : _fetchCustomRecommendation,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                    ),
-                    child: _isSearching
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text("Get Suggestion"),
-                  ),
-                ],
-              ),
-               if (_searchError != null && !_isLoadingInitial)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Text(_searchError!, style: const TextStyle(color: Colors.red)),
+              ],
+            ),
+            child: Column(
+              children: [
+                Text(
+                  "AI Culinary Curator",
+                  style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: titleColor),
                 ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  "Get personalized dish recommendations just for you.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 48),
+                
+                // --- Recommendations Section ---
+                _buildRecommendationsView(),
+                
+                const SizedBox(height: 40),
+
+                // --- Search Section ---
+                Text(
+                  "Or, Find Your Own Craving",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: titleColor),
+                ),
+                const SizedBox(height: 20),
+                _buildSearchView(),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  // CHANGED: This method now uses a Wrap widget instead of a PageView.
+  Widget _buildRecommendationsView() {
+    if (_isLoading) {
+      // Set a fixed height to prevent layout jumps while loading.
+      return const SizedBox(height: 380, child: Center(child: CircularProgressIndicator()));
+    }
+    if (_searchError != null && _dishes.isEmpty) {
+      return SizedBox(height: 380, child: Center(child: Text(_searchError!, style: const TextStyle(color: Colors.red, fontSize: 16))));
+    }
+    
+    // Using a Wrap widget makes the layout responsive automatically.
+    // Cards will sit side-by-side and wrap to the next line on smaller screens.
+    return Wrap(
+      spacing: 24, // Horizontal space between cards.
+      runSpacing: 24, // Vertical space between cards when they wrap.
+      alignment: WrapAlignment.center,
+      children: _dishes.map((dish) {
+        return _buildRecommendationCard(
+          imageUrl: dish['image_url'] ?? '',
+          dishName: dish['name'] ?? 'No Name',
+          reason: dish['description'] ?? _reason ?? 'Our special pick.',
+          price: dish['price']?.toDouble() ?? 0.0,
+          dishId: dish['id'],
+        );
+      }).toList(),
+    );
+  }
+
+  // REMOVED: The _buildDot method is no longer needed.
+  
+  Widget _buildSearchView() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Expanded(
+                child: TextField(
+                  controller: _prefController,
+                  decoration: const InputDecoration(
+                    labelText: "e.g., 'Something spicy but healthy'",
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _fetchCustomRecommendation(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: _isSearching ? null : _fetchCustomRecommendation,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+              ),
+              child: _isSearching
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text("Get Suggestion"),
+            ),
+          ],
+        ),
+        if (_searchError != null && _dishes.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: Text(_searchError!, style: const TextStyle(color: Colors.red)),
+          ),
+      ],
     );
   }
 
@@ -224,6 +251,10 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     );
   }
 }
+
+
+// --- NO CHANGES NEEDED FOR THE WIDGET BELOW ---
+// The existing _AnimatedFoodCard is perfect.
 
 class _AnimatedFoodCard extends StatefulWidget {
   final String imageUrl;
@@ -270,7 +301,7 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
     );
     
     _flipController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -318,12 +349,12 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
       },
       child: GestureDetector(
         onTap: () {
-          // Navigate to menu page with specific dish
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => MenuScreen(
                 initialCategory: widget.dishName,
+                initialItemId: widget.dishId,
               ),
             ),
           );
@@ -373,7 +404,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
       ),
       child: Stack(
         children: [
-          // Animated circles background
           Positioned(
             top: 0,
             left: 0,
@@ -381,7 +411,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
             bottom: 0,
             child: Stack(
               children: [
-                // Circle 1
                 Positioned(
                   top: 20,
                   left: 20,
@@ -411,7 +440,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                     },
                   ),
                 ),
-                // Circle 2 (bottom)
                 Positioned(
                   top: 0,
                   left: 50,
@@ -441,7 +469,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                     },
                   ),
                 ),
-                // Circle 3 (right)
                 Positioned(
                   top: -80,
                   left: 160,
@@ -474,7 +501,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
               ],
             ),
           ),
-          // Food image
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(5),
@@ -490,7 +516,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
               ),
             ),
           ),
-          // Top left badge
           Positioned(
             top: 10,
             left: 10,
@@ -514,7 +539,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
               ),
             ),
           ),
-          // Content overlay
           Positioned(
             bottom: 0,
             left: 0,
@@ -567,7 +591,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
       ),
       child: Stack(
         children: [
-          // Blurred dish image background
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(5),
@@ -586,7 +609,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
               ),
             ),
           ),
-          // Dark overlay for better text readability
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -595,14 +617,12 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
               ),
             ),
           ),
-          // Content
           Positioned.fill(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Top section with badge and favorite
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -632,7 +652,7 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                           color: Colors.black.withOpacity(0.6),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.favorite_border,
                           color: Colors.white,
                           size: 16,
@@ -643,7 +663,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                   
                   const SizedBox(height: 16),
                   
-                  // Dish name
                   Text(
                     widget.dishName,
                     style: const TextStyle(
@@ -659,7 +678,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                   
                   const SizedBox(height: 8),
                   
-                  // Description
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
@@ -667,7 +685,7 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      widget.reason, // This is the actual description from the database
+                      widget.reason,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 10,
@@ -681,7 +699,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                   
                   const SizedBox(height: 12),
                   
-                  // Price
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -704,7 +721,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                   
                   const SizedBox(height: 16),
                   
-                  // Add to cart button
                   Container(
                     width: double.infinity,
                     height: 36,
@@ -725,7 +741,6 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
                         borderRadius: BorderRadius.circular(18),
                         onTap: () {
                           // Add to cart logic would go here
-                          // This preserves the existing functionality
                         },
                         child: const Center(
                           child: Row(
@@ -760,3 +775,4 @@ class _AnimatedFoodCardState extends State<_AnimatedFoodCard>
     );
   }
 }
+

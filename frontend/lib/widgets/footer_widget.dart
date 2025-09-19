@@ -9,7 +9,7 @@ class FooterWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(builder: (context, theme, _) {
       final bool isDark = theme.isDarkMode;
-      final Color bg = isDark ? const Color(0xFF0F1113) : Colors.white;
+      final Color bg = Theme.of(context).scaffoldBackgroundColor;
       final Color heading = isDark ? Colors.white : Colors.black87;
       final Color text = isDark ? Colors.white70 : Colors.black54;
       final Color divider = isDark ? Colors.white12 : Colors.black12;

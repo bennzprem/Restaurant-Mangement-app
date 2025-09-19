@@ -29,7 +29,7 @@ class ByteBot:
         
         results = self.index.query(
             vector=embedding,
-            top_k=1,
+            top_k=3,
             include_metadata=True
         )
         return results.to_dict()

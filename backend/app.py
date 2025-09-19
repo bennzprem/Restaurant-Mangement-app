@@ -1700,72 +1700,74 @@ def personalized_recommendation(user_id):
         # 1. If user provides a specific taste preference, use semantic search (Pinecone)
         if taste_pref:
             try:
-                search_results = byte_bot_service.semantic_search(taste_pref)
-                if search_results and search_results['matches']:
-                    top_hit = search_results['matches'][0]['metadata']
-                    # Ensure price is a number, not a string
-                    if isinstance(top_hit.get('price'), str):
-                        top_hit['price'] = float(top_hit['price'])
+                search_results = byte_bot_service.semantic_search(taste_pref) # This now gets top 3
+                if search_results and search_results.get('matches'):
+                    # Extract metadata from all top hits
+                    top_dishes = [match['metadata'] for match in search_results['matches']]
+                    # Clean up prices just in case
+                    for dish in top_dishes:
+                        if isinstance(dish.get('price'), str):
+                            dish['price'] = float(dish['price'])
+                    
                     return jsonify({
-                        "dish": top_hit,
+                        "dishes": top_dishes, # CHANGED: "dishes" is now a list
                         "reason": f"Because you're looking for something '{taste_pref.lower()}'."
                     }), 200
             except Exception as e:
                 print(f"Pinecone search failed, falling back: {e}")
-                # If Pinecone fails, we'll proceed to the next logic steps
         
         # This function will be our fallback for guests or when other logic fails
         def get_fallback_recommendation():
-            # First, try to get a random bestseller that is available
+            # Try to get up to 3 random bestsellers that are available
             bestseller_res = supabase.table("menu_items").select("*").eq("is_bestseller", True).eq("is_available", True).execute()
             if bestseller_res.data:
-                dish = random.choice(bestseller_res.data)
+                # Use random.sample to get up to 3 unique items
+                num_to_sample = min(3, len(bestseller_res.data))
+                dishes = random.sample(bestseller_res.data, num_to_sample)
                 return jsonify({
-                    "dish": dish,
-                    "reason": "This is a trending pick, loved by many of our customers!"
+                    "dishes": dishes,
+                    "reason": "These are our trending picks, loved by many customers!"
                 }), 200
 
-            # If no bestsellers, try a random available chef special
+            # If no bestsellers, try up to 3 random available chef specials
             chef_spl_res = supabase.table("menu_items").select("*").eq("is_chef_spl", True).eq("is_available", True).execute()
             if chef_spl_res.data:
-                dish = random.choice(chef_spl_res.data)
+                num_to_sample = min(3, len(chef_spl_res.data))
+                dishes = random.sample(chef_spl_res.data, num_to_sample)
                 return jsonify({
-                    "dish": dish,
-                    "reason": "A special recommendation from our chef you might enjoy."
+                    "dishes": dishes,
+                    "reason": "Special recommendations from our chef you might enjoy."
                 }), 200
             
             # Absolute fallback if no items are tagged
-            return jsonify({"error": "Could not determine a suitable recommendation."}), 404
+            return jsonify({"error": "Could not determine suitable recommendations."}), 404
 
         # 2. If user is logged in, check their order history
         if user_id != 'guest':
-            # Fetch the most recent order for the user
             orders_res = supabase.table("orders").select("id").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
             
             if orders_res.data:
                 last_order_id = orders_res.data[0]["id"]
-                # Get an item from their last order
                 last_items_res = supabase.table("order_items").select("menu_item_id").eq("order_id", last_order_id).limit(1).execute()
                 
                 if last_items_res.data:
                     last_item_id = last_items_res.data[0]["menu_item_id"]
-                    # Get the category of the last item
                     last_item_details_res = supabase.table("menu_items").select("category_id, name").eq("id", last_item_id).maybe_single().execute()
                     
                     if last_item_details_res.data:
                         last_item_details = last_item_details_res.data
-                        # Find other available items in the same category, excluding the last item ordered
                         similar_items_res = supabase.table("menu_items").select("*").eq("category_id", last_item_details["category_id"]).eq("is_available", True).neq("id", last_item_id).execute()
                         
                         if similar_items_res.data:
-                            # Recommend a random item from that category
-                            dish = random.choice(similar_items_res.data)
+                            # Recommend up to 3 random items from that category
+                            num_to_sample = min(3, len(similar_items_res.data))
+                            dishes = random.sample(similar_items_res.data, num_to_sample)
                             return jsonify({
-                                "dish": dish,
-                                "reason": f"Since you enjoyed '{last_item_details['name']}', you might also like this!"
+                                "dishes": dishes,
+                                "reason": f"Since you enjoyed '{last_item_details['name']}', you might also like these!"
                             }), 200
 
-        # 3. If the user is a guest, has no history, or history-based logic fails, get a fallback.
+        # 3. Fallback for guests or users with no relevant history
         return get_fallback_recommendation()
 
     except Exception as e:
