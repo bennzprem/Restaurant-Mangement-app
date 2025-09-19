@@ -1,17 +1,20 @@
 // lib/cart_screen.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart'; // 1. Added Razorpay import
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:js' as js;
+import 'dart:ui' as ui;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service.dart';
 import 'cart_provider.dart';
 import 'auth_provider.dart';
 import 'widgets/address_map_picker.dart';
 import 'widgets/header_widget.dart';
-import 'theme.dart';
+import 'widgets/checkout_step.dart';
+import 'widgets/order_summary_card.dart';
+import 'models.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -38,6 +41,14 @@ class _CartScreenState extends State<CartScreen> {
   String? _stateProvince;
   String? _pincode;
   String? _contactNumber;
+  AddressDetails? _savedAddress;
+
+  // Helper method to calculate total amount including fees
+  double get _totalAmountWithFees {
+    final deliveryFee = 41.0;
+    final gstAndCharges = 74.69;
+    return _cart.totalAmount + deliveryFee + gstAndCharges;
+  }
 
   @override
   void initState() {
@@ -46,6 +57,45 @@ class _CartScreenState extends State<CartScreen> {
       _razorpay = Razorpay();
       _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    }
+    _loadSavedAddress();
+  }
+
+  Future<void> _loadSavedAddress() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      final addressJson = prefs.getString('address_${auth.user!.id}');
+      if (addressJson != null) {
+        final addressData = jsonDecode(addressJson);
+        setState(() {
+          _savedAddress = AddressDetails(
+            houseNo: addressData['houseNo'] ?? '',
+            area: addressData['area'] ?? '',
+            city: addressData['city'] ?? '',
+            state: addressData['state'] ?? '',
+            pincode: addressData['pincode'] ?? '',
+          );
+        });
+      }
+    }
+  }
+
+  Future<void> _saveAddress(AddressDetails address) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      final addressJson = jsonEncode({
+        'houseNo': address.houseNo,
+        'area': address.area,
+        'city': address.city,
+        'state': address.state,
+        'pincode': address.pincode,
+      });
+      await prefs.setString('address_${auth.user!.id}', addressJson);
+      setState(() {
+        _savedAddress = address;
+      });
     }
   }
 
@@ -81,10 +131,12 @@ class _CartScreenState extends State<CartScreen> {
     _isPrefetching = true;
     try {
       final apiService = ApiService();
-      final orderId = await apiService.createRazorpayOrder(_cart.totalAmount);
+      final totalAmount = _totalAmountWithFees;
+
+      final orderId = await apiService.createRazorpayOrder(totalAmount);
       setState(() {
         _prefetchedOrderId = orderId;
-        _prefetchedAmountPaise = (_cart.totalAmount * 100).round();
+        _prefetchedAmountPaise = (totalAmount * 100).round();
       });
     } catch (_) {
       // ignore for now; will retry on next build
@@ -100,6 +152,13 @@ class _CartScreenState extends State<CartScreen> {
 
     if (_auth.user == null) {
       showLoginPrompt(context);
+      return;
+    }
+
+    if (_savedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add a delivery address first.')),
+      );
       return;
     }
 
@@ -307,7 +366,7 @@ class _CartScreenState extends State<CartScreen> {
                 Navigator.of(ctx).pop(true);
               }
             },
-            child: const Text('Continue to Pay'),
+            child: const Text('Add Address'),
           ),
         ],
       ),
@@ -324,6 +383,17 @@ class _CartScreenState extends State<CartScreen> {
         _pincode = pincodeController.text.trim();
         _contactNumber = phoneController.text.trim();
       });
+
+      // Save the address for future use
+      final addressDetails = AddressDetails(
+        houseNo: _addressLine ?? '',
+        area: _addressLine2 ?? '',
+        city: _city ?? '',
+        state: _stateProvince ?? '',
+        pincode: _pincode ?? '',
+      );
+      await _saveAddress(addressDetails);
+
       if (_prefetchedOrderId == null) {
         await _prefetchOrder();
       }
@@ -334,28 +404,35 @@ class _CartScreenState extends State<CartScreen> {
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     final apiService = ApiService();
 
+    // Use the saved address
+    final addressString = _savedAddress != null
+        ? _savedAddress.toString()
+        : 'No address provided';
+
     // Use the stored member variables, NOT Provider.of(context)
     apiService.placeOrder(
       _cart.items.values.toList(),
-      _cart.totalAmount,
+      _totalAmountWithFees,
       _auth.user!.id,
-      [
-        if (_addressLine != null) _addressLine,
-        if (_addressLine2 != null) _addressLine2,
-        if (_city != null) _city,
-        if (_stateProvince != null) _stateProvince,
-        if (_pincode != null) 'PIN: $_pincode',
-      ].whereType<String>().join(', '),
+      addressString,
     );
 
     _cart.clearCart();
 
     if (mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment Successful! Order Placed.')),
-      );
+      _showOrderCompletionDialog();
     }
+  }
+
+  void _showOrderCompletionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return OrderCompletionDialog();
+      },
+    );
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -369,12 +446,12 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-    final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '₹');
     final bool isTableMode = widget.tableSessionId != null;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
+      backgroundColor:
+          isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
       appBar: null,
       body: Column(
         children: [
@@ -395,130 +472,497 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ),
                   )
-                : ListView.builder(
-                    itemCount: cart.items.length,
-                    itemBuilder: (ctx, i) {
-                      final cartItem = cart.items.values.toList()[i];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage:
-                                NetworkImage(cartItem.menuItem.imageUrl),
-                          ),
-                          title: Text(
-                            cartItem.menuItem.name,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(
-                            currencyFormat.format(cartItem.menuItem.price),
-                            style: TextStyle(
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 600) {
+                        // Desktop layout - Row with checkout steps and order summary
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: () =>
-                                    cart.removeSingleItem(cartItem.menuItem.id),
+                            // Left side - Checkout Steps (2/3 width)
+                            Expanded(
+                              flex: 2,
+                              child: SingleChildScrollView(
+                                child: _buildCheckoutSteps(isDark, isTableMode),
                               ),
                             ),
-                            Text('${cartItem.quantity}'),
-                            MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () => cart.addItem(cartItem.menuItem),
+                            // Right side - Order Summary (1/3 width)
+                            Expanded(
+                              flex: 1,
+                              child: SingleChildScrollView(
+                                child: OrderSummaryCard(
+                                  onProceedToPay: () {
+                                    if (isTableMode) {
+                                      // Table Mode Logic
+                                      Provider.of<CartProvider>(context,
+                                              listen: false)
+                                          .clearCart();
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Items sent to the kitchen!')),
+                                      );
+                                    } else {
+                                      // Use saved address for payment
+                                      _openCheckout();
+                                    }
+                                  },
+                                  isTableMode: isTableMode,
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                        ),
-                      );
+                        );
+                      } else {
+                        // Mobile layout - Column with stacked content
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              _buildCheckoutSteps(isDark, isTableMode),
+                              OrderSummaryCard(
+                                onProceedToPay: () {
+                                  if (isTableMode) {
+                                    // Table Mode Logic
+                                    Provider.of<CartProvider>(context,
+                                            listen: false)
+                                        .clearCart();
+                                    Navigator.of(context).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Items sent to the kitchen!')),
+                                    );
+                                  } else {
+                                    // Use saved address for payment
+                                    _openCheckout();
+                                  }
+                                },
+                                isTableMode: isTableMode,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                     },
                   ),
           ),
-          if (cart.items.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.all(16.0),
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckoutSteps(bool isDark, bool isTableMode) {
+    final auth = Provider.of<AuthProvider>(context);
+
+    return CheckoutStepsList(
+      steps: [
+        CheckoutStep(
+          icon: Icons.person,
+          title: auth.isLoggedIn ? 'Logged in' : 'Account',
+          subtitle: auth.isLoggedIn
+              ? 'Welcome back! You are ready to place your order.'
+              : 'To place your order now, log in to your existing account or sign up.',
+          isActive: true,
+          isCompleted: auth.isLoggedIn,
+          content: auth.isLoggedIn
+              ? _buildLoggedInUserStep(auth, isDark)
+              : _buildAccountStep(isDark),
+        ),
+        CheckoutStep(
+          icon: Icons.location_on,
+          title: 'Add a delivery address',
+          subtitle: auth.isLoggedIn
+              ? (_savedAddress != null
+                  ? 'Address added successfully'
+                  : 'You seem to be in the new location')
+              : 'Please log in first to add delivery address',
+          isActive: auth.isLoggedIn,
+          isCompleted: _savedAddress != null,
+          content: auth.isLoggedIn ? _buildDeliveryAddressStep(isDark) : null,
+        ),
+        CheckoutStep(
+          icon: Icons.credit_card,
+          title: 'Payment',
+          subtitle: _savedAddress != null
+              ? 'Ready to process payment'
+              : 'Please add delivery address first',
+          isActive: _savedAddress != null,
+          content: _savedAddress != null ? _buildPaymentStep(isDark) : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountStep(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+                foregroundColor: const Color(0xFF4CAF50),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total:',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  Text(
-                    currencyFormat.format(cart.totalAmount),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (cart.items.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: ElevatedButton(
-                  child: Text(isTableMode ? 'Send to Kitchen' : 'Proceed to Pay'),
-                  onPressed: () {
-                  if (isTableMode) {
-                    // Table Mode Logic (Unchanged)
-                    Provider.of<CartProvider>(context, listen: false)
-                        .clearCart();
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Items sent to the kitchen!')),
-                    );
-                  } else {
-                    // Ask for address/contact, then open checkout
-                    _promptAddressThenPay();
-                  }
-                },
+              child: const Text(
+                'Have an account? LOG IN',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/signup');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'New to ByteEat? SIGN UP',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoggedInUserStep(AuthProvider auth, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: const Color(0xFF4CAF50),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${auth.user?.name ?? 'User'} | ${auth.user?.email ?? 'No email'}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ready to place your order',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              auth.signOut();
+            },
+            child: Text(
+              'Logout',
+              style: TextStyle(
+                color: const Color(0xFF4CAF50),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliveryAddressStep(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      child: Column(
+        children: [
+          if (_savedAddress != null) ...[
+            // Show existing address
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF4CAF50),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Delivery Address',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _savedAddress.toString(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _promptAddressThenPay();
+                        },
+                        icon: Icon(
+                          Icons.edit,
+                          color: const Color(0xFF4CAF50),
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // No saved address - show add new address card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
+                  width: 1,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.add_location_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add New Address',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Adugodi, Bengaluru, Karnataka, India',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        _promptAddressThenPay();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                            color: Color(0xFF4CAF50), width: 2),
+                        foregroundColor: const Color(0xFF4CAF50),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'ADD NEW',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentStep(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFF4CAF50),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.credit_card,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Payment Method',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Pay securely with Razorpay',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _openCheckout();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'PAY NOW',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -546,4 +990,279 @@ void showLoginPrompt(BuildContext context) {
       ],
     ),
   );
+}
+
+class OrderCompletionDialog extends StatefulWidget {
+  const OrderCompletionDialog({super.key});
+
+  @override
+  State<OrderCompletionDialog> createState() => _OrderCompletionDialogState();
+}
+
+class _OrderCompletionDialogState extends State<OrderCompletionDialog>
+    with TickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late AnimationController _checkController;
+  late AnimationController _fadeController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _checkAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize animation controllers
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _checkController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    // Create animations
+    _scaleAnimation = CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    );
+    _checkAnimation = CurvedAnimation(
+      parent: _checkController,
+      curve: Curves.easeInOut,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+
+    // Start animations
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    // Start scale animation
+    _scaleController.forward();
+
+    // Wait a bit then start check animation
+    await Future.delayed(const Duration(milliseconds: 200));
+    _checkController.forward();
+
+    // Wait a bit then start fade animation
+    await Future.delayed(const Duration(milliseconds: 300));
+    _fadeController.forward();
+
+    // Auto close and redirect after 3 seconds
+    await Future.delayed(const Duration(milliseconds: 2000));
+    _redirectToHome();
+  }
+
+  void _redirectToHome() {
+    if (mounted) {
+      Navigator.of(context).pop(); // Close dialog
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _checkController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Animated checkmark circle
+            AnimatedBuilder(
+              animation: _scaleAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: AnimatedBuilder(
+                      animation: _checkAnimation,
+                      builder: (context, child) {
+                        return CustomPaint(
+                          painter: CheckmarkPainter(_checkAnimation.value),
+                          size: const Size(100, 100),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // Order completed text
+            AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Order Completed!',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your delicious meal is being prepared\nand will be delivered soon!',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // Loading indicator
+            AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            const Color(0xFF4CAF50),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Redirecting to home...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.grey[500] : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CheckmarkPainter extends CustomPainter {
+  final double progress;
+
+  CheckmarkPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final path = ui.Path();
+
+    // Start point of checkmark
+    final startX = size.width * 0.25;
+    final startY = size.height * 0.5;
+
+    // Middle point of checkmark
+    final middleX = size.width * 0.45;
+    final middleY = size.height * 0.65;
+
+    // End point of checkmark
+    final endX = size.width * 0.75;
+    final endY = size.height * 0.35;
+
+    if (progress <= 0.5) {
+      // Draw first part of checkmark (vertical line)
+      final currentProgress = progress * 2;
+      final currentY = startY + (middleY - startY) * currentProgress;
+
+      path.moveTo(startX, startY);
+      path.lineTo(middleX, currentY);
+    } else {
+      // Draw first part completely
+      path.moveTo(startX, startY);
+      path.lineTo(middleX, middleY);
+
+      // Draw second part of checkmark (diagonal line)
+      final currentProgress = (progress - 0.5) * 2;
+      final currentX = middleX + (endX - middleX) * currentProgress;
+      final currentY = middleY + (endY - middleY) * currentProgress;
+
+      path.lineTo(currentX, currentY);
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CheckmarkPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
