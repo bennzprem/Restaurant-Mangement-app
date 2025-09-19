@@ -485,10 +485,11 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                     child: ListView.separated(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: categories.length,
+                      itemCount: categories.length * 3, // Triple for infinite loop
                       separatorBuilder: (_, __) => const SizedBox(width: 20),
                       itemBuilder: (context, index) {
-                        final name = categories[index].name;
+                        final actualIndex = index % categories.length;
+                        final name = categories[actualIndex].name;
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -499,27 +500,27 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                           );
                         },
                         child: MouseRegion(
-                          onEnter: (_) => setState(() => _hoveredIndex = index),
+                          onEnter: (_) => setState(() => _hoveredIndex = actualIndex),
                           onExit: (_) => setState(() => _hoveredIndex = -1),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 400),
                             decoration: BoxDecoration(
-                              color: _hoveredIndex == index
+                              color: _hoveredIndex == actualIndex
                                   ? Theme.of(context).primaryColor.withOpacity(0.2)
                                   : (isDark
                                       ? Colors.white.withOpacity(0.06)
                                       : Colors.white.withOpacity(0.7)),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: _hoveredIndex == index
+                                color: _hoveredIndex == actualIndex
                                     ? Theme.of(context).primaryColor
                                     : Colors.white
                                         .withOpacity(isDark ? 0.12 : 0.2),
-                                width: _hoveredIndex == index ? 2 : 1,
+                                width: _hoveredIndex == actualIndex ? 2 : 1,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _hoveredIndex == index
+                                  color: _hoveredIndex == actualIndex
                                       ? Theme.of(context).primaryColor.withOpacity(0.3)
                                       : Colors.black
                                           .withOpacity(isDark ? 0.5 : 0.06),
@@ -538,11 +539,11 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                   // Animated arrow icon instead of emoji
                                   AnimatedRotation(
                                     duration: const Duration(milliseconds: 300),
-                                    turns: _hoveredIndex == index ? 0.25 : 0.0,
+                                    turns: _hoveredIndex == actualIndex ? 0.25 : 0.0,
                                     child: Icon(
                                       Icons.arrow_forward_ios,
                                       size: 32,
-                                      color: _hoveredIndex == index
+                                      color: _hoveredIndex == actualIndex
                                           ? Colors.black
                                           : Theme.of(context).primaryColor,
                                     ),
@@ -555,7 +556,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Nunito',
-                                      color: _hoveredIndex == index
+                                      color: _hoveredIndex == actualIndex
                                           ? Colors.black
                                           : (isDark
                                               ? Colors.white
@@ -693,7 +694,7 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
       if (mounted) {
         _autoScrollToNext();
       }
@@ -883,40 +884,11 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                   .map((buttonData) {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 8.0),
-                                      child: SizedBox(
-                                        width: double.infinity,
-                                        child: OutlinedButton(
-                                          onPressed: buttonData['action'] as VoidCallback,
-                                          style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                              const EdgeInsets.symmetric(vertical: 12)
-                                            ),
-                                            shape: MaterialStateProperty.all(
-                                              RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                                              if (states.contains(MaterialState.hovered)) {
-                                                return theme.primaryColor; 
-                                              }
-                                              return Colors.transparent;
-                                            }),
-                                            foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                                              if (states.contains(MaterialState.hovered)) {
-                                                return isDark ? Colors.black : Colors.white;
-                                              }
-                                              return theme.primaryColor;
-                                            }),
-                                            side: MaterialStateProperty.all(
-                                              BorderSide(color: theme.primaryColor, width: 1.5)
-                                            ),
-                                          ),
-                                          child: Text(
-                                            buttonData['text'],
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
+                                      child: _AnimatedButton(
+                                        onPressed: buttonData['action'] as VoidCallback,
+                                        text: buttonData['text'],
+                                        isDark: isDark,
+                                        theme: theme,
                                       ),
                                     );
                                   }).toList(),
@@ -933,6 +905,162 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnimatedButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final String text;
+  final bool isDark;
+  final ThemeData theme;
+
+  const _AnimatedButton({
+    required this.onPressed,
+    required this.text,
+    required this.isDark,
+    required this.theme,
+  });
+
+  @override
+  State<_AnimatedButton> createState() => _AnimatedButtonState();
+}
+
+class _AnimatedButtonState extends State<_AnimatedButton>
+    with TickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _textShadowAnimation;
+
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 300.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeInOut,
+    ));
+
+    _textShadowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  Color get _buttonColor => widget.isDark ? Colors.lightGreen : const Color(0xFF2E7D32);
+  Color get _accentColor => widget.isDark ? const Color(0xFF388E3C) : Colors.lightGreen;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _hoverController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _hoverController.reverse();
+      },
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedBuilder(
+          animation: _hoverController,
+          builder: (context, child) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              width: 200, // Reduced width as requested
+              height: 48,
+              decoration: BoxDecoration(
+                color: _isHovered ? _accentColor : _buttonColor,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: _accentColor.withOpacity(_isHovered ? 0.5 : 0.3),
+                    blurRadius: _isHovered ? 12 : 8,
+                    offset: Offset(0, _isHovered ? 6 : 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    // Animated background circle - no small dot, starts from 0
+                    Positioned(
+                      left: 20,
+                      bottom: 0,
+                      child: AnimatedBuilder(
+                        animation: _scaleAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: _accentColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Button text
+                    Center(
+                      child: AnimatedBuilder(
+                        animation: _textShadowAnimation,
+                        builder: (context, child) {
+                          return AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 400),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: _isHovered ? 17 : 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Nunito',
+                              shadows: [
+                                Shadow(
+                                  color: _accentColor.withOpacity(0.8),
+                                  offset: Offset(
+                                    3 - (1 * _textShadowAnimation.value),
+                                    5 - (3 * _textShadowAnimation.value),
+                                  ),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Text(widget.text),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -50,46 +50,6 @@ class AboutSection extends StatelessWidget {
 
           const SizedBox(height: 80),
 
-          // Chef section
-          Column(
-            children: [
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: isDesktop ? 40 : (isTablet ? 34 : 26),
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  children: const [
-                    TextSpan(text: 'Our '),
-                    TextSpan(
-                      text: 'ByteEat',
-                      style: TextStyle(color: Color(0xFFDAE952)),
-                    ),
-                    TextSpan(text: ' Restaurant Expert Chef'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'Food, substance consisting essentially of protein, carbohydrate, fat, and other nutrients used in the body of an organism to sustain growth and vital processes and to furnish energy. The absorption and utilization of food by the body is fundamental to nutrition and is facilitated by digestion.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: isDesktop ? 20 : (isTablet ? 18 : 15),
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : Colors.black87,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -108,13 +68,13 @@ class AboutSection extends StatelessWidget {
                   : Colors.black,
               fontWeight: FontWeight.bold,
             ),
-            children: const [
-              TextSpan(text: 'Welcome to our '),
+            children: [
+              const TextSpan(text: 'Welcome to our '),
               TextSpan(
                 text: 'ByteEat',
-                style: TextStyle(color: Color(0xFFDAE952)),
+                style: TextStyle(color: Theme.of(context).primaryColor),
               ),
-              TextSpan(text: ' Restaurant'),
+              const TextSpan(text: ' Restaurant'),
             ],
           ),
         ),
@@ -135,7 +95,7 @@ class AboutSection extends StatelessWidget {
             Navigator.pushNamed(context, '/about');
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFDAE952),
+            backgroundColor: Theme.of(context).primaryColor,
             foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(25),
@@ -194,7 +154,7 @@ class AboutSection extends StatelessWidget {
             child: Container(
               width: 32,
               height: 32,
-              color: const Color(0xFFDAE952),
+              color: Theme.of(context).primaryColor,
             ),
           ),
         ),
