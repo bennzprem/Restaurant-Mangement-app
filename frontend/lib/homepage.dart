@@ -607,6 +607,7 @@ class ServiceSelectionCarousel extends StatefulWidget {
 class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   int _selectedIndex = 1;
   Timer? _autoScrollTimer;
+  bool _isHoveringSelectedCard = false;
 
   late final List<Map<String, dynamic>> _cardData;
 
@@ -702,9 +703,12 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   }
   
   void _autoScrollToNext() {
-    setState(() {
-      _selectedIndex = (_selectedIndex + 1) % _cardData.length;
-    });
+    // Only auto-scroll if not hovering over the selected card
+    if (!_isHoveringSelectedCard) {
+      setState(() {
+        _selectedIndex = (_selectedIndex + 1) % _cardData.length;
+      });
+    }
   }
   
   void _onCardTap(int index) {
@@ -829,14 +833,17 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                     curve: Curves.easeInOutCubic,
                     transform: _getTransform(index, screenWidth),
                     transformAlignment: Alignment.center,
-                    child: GestureDetector(
-                      onTap: () => _onCardTap(index),
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 800),
-                            opacity: index == _selectedIndex ? 1.0 : 0.4,
-                        child: SizedBox(
-                          width: screenWidth * 0.5,
-                          child: Container(
+                    child: MouseRegion(
+                      onEnter: (_) => setState(() => _isHoveringSelectedCard = index == _selectedIndex),
+                      onExit: (_) => setState(() => _isHoveringSelectedCard = false),
+                      child: GestureDetector(
+                        onTap: () => _onCardTap(index),
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 800),
+                              opacity: index == _selectedIndex ? 1.0 : 0.4,
+                          child: SizedBox(
+                            width: screenWidth * 0.5,
+                            child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                             decoration: BoxDecoration(
                               color: theme.cardColor,
@@ -899,7 +906,10 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                         ),
                       ),
                     ),
-                  );
+                  ),
+                );
+                
+                  
                 }),
               ),
             ),
