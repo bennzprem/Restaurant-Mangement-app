@@ -154,7 +154,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                 Icon(Icons.person, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 8),
                 Text(
-                  'Waiter: ${order['waiter_name']}',
+                  '${(order['table_info'] != null && order['table_info'] != 'Delivery order') ? 'Customer' : 'Waiter'}: ${order['waiter_name']}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
