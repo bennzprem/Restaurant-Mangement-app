@@ -13,6 +13,7 @@ from twilio.base.exceptions import TwilioRestException
 from werkzeug.utils import secure_filename
 import mimetypes
 import razorpay
+from urllib.parse import quote
 
 from dotenv import load_dotenv  # <-- ADD THIS LINE
 # Import your existing ByteBot class and the new VoiceAssistant class
@@ -647,6 +648,263 @@ def get_orders_count():
     except Exception as e:
         print(f"Error fetching orders count: {e}")
         return jsonify({"error": str(e)}), 500
+
+# --- Kitchen and Delivery Order Feeds ---
+@app.route('/api/kitchen/orders', methods=['GET'])
+def api_kitchen_orders():
+    """Returns orders that need preparation for delivery with user and item details."""
+    try:
+        # Fetch orders marked as Preparing
+        orders_res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.Preparing&order=created_at.desc",
+            headers=SUPABASE_HEADERS,
+        )
+        orders_res.raise_for_status()
+        orders = orders_res.json() or []
+
+        result = []
+        for order in orders:
+            order_id = order.get('id')
+
+            # Get user info
+            user_name = None
+            if order.get('user_id'):
+                u_res = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/users?select=name&id=eq.{order['user_id']}",
+                    headers=SUPABASE_HEADERS,
+                )
+                if u_res.ok and u_res.json():
+                    user_name = (u_res.json()[0] or {}).get('name')
+
+            # Get items for the order joined to menu_items
+            items_res = requests.get(
+                f"{SUPABASE_URL}/rest/v1/order_items?select=quantity,price_at_order,menu_items(name,description,image_url)&order_id=eq.{order_id}",
+                headers=SUPABASE_HEADERS,
+            )
+            items_res.raise_for_status()
+            raw_items = items_res.json() or []
+            items = []
+            for it in raw_items:
+                mi = it.get('menu_items') or {}
+                items.append({
+                    'name': mi.get('name'),
+                    'description': mi.get('description'),
+                    'image_url': mi.get('image_url'),
+                    'quantity': it.get('quantity', 1),
+                    'price': it.get('price_at_order', 0),
+                })
+
+            result.append({
+                'order_id': order_id,
+                'status': order.get('status'),
+                'waiter_name': user_name or 'User',
+                'table_info': order.get('delivery_address') or 'Delivery order',
+                'total_amount': order.get('total_amount') or order.get('total') or 0,
+                'items': items,
+            })
+
+        return cors_json_response(result, 200)
+    except Exception as e:
+        print(f"Error building kitchen orders feed: {e}")
+        return cors_json_response({"error": str(e)}, 500)
+
+
+@app.route('/api/delivery/orders', methods=['GET'])
+def api_delivery_orders():
+    """Returns orders that are ready for delivery (status = Ready)."""
+    try:
+        print("Fetching ready orders for delivery")
+        
+        # First, let's check what order statuses exist
+        all_orders_res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?select=id,status&order=created_at.desc&limit=10",
+            headers=SUPABASE_HEADERS,
+        )
+        if all_orders_res.ok:
+            all_orders = all_orders_res.json() or []
+            print(f"Recent order statuses: {[order.get('status') for order in all_orders]}")
+        
+        orders_res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.Ready&order=created_at.desc",
+            headers=SUPABASE_HEADERS,
+        )
+        print(f"Ready orders response status: {orders_res.status_code}")
+        print(f"Ready orders response body: {orders_res.text}")
+        
+        orders_res.raise_for_status()
+        orders = orders_res.json() or []
+        print(f"Found {len(orders)} ready orders")
+        
+        # If no ready orders, let's also check preparing orders for debugging
+        if len(orders) == 0:
+            preparing_res = requests.get(
+                f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.Preparing&order=created_at.desc",
+                headers=SUPABASE_HEADERS,
+            )
+            if preparing_res.ok:
+                preparing_orders = preparing_res.json() or []
+                print(f"Found {len(preparing_orders)} preparing orders (these need to be marked ready by kitchen)")
+
+        result = []
+        for order in orders:
+            order_id = order.get('id')
+            user_name = None
+            if order.get('user_id'):
+                u_res = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/users?select=name&id=eq.{order['user_id']}",
+                    headers=SUPABASE_HEADERS,
+                )
+                if u_res.ok and u_res.json():
+                    user_name = (u_res.json()[0] or {}).get('name')
+
+            result.append({
+                'order_id': order_id,
+                'status': order.get('status'),
+                'customer_name': user_name or 'User',
+                'delivery_address': order.get('delivery_address'),
+                'total_amount': order.get('total_amount') or order.get('total') or 0,
+            })
+
+        print(f"Returning {len(result)} ready orders")
+        return cors_json_response(result, 200)
+    except Exception as e:
+        print(f"Error building delivery orders feed: {e}")
+        import traceback
+        traceback.print_exc()
+        return cors_json_response({"error": str(e)}, 500)
+
+
+@app.route('/api/delivery/orders/<int:order_id>/accept', methods=['POST'])
+def api_delivery_accept(order_id: int):
+    """Delivery user accepts an order → mark as Out for delivery and assign delivery_user_id."""
+    try:
+        data = request.get_json(silent=True) or {}
+        delivery_user_id = data.get('delivery_user_id')
+        
+        print(f"Accepting order {order_id} for delivery_user_id: {delivery_user_id}")
+
+        # First, check if the order exists and get its current status
+        check_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}&select=id,status",
+            headers=SUPABASE_HEADERS,
+        )
+        print(f"Order check response: {check_resp.status_code} - {check_resp.text}")
+        
+        if check_resp.status_code != 200:
+            return cors_json_response({"error": "Order not found"}, 404)
+            
+        order_data = check_resp.json()
+        if not order_data:
+            return cors_json_response({"error": "Order not found"}, 404)
+            
+        current_status = order_data[0].get('status')
+        print(f"Current order status: {current_status}")
+
+        # Update status
+        update = { 'status': 'Out for delivery' }
+        if delivery_user_id:
+            update['delivery_user_id'] = delivery_user_id
+
+        print(f"Updating order with data: {update}")
+        
+        # Try to update with delivery_user_id first
+        resp = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}",
+            json=update,
+            headers=SUPABASE_HEADERS,
+        )
+        
+        # If the update fails due to column issues, try without delivery_user_id
+        if resp.status_code == 400 and 'delivery_user_id' in update:
+            print("Failed to update with delivery_user_id, trying without it")
+            print(f"Error response: {resp.text}")
+            update_without_user = { 'status': 'Out for delivery' }
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}",
+                json=update_without_user,
+                headers=SUPABASE_HEADERS,
+            )
+            print(f"Fallback update response: {resp.status_code} - {resp.text}")
+        
+        print(f"Supabase response status: {resp.status_code}")
+        print(f"Supabase response body: {resp.text}")
+        
+        resp.raise_for_status()
+        return cors_json_response({"message": "Order accepted for delivery"}, 200)
+    except Exception as e:
+        print(f"Error accepting delivery order: {e}")
+        import traceback
+        traceback.print_exc()
+        return cors_json_response({"error": str(e)}, 500)
+
+@app.route('/test-delivery-column', methods=['GET'])
+def test_delivery_column():
+    """Test endpoint to check if delivery_user_id column exists and works."""
+    try:
+        # Try to select the delivery_user_id column
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?select=id,delivery_user_id&limit=1",
+            headers=SUPABASE_HEADERS,
+        )
+        print(f"Column test response: {resp.status_code} - {resp.text}")
+        return cors_json_response({"status": resp.status_code, "response": resp.text}, 200)
+    except Exception as e:
+        print(f"Column test error: {e}")
+        return cors_json_response({"error": str(e)}, 500)
+
+@app.route('/api/delivery/accepted-orders', methods=['GET'])
+def api_delivery_accepted_orders():
+    """Returns orders that are accepted by a specific delivery person (status = Out for delivery)."""
+    try:
+        delivery_user_id = request.args.get('delivery_user_id')
+        print(f"Fetching accepted orders for delivery_user_id: {delivery_user_id}")
+        
+        if not delivery_user_id:
+            return cors_json_response({"error": "delivery_user_id is required"}, 400)
+
+        # For now, get all "Out for delivery" orders since the column might not be working
+        # TODO: Once delivery_user_id column is properly configured, filter by it
+        orders_res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.{quote('Out for delivery')}&order=created_at.desc",
+            headers=SUPABASE_HEADERS,
+        )
+        print(f"Supabase response status: {orders_res.status_code}")
+        print(f"Supabase response body: {orders_res.text}")
+        
+        orders_res.raise_for_status()
+        orders = orders_res.json() or []
+        print(f"Found {len(orders)} accepted orders")
+
+        # Orders are already filtered by delivery_user_id in the query
+        filtered_orders = orders
+
+        result = []
+        for order in filtered_orders:
+            order_id = order.get('id')
+            user_name = None
+            if order.get('user_id'):
+                u_res = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/users?select=name&id=eq.{order['user_id']}",
+                    headers=SUPABASE_HEADERS,
+                )
+                if u_res.ok and u_res.json():
+                    user_name = (u_res.json()[0] or {}).get('name')
+
+            result.append({
+                'order_id': order_id,
+                'status': order.get('status'),
+                'customer_name': user_name or 'User',
+                'delivery_address': order.get('delivery_address'),
+                'total_amount': order.get('total_amount') or order.get('total') or 0,
+            })
+
+        print(f"Returning {len(result)} accepted orders")
+        return cors_json_response(result, 200)
+    except Exception as e:
+        print(f"Error building accepted orders feed: {e}")
+        import traceback
+        traceback.print_exc()
+        return cors_json_response({"error": str(e)}, 500)
 
 @app.route('/orders', methods=['GET'])
 def get_all_orders():
