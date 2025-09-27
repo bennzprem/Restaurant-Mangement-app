@@ -26,31 +26,29 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
   final TextEditingController _prefController = TextEditingController();
   // REMOVED: PageController and _currentPage are no longer needed.
 
+  // ai_culinary_curator_section.dart
+
+  // REPLACE the code from initState down to the end of _fetchCustomRecommendation
+  // with this new, corrected block.
+
   @override
   void initState() {
     super.initState();
-    // REMOVED: PageController listener is gone.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchInitialRecommendation();
+      _fetchInitialRecommendation(); // This will now call the history endpoint
     });
   }
   
   @override
   void dispose() {
-    // REMOVED: PageController is no longer disposed.
     _prefController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchRecommendations({String? tastePreference}) async {
-    final bool isCustomSearch = tastePreference != null;
-    
+  // NEW function for initial, history-based recommendations
+  Future<void> _fetchInitialRecommendation() async {
     setState(() {
-      if (isCustomSearch) {
-        _isSearching = true;
-      } else {
-        _isLoading = true;
-      }
+      _isLoading = true;
       _searchError = null;
     });
 
@@ -58,8 +56,51 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     final userId = authProvider.user?.id ?? "guest";
 
     try {
+      // Calls the NEW Pinecone endpoint
       final response = await http.post(
-        Uri.parse("http://127.0.0.1:5000/recommendation/$userId"),
+        Uri.parse("http://127.0.0.1:5000/history-recommendation/$userId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _dishes = List<Map<String, dynamic>>.from(data["dishes"]);
+          _reason = data["reason"];
+        });
+      } else {
+        final errorData = jsonDecode(response.body);
+        setState(() {
+          _searchError = errorData['error'] ?? 'Could not load initial suggestions.';
+          _dishes = [];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _searchError = "Server connection error.";
+        _dishes = [];
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // UPDATED function for custom "Find Your Craving" search
+  Future<void> _fetchCustomRecommendation() async {
+    final tastePreference = _prefController.text;
+    if (tastePreference.isEmpty) return;
+
+    setState(() {
+      _isSearching = true;
+      _searchError = null;
+    });
+
+    try {
+      // Calls the EXISTING Groq endpoint
+      final response = await http.post(
+        Uri.parse("http://127.0.0.1:5000/ai-recommendation"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"taste_preference": tastePreference}),
       );
@@ -84,19 +125,8 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
       });
     } finally {
       setState(() {
-        if (isCustomSearch) {
-          _isSearching = false;
-        } else {
-          _isLoading = false;
-        }
+        _isSearching = false;
       });
-    }
-  }
-
-  void _fetchInitialRecommendation() => _fetchRecommendations();
-  void _fetchCustomRecommendation() {
-    if (_prefController.text.isNotEmpty) {
-      _fetchRecommendations(tastePreference: _prefController.text);
     }
   }
 
@@ -107,26 +137,13 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     final Color titleColor = isDark ? Colors.white : const Color(0xFF1D2A39);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 64),
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.black.withOpacity(0.4) : Colors.grey.withOpacity(0.15),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                  offset: const Offset(0, 10),
-                )
-              ],
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 6, 24, 48),
             child: Column(
               children: [
                 Text(

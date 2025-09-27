@@ -620,6 +620,7 @@ class ServiceSelectionCarousel extends StatefulWidget {
 class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   int _selectedIndex = 1;
   Timer? _autoScrollTimer;
+  bool _isHoveringSelectedCard = false;
 
   late final List<Map<String, dynamic>> _cardData;
 
@@ -715,9 +716,12 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   }
 
   void _autoScrollToNext() {
-    setState(() {
-      _selectedIndex = (_selectedIndex + 1) % _cardData.length;
-    });
+    // Only auto-scroll if not hovering over the selected card
+    if (!_isHoveringSelectedCard) {
+      setState(() {
+        _selectedIndex = (_selectedIndex + 1) % _cardData.length;
+      });
+    }
   }
 
   void _onCardTap(int index) {
@@ -855,78 +859,87 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                     curve: Curves.easeInOutCubic,
                     transform: _getTransform(index, screenWidth),
                     transformAlignment: Alignment.center,
-                    child: GestureDetector(
-                      onTap: () => _onCardTap(index),
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 800),
-                        opacity: index == _selectedIndex ? 1.0 : 0.4,
-                        child: SizedBox(
-                          width: screenWidth * 0.5,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 24, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: theme.cardColor,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: index == _selectedIndex
-                                    ? theme.primaryColor
-                                    : Colors.transparent,
-                                width: 2.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black
-                                      .withOpacity(isDark ? 0.3 : 0.08),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
-                                )
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                AnimatedScale(
-                                  scale: index == _selectedIndex ? 1.1 : 0.9,
-                                  duration: const Duration(milliseconds: 800),
-                                  child: AnimatedRotation(
-                                    turns: index == _selectedIndex ? 0.0 : 0.05,
-                                    duration:
-                                        const Duration(milliseconds: 1000),
-                                    child: Icon(card['icon'],
-                                        size: 48, color: theme.primaryColor),
-                                  ),
+                    child: MouseRegion(
+                      onEnter: (_) => setState(() =>
+                          _isHoveringSelectedCard = index == _selectedIndex),
+                      onExit: (_) =>
+                          setState(() => _isHoveringSelectedCard = false),
+                      child: GestureDetector(
+                        onTap: () => _onCardTap(index),
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 800),
+                          opacity: index == _selectedIndex ? 1.0 : 0.4,
+                          child: SizedBox(
+                            width: screenWidth * 0.5,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 24, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: theme.cardColor,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: index == _selectedIndex
+                                      ? theme.primaryColor
+                                      : Colors.transparent,
+                                  width: 2.5,
                                 ),
-                                AnimatedScale(
-                                  scale: index == _selectedIndex ? 1.0 : 0.9,
-                                  duration: const Duration(milliseconds: 800),
-                                  child: Text(
-                                    card['title'],
-                                    style:
-                                        theme.textTheme.displayLarge?.copyWith(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Nunito',
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withOpacity(isDark ? 0.3 : 0.08),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  )
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  AnimatedScale(
+                                    scale: index == _selectedIndex ? 1.1 : 0.9,
+                                    duration: const Duration(milliseconds: 800),
+                                    child: AnimatedRotation(
+                                      turns:
+                                          index == _selectedIndex ? 0.0 : 0.05,
+                                      duration:
+                                          const Duration(milliseconds: 1000),
+                                      child: Icon(card['icon'],
+                                          size: 48, color: theme.primaryColor),
                                     ),
                                   ),
-                                ),
-                                Column(
-                                  children: (card['buttons']
-                                          as List<Map<String, dynamic>>)
-                                      .map((buttonData) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8.0),
-                                      child: _AnimatedButton(
-                                        onPressed: buttonData['action']
-                                            as VoidCallback,
-                                        text: buttonData['text'],
-                                        isDark: isDark,
-                                        theme: theme,
+                                  AnimatedScale(
+                                    scale: index == _selectedIndex ? 1.0 : 0.9,
+                                    duration: const Duration(milliseconds: 800),
+                                    child: Text(
+                                      card['title'],
+                                      style: theme.textTheme.displayLarge
+                                          ?.copyWith(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Nunito',
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
+                                    ),
+                                  ),
+                                  Column(
+                                    children: (card['buttons']
+                                            as List<Map<String, dynamic>>)
+                                        .map((buttonData) {
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 8.0),
+                                        child: _AnimatedButton(
+                                          onPressed: buttonData['action']
+                                              as VoidCallback,
+                                          text: buttonData['text'],
+                                          isDark: isDark,
+                                          theme: theme,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
