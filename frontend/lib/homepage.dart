@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'auth_provider.dart'; // keep your auth provider import
-import 'menu_screen.dart';
+import 'menu_screen_with_location.dart';
 import 'dine_in_page.dart';
 import 'takeaway_page.dart';
 import 'api_service.dart';
 import 'models.dart';
 
 import '../widgets/header_widget.dart';
-import '../widgets/hero_section.dart';
 import '../widgets/about_section.dart';
 import '../widgets/ai_culinary_curator_section.dart';
 import '../widgets/culinary_philosophy_section.dart';
@@ -32,7 +30,8 @@ class _HomePageState extends State<HomePage> {
       case 'Delivery':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const MenuScreen()),
+          MaterialPageRoute(
+              builder: (context) => const MenuScreenWithLocation()),
         );
         break;
       case 'Dine-In':
@@ -66,34 +65,34 @@ class _HomePageState extends State<HomePage> {
                     ? 20
                     : 0;
             // REPLACE THE OLD SingleChildScrollView WIDGET WITH THIS NEW ONE
-return SingleChildScrollView(
-  child: Padding(
-    padding: EdgeInsets.only(
-      left: horizontalPadding,
-      right: horizontalPadding,
-      // CHANGED: Added top padding to push content below the header.
-      // The header is about 88px tall, so 100px provides nice spacing.
-      top: 100, 
-    ),
-    child: Column(
-      children: [
-        ServiceSelectionCarousel(
-          onOrderNow: () => _handleNavigation(context, 'Delivery'),
-          onExplore: () => _handleNavigation(context, 'Dine-In'),
-          onPickup: () => _handleNavigation(context, 'Takeaway'),
-        ),
-        if (authProvider.isLoggedIn) _RoleQuickAccess(),
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  // CHANGED: Added top padding to push content below the header.
+                  // The header is about 88px tall, so 100px provides nice spacing.
+                  top: 100,
+                ),
+                child: Column(
+                  children: [
+                    ServiceSelectionCarousel(
+                      onOrderNow: () => _handleNavigation(context, 'Delivery'),
+                      onExplore: () => _handleNavigation(context, 'Dine-In'),
+                      onPickup: () => _handleNavigation(context, 'Takeaway'),
+                    ),
+                    if (authProvider.isLoggedIn) _RoleQuickAccess(),
 
-        // Continuing the home_screen.dart sections
-        _MenuCategoryCarousel(),
-        AboutSection(),
-        AiCulinaryCuratorSection(),
-        CulinaryPhilosophySection(),
-        FooterWidget(),
-      ],
-    ),
-  ),
-);
+                    // Continuing the home_screen.dart sections
+                    _MenuCategoryCarousel(),
+                    AboutSection(),
+                    AiCulinaryCuratorSection(),
+                    CulinaryPhilosophySection(),
+                    FooterWidget(),
+                  ],
+                ),
+              ),
+            );
           }),
 
           // Fixed header with integrated navigation at the very top
@@ -423,7 +422,9 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
       );
 
       final int virtualIndex = (target / _itemExtent).round();
-      _currentScrollIndex = (virtualIndex % categories.length + categories.length) % categories.length;
+      _currentScrollIndex =
+          (virtualIndex % categories.length + categories.length) %
+              categories.length;
     }
     _resetAutoScrollTimer();
   }
@@ -476,7 +477,8 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
               children: [
                 IconButton(
                   icon: Icon(Icons.arrow_left,
-                      size: 32, color: isDark ? Colors.white70 : Colors.black87),
+                      size: 32,
+                      color: isDark ? Colors.white70 : Colors.black87),
                   onPressed: scrollLeft,
                 ),
                 Expanded(
@@ -485,101 +487,112 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                     child: ListView.separated(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: categories.length * 3, // Triple for infinite loop
+                      itemCount:
+                          categories.length * 3, // Triple for infinite loop
                       separatorBuilder: (_, __) => const SizedBox(width: 20),
                       itemBuilder: (context, index) {
                         final actualIndex = index % categories.length;
                         final name = categories[actualIndex].name;
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MenuScreen(initialCategory: name),
-                            ),
-                          );
-                        },
-                        child: MouseRegion(
-                          onEnter: (_) => setState(() => _hoveredIndex = actualIndex),
-                          onExit: (_) => setState(() => _hoveredIndex = -1),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            decoration: BoxDecoration(
-                              color: _hoveredIndex == actualIndex
-                                  ? Theme.of(context).primaryColor.withOpacity(0.2)
-                                  : (isDark
-                                      ? Colors.white.withOpacity(0.06)
-                                      : Colors.white.withOpacity(0.7)),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: _hoveredIndex == actualIndex
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.white
-                                        .withOpacity(isDark ? 0.12 : 0.2),
-                                width: _hoveredIndex == actualIndex ? 2 : 1,
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MenuScreenWithLocation(
+                                    initialCategory: name),
                               ),
-                              boxShadow: [
-                                BoxShadow(
+                            );
+                          },
+                          child: MouseRegion(
+                            onEnter: (_) =>
+                                setState(() => _hoveredIndex = actualIndex),
+                            onExit: (_) => setState(() => _hoveredIndex = -1),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              decoration: BoxDecoration(
+                                color: _hoveredIndex == actualIndex
+                                    ? Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.2)
+                                    : (isDark
+                                        ? Colors.white.withOpacity(0.06)
+                                        : Colors.white.withOpacity(0.7)),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
                                   color: _hoveredIndex == actualIndex
-                                      ? Theme.of(context).primaryColor.withOpacity(0.3)
-                                      : Colors.black
-                                          .withOpacity(isDark ? 0.5 : 0.06),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
+                                      ? Theme.of(context).primaryColor
+                                      : Colors.white
+                                          .withOpacity(isDark ? 0.12 : 0.2),
+                                  width: _hoveredIndex == actualIndex ? 2 : 1,
                                 ),
-                              ],
-                            ),
-                            child: Container(
-                              width: 140,
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Animated arrow icon instead of emoji
-                                  AnimatedRotation(
-                                    duration: const Duration(milliseconds: 300),
-                                    turns: _hoveredIndex == actualIndex ? 0.25 : 0.0,
-                                    child: Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 32,
-                                      color: _hoveredIndex == actualIndex
-                                          ? Colors.black
-                                          : Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    name,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Nunito',
-                                      color: _hoveredIndex == actualIndex
-                                          ? Colors.black
-                                          : (isDark
-                                              ? Colors.white
-                                              : Colors.black),
-                                    ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _hoveredIndex == actualIndex
+                                        ? Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.3)
+                                        : Colors.black
+                                            .withOpacity(isDark ? 0.5 : 0.06),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
+                              child: Container(
+                                width: 140,
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Animated arrow icon instead of emoji
+                                    AnimatedRotation(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      turns: _hoveredIndex == actualIndex
+                                          ? 0.25
+                                          : 0.0,
+                                      child: Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 32,
+                                        color: _hoveredIndex == actualIndex
+                                            ? Colors.black
+                                            : Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      name,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Nunito',
+                                        color: _hoveredIndex == actualIndex
+                                            ? Colors.black
+                                            : (isDark
+                                                ? Colors.white
+                                                : Colors.black),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                icon: Icon(Icons.arrow_right,
-                    size: 32, color: isDark ? Colors.white70 : Colors.black87),
-                onPressed: scrollRight,
-              ),
-            ],
-          ),
+                IconButton(
+                  icon: Icon(Icons.arrow_right,
+                      size: 32,
+                      color: isDark ? Colors.white70 : Colors.black87),
+                  onPressed: scrollRight,
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -616,7 +629,7 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
   @override
   void initState() {
     super.initState();
-    
+
     // CHANGED: All button actions are now mapped to navigation calls.
     // The original logic for the 3 main buttons is retained.
     _cardData = [
@@ -681,17 +694,17 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
         ]
       }
     ];
-    
+
     // Start auto-scroll timer
     _startAutoScroll();
   }
-  
+
   @override
   void dispose() {
     _autoScrollTimer?.cancel();
     super.dispose();
   }
-  
+
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
@@ -700,18 +713,18 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
       }
     });
   }
-  
+
   void _autoScrollToNext() {
     setState(() {
       _selectedIndex = (_selectedIndex + 1) % _cardData.length;
     });
   }
-  
+
   void _onCardTap(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    
+
     // Reset auto-scroll timer when user interacts
     _startAutoScroll();
   }
@@ -722,49 +735,61 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
     const double rotation = 0.05; // Small rotation for depth effect
 
     // Sequential/rotational transition logic based on the CSS pattern
-    if (_selectedIndex == 0) { // Delivery selected
-      if (index == 0) { // Current card (Delivery)
+    if (_selectedIndex == 0) {
+      // Delivery selected
+      if (index == 0) {
+        // Current card (Delivery)
         return Matrix4.identity()
           ..scale(1.0)
           ..rotateZ(0.0);
-      } else if (index == 1) { // Next card (Dine-In) - moves to right
+      } else if (index == 1) {
+        // Next card (Dine-In) - moves to right
         return Matrix4.identity()
           ..translate(horizontalTranslation)
           ..scale(scale)
           ..rotateZ(rotation);
-      } else { // Previous card (Takeaway) - moves to left
+      } else {
+        // Previous card (Takeaway) - moves to left
         return Matrix4.identity()
           ..translate(-horizontalTranslation)
           ..scale(scale)
           ..rotateZ(-rotation);
       }
-    } else if (_selectedIndex == 1) { // Dine-In selected
-      if (index == 1) { // Current card (Dine-In)
+    } else if (_selectedIndex == 1) {
+      // Dine-In selected
+      if (index == 1) {
+        // Current card (Dine-In)
         return Matrix4.identity()
           ..scale(1.0)
           ..rotateZ(0.0);
-      } else if (index == 2) { // Next card (Takeaway) - moves to right
+      } else if (index == 2) {
+        // Next card (Takeaway) - moves to right
         return Matrix4.identity()
           ..translate(horizontalTranslation)
           ..scale(scale)
           ..rotateZ(rotation);
-      } else { // Previous card (Delivery) - moves to left
+      } else {
+        // Previous card (Delivery) - moves to left
         return Matrix4.identity()
           ..translate(-horizontalTranslation)
           ..scale(scale)
           ..rotateZ(-rotation);
       }
-    } else { // Takeaway selected
-      if (index == 2) { // Current card (Takeaway)
+    } else {
+      // Takeaway selected
+      if (index == 2) {
+        // Current card (Takeaway)
         return Matrix4.identity()
           ..scale(1.0)
           ..rotateZ(0.0);
-      } else if (index == 0) { // Next card (Delivery) - moves to right
+      } else if (index == 0) {
+        // Next card (Delivery) - moves to right
         return Matrix4.identity()
           ..translate(horizontalTranslation)
           ..scale(scale)
           ..rotateZ(rotation);
-      } else { // Previous card (Dine-In) - moves to left
+      } else {
+        // Previous card (Dine-In) - moves to left
         return Matrix4.identity()
           ..translate(-horizontalTranslation)
           ..scale(scale)
@@ -779,7 +804,7 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
     final screenHeight = MediaQuery.of(context).size.height;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     const double headerHeight = 135;
 
     return Container(
@@ -805,7 +830,8 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 28,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected
                             ? (isDark ? Colors.white : Colors.black87)
                             : Colors.grey.shade600,
@@ -831,13 +857,14 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                     transformAlignment: Alignment.center,
                     child: GestureDetector(
                       onTap: () => _onCardTap(index),
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 800),
-                            opacity: index == _selectedIndex ? 1.0 : 0.4,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 800),
+                        opacity: index == _selectedIndex ? 1.0 : 0.4,
                         child: SizedBox(
                           width: screenWidth * 0.5,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 24, horizontal: 16),
                             decoration: BoxDecoration(
                               color: theme.cardColor,
                               borderRadius: BorderRadius.circular(24),
@@ -849,7 +876,8 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                                  color: Colors.black
+                                      .withOpacity(isDark ? 0.3 : 0.08),
                                   blurRadius: 15,
                                   offset: const Offset(0, 5),
                                 )
@@ -863,8 +891,10 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                   duration: const Duration(milliseconds: 800),
                                   child: AnimatedRotation(
                                     turns: index == _selectedIndex ? 0.0 : 0.05,
-                                    duration: const Duration(milliseconds: 1000),
-                                    child: Icon(card['icon'], size: 48, color: theme.primaryColor),
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                    child: Icon(card['icon'],
+                                        size: 48, color: theme.primaryColor),
                                   ),
                                 ),
                                 AnimatedScale(
@@ -872,7 +902,8 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                   duration: const Duration(milliseconds: 800),
                                   child: Text(
                                     card['title'],
-                                    style: theme.textTheme.displayLarge?.copyWith(
+                                    style:
+                                        theme.textTheme.displayLarge?.copyWith(
                                       fontSize: 30,
                                       fontWeight: FontWeight.bold,
                                       fontFamily: 'Nunito',
@@ -880,12 +911,14 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                   ),
                                 ),
                                 Column(
-                                  children: (card['buttons'] as List<Map<String, dynamic>>)
-                                  .map((buttonData) {
+                                  children: (card['buttons']
+                                          as List<Map<String, dynamic>>)
+                                      .map((buttonData) {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 8.0),
                                       child: _AnimatedButton(
-                                        onPressed: buttonData['action'] as VoidCallback,
+                                        onPressed: buttonData['action']
+                                            as VoidCallback,
                                         text: buttonData['text'],
                                         isDark: isDark,
                                         theme: theme,
@@ -938,7 +971,7 @@ class _AnimatedButtonState extends State<_AnimatedButton>
   @override
   void initState() {
     super.initState();
-    
+
     _hoverController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -967,8 +1000,10 @@ class _AnimatedButtonState extends State<_AnimatedButton>
     super.dispose();
   }
 
-  Color get _buttonColor => widget.isDark ? Colors.lightGreen : const Color(0xFF2E7D32);
-  Color get _accentColor => widget.isDark ? const Color(0xFF388E3C) : Colors.lightGreen;
+  Color get _buttonColor =>
+      widget.isDark ? Colors.lightGreen : const Color(0xFF2E7D32);
+  Color get _accentColor =>
+      widget.isDark ? const Color(0xFF388E3C) : Colors.lightGreen;
 
   @override
   Widget build(BuildContext context) {

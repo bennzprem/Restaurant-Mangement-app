@@ -137,6 +137,115 @@ class AddressDetails {
   }
 }
 
+// New model for saved addresses in user profile
+class SavedAddress {
+  final String id;
+  final String userId;
+  final String houseNo;
+  final String area;
+  final String city;
+  final String state;
+  final String pincode;
+  final String? contactName;
+  final String? contactPhone;
+  final bool isDefault;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  SavedAddress({
+    required this.id,
+    required this.userId,
+    required this.houseNo,
+    required this.area,
+    required this.city,
+    required this.state,
+    required this.pincode,
+    this.contactName,
+    this.contactPhone,
+    this.isDefault = false,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory SavedAddress.fromJson(Map<String, dynamic> json) {
+    return SavedAddress(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      houseNo: json['house_no'] ?? '',
+      area: json['area'] ?? '',
+      city: json['city'] ?? '',
+      state: json['state'] ?? '',
+      pincode: json['pincode'] ?? '',
+      contactName: json['contact_name'],
+      contactPhone: json['contact_phone'],
+      isDefault: json['is_default'] ?? false,
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updated_at'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'house_no': houseNo,
+      'area': area,
+      'city': city,
+      'state': state,
+      'pincode': pincode,
+      'contact_name': contactName,
+      'contact_phone': contactPhone,
+      'is_default': isDefault,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  // Convert to AddressDetails for compatibility
+  AddressDetails toAddressDetails() {
+    return AddressDetails(
+      houseNo: houseNo,
+      area: area,
+      city: city,
+      state: state,
+      pincode: pincode,
+    );
+  }
+
+  // Create from AddressDetails
+  factory SavedAddress.fromAddressDetails({
+    required String id,
+    required String userId,
+    required AddressDetails address,
+    String? contactName,
+    String? contactPhone,
+    bool isDefault = false,
+  }) {
+    final now = DateTime.now();
+    return SavedAddress(
+      id: id,
+      userId: userId,
+      houseNo: address.houseNo,
+      area: address.area,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      contactName: contactName,
+      contactPhone: contactPhone,
+      isDefault: isDefault,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  @override
+  String toString() {
+    return '$houseNo, $area, $city, $state - $pincode';
+  }
+}
+
 // Add this class to your models.dart file
 class Table {
   final String id;
