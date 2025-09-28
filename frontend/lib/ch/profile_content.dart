@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../api_service.dart';
 import 'package:image_picker/image_picker.dart';
+import '../widgets/address_management_widget.dart';
 
 class ProfileContent extends StatefulWidget {
   const ProfileContent({super.key});
@@ -161,6 +162,8 @@ class _ProfileContentState extends State<ProfileContent> {
                           _buildGeneralInfoCard(),
                           const SizedBox(height: 24),
                           _buildPasswordInfoCard(),
+                          const SizedBox(height: 24),
+                          const AddressManagementWidget(),
                         ],
                       ),
                     ),
@@ -178,6 +181,8 @@ class _ProfileContentState extends State<ProfileContent> {
                     _buildGeneralInfoCard(),
                     const SizedBox(height: 24),
                     _buildPasswordInfoCard(),
+                    const SizedBox(height: 24),
+                    const AddressManagementWidget(),
                   ],
                 ),
         );

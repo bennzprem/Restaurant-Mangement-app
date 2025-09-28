@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import 'api_service.dart';
 import 'auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert' as convert;
 import 'package:http/http.dart' as http;
-import 'location_tracking_page.dart';
 
 class DeliveryDashboardPage extends StatefulWidget {
   const DeliveryDashboardPage({super.key});
@@ -121,6 +122,195 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
     }
   }
 
+  Future<void> _markOrderAsDelivered(int orderId) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final userId = auth.user?.id;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please log in to mark orders as delivered')),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark as Delivered'),
+        content: const Text(
+            'Are you sure you want to mark this order as delivered?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Mark Delivered'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final resp = await http.post(
+        Uri.parse('${_api.baseUrl}/api/delivery/orders/$orderId/delivered'),
+        headers: {'Content-Type': 'application/json'},
+        body: convert.jsonEncode({'delivery_user_id': userId}),
+      );
+
+      if (resp.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Order marked as delivered successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          print('Order marked as delivered, refreshing dashboard...');
+          _load();
+        }
+      } else {
+        print(
+            'Order delivery marking failed: ${resp.statusCode} - ${resp.body}');
+        throw 'Server responded ${resp.statusCode}: ${resp.body}';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to mark order as delivered: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openGoogleMapsForDirections(String deliveryAddress) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Get delivery boy's current location
+      Position? currentPosition;
+      try {
+        // Check if location services are enabled
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showLocationError(
+              'Location services are disabled. Please enable location services to get directions.');
+          return;
+        }
+
+        // Check location permissions
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) {
+            Navigator.of(context).pop(); // Close loading dialog
+            _showLocationError(
+                'Location permissions are denied. Please enable location permissions to get directions.');
+            return;
+          }
+        }
+
+        if (permission == LocationPermission.deniedForever) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showLocationError(
+              'Location permissions are permanently denied. Please enable them in device settings.');
+          return;
+        }
+
+        // Get current position
+        currentPosition = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (e) {
+        Navigator.of(context).pop(); // Close loading dialog
+        print('Error getting current location: $e');
+        _showLocationError(
+            'Unable to get your current location. Please check your location settings.');
+        return;
+      }
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      // Encode the addresses for URL
+      final encodedDestination = Uri.encodeComponent(deliveryAddress);
+      final origin = '${currentPosition.latitude},${currentPosition.longitude}';
+
+      // Create Google Maps URL for directions with origin and destination
+      final googleMapsUrl =
+          'https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$encodedDestination&travelmode=driving';
+
+      // Try to open in Google Maps app first with origin and destination
+      final googleMapsAppUrl =
+          'comgooglemaps://?saddr=$origin&daddr=$encodedDestination&directionsmode=driving';
+
+      if (await canLaunchUrl(Uri.parse(googleMapsAppUrl))) {
+        await launchUrl(Uri.parse(googleMapsAppUrl));
+      } else if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+        await launchUrl(Uri.parse(googleMapsUrl),
+            mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: show address in a dialog
+        _showAddressDialog(deliveryAddress);
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog if still open
+      print('Error opening Google Maps: $e');
+      _showAddressDialog(deliveryAddress);
+    }
+  }
+
+  void _showLocationError(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddressDialog(String address) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delivery Address'),
+        content: Text(address),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,22 +404,29 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LocationTrackingPage(
-                                deliveryAddress:
-                                    order['delivery_address'] ?? '',
-                                customerName: order['customer_name'] ?? '',
-                                orderId: order['order_id'],
-                              ),
-                            ),
-                          );
+                          _openGoogleMapsForDirections(
+                              order['delivery_address'] ?? '');
                         },
                         icon: const Icon(Icons.location_on),
                         label: const Text('View Location'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _markOrderAsDelivered(order['order_id'] as int);
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Mark as Delivered'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),

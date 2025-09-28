@@ -43,6 +43,7 @@ import 'auth_provider.dart';
 import 'cart_provider.dart';
 import 'favorites_provider.dart';
 import 'waiter_cart_provider.dart';
+import 'providers/delivery_location_provider.dart';
 import 'theme.dart';
 import 'homepage.dart';
 import 'loginpage.dart';
@@ -57,6 +58,7 @@ import 'takeaway_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
 import 'menu_screen.dart';
+import 'menu_screen_with_location.dart';
 import 'about_page.dart';
 import 'contact_page.dart';
 import 'admin_dashboard_page.dart';
@@ -104,6 +106,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (ctx) => CartProvider()),
         ChangeNotifierProvider(create: (ctx) => WaiterCartProvider()),
         ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
+        ChangeNotifierProvider(create: (ctx) => DeliveryLocationProvider()),
         // FavoritesProvider now depends on AuthProvider
         ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(
           create: (ctx) => FavoritesProvider(null),
@@ -134,8 +137,10 @@ class MyApp extends StatelessWidget {
               '/takeaway': (context) => TakeawayPage(),
               '/booking-history': (context) => const BookingHistoryPage(),
               '/menu': (context) {
-                final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-                return MenuScreen(initialCategory: args?['initialCategory'] as String?);
+                final args = ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+                return MenuScreenWithLocation(
+                    initialCategory: args?['initialCategory'] as String?);
               },
               '/about': (context) => AboutPage(),
               '/contact': (context) => const ContactPage(),
@@ -152,7 +157,8 @@ class MyApp extends StatelessWidget {
               // Explore section detail pages
               '/explore/special-diet': (context) => const AllDayPicksPage(),
               '/explore/fitness': (context) => const FitnessCategoriesPage(),
-              '/explore/subscription-combo': (context) => const SubscriptionComboPage(),
+              '/explore/subscription-combo': (context) =>
+                  const SubscriptionComboPage(),
               // Table booking and ordering pages
               '/reserve-table': (context) => const BookTablePage(),
               '/order-from-table': (context) => const OrderFromTablePage(),

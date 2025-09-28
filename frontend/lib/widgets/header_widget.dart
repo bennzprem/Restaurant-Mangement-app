@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../ch/user_dashboard_page.dart';
+import '../cart_provider.dart';
+import '../cart_screen.dart';
+import '../location_selection_popup.dart';
 import 'dart:ui';
-import 'dart:math';
 import 'package:video_player/video_player.dart';
 import '../theme.dart';
 import '../voice_overlay.dart';
@@ -105,7 +107,8 @@ class HeaderWidget extends StatelessWidget {
                     'ByteEat',
                     style: TextStyle(
                       fontFamily: 'StoryScript',
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 20 : 30,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 700 ? 20 : 30,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
                       color: theme.textTheme.displayLarge?.color,
@@ -130,6 +133,120 @@ class HeaderWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Cart Button
+                  Consumer<CartProvider>(
+                    builder: (context, cart, child) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const CartScreen(),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.shopping_cart_outlined,
+                                color: Theme.of(context).primaryColor,
+                                size: 20,
+                              ),
+                              tooltip: 'Cart',
+                              style: IconButton.styleFrom(
+                                padding: const EdgeInsets.all(8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                            ),
+                            // Cart item count badge
+                            if (cart.items.isNotEmpty)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    '${cart.items.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  // Location Button (only for logged-in users)
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, child) {
+                      if (!auth.isLoggedIn) {
+                        return const SizedBox
+                            .shrink(); // Hide the button if not logged in
+                      }
+
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return const LocationSelectionPopup();
+                              },
+                            );
+                          },
+                          icon: Icon(
+                            Icons.location_on_outlined,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                          tooltip: 'Add Location',
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       color: themeProvider.isDarkMode
@@ -190,44 +307,46 @@ class HeaderWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   // Replace the code above with this new Consumer widget
-Consumer<AuthProvider>(
-  builder: (context, auth, child) {
-    // This logic now handles both logged-in and logged-out states
-    bool isLoggedIn = auth.isLoggedIn;
-    IconData iconData =
-        isLoggedIn ? Icons.person_outline : Icons.person_add_alt_1_rounded;
-    String tooltip = isLoggedIn ? 'My Dashboard' : 'Sign Up';
-    VoidCallback onPressed = isLoggedIn
-        ? () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const UserDashboardPage(),
-              ),
-            )
-        : () => Navigator.of(context).pushNamed('/signup'); // Navigates to signup page
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, child) {
+                      // This logic now handles both logged-in and logged-out states
+                      bool isLoggedIn = auth.isLoggedIn;
+                      IconData iconData = isLoggedIn
+                          ? Icons.person_outline
+                          : Icons.person_add_alt_1_rounded;
+                      String tooltip = isLoggedIn ? 'My Dashboard' : 'Sign Up';
+                      VoidCallback onPressed = isLoggedIn
+                          ? () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const UserDashboardPage(),
+                                ),
+                              )
+                          : () => Navigator.of(context)
+                              .pushNamed('/signup'); // Navigates to signup page
 
-    return Container(
-      decoration: BoxDecoration(
-        color: themeProvider.isDarkMode
-            ? Colors.grey.shade800
-            : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).primaryColor,
-          width: 2,
-        ),
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        tooltip: tooltip,
-        icon: Icon(
-          iconData,
-          color: Theme.of(context).primaryColor,
-          size: 20,
-        ),
-      ),
-    );
-  },
-),
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        child: IconButton(
+                          onPressed: onPressed,
+                          tooltip: tooltip,
+                          icon: Icon(
+                            iconData,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -248,12 +367,14 @@ class _DesktopNav extends StatefulWidget {
   State<_DesktopNav> createState() => _DesktopNavState();
 }
 
-class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin {
+class _DesktopNavState extends State<_DesktopNav>
+    with TickerProviderStateMixin {
   int _activeIndex = 0;
   int? _hoverIndex;
 
   // GlobalKeys are used to find the position and size of each navigation item.
-  final List<GlobalKey> _keys = List.generate(_navItems.length, (_) => GlobalKey());
+  final List<GlobalKey> _keys =
+      List.generate(_navItems.length, (_) => GlobalKey());
   List<Rect> _rects = List.generate(_navItems.length, (_) => Rect.zero);
 
   // State for the animated top line.
@@ -267,7 +388,8 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
   @override
   void initState() {
     super.initState();
-    _activeIndex = _navItems.indexWhere((item) => item['active'] == widget.active);
+    _activeIndex =
+        _navItems.indexWhere((item) => item['active'] == widget.active);
     if (_activeIndex == -1) _activeIndex = 0;
 
     _triangleController = AnimationController(
@@ -277,24 +399,31 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
 
     // A sequence animation to make the triangle dip and then bounce up.
     _triangleAnimation = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 15.0).chain(CurveTween(curve: Curves.easeIn)), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 15.0, end: 0.0).chain(CurveTween(curve: Curves.bounceOut)), weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: 0.0, end: 15.0)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 1),
+      TweenSequenceItem(
+          tween: Tween(begin: 15.0, end: 0.0)
+              .chain(CurveTween(curve: Curves.bounceOut)),
+          weight: 2),
     ]).animate(_triangleController);
 
     // Calculate item positions after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _calculatePositions();
       _moveLine(_activeIndex, isInitial: true);
-      _triangleController.forward(from: 1.0); // Show triangle in final position initially
+      _triangleController.forward(
+          from: 1.0); // Show triangle in final position initially
     });
   }
-  
+
   // Recalculates the positions of nav items. This is crucial for responsiveness.
   void _calculatePositions() {
     if (!mounted) return;
     final navBarContext = context;
     if (navBarContext.findRenderObject() == null) return;
-    
+
     final navBarBox = navBarContext.findRenderObject() as RenderBox;
     List<Rect> newRects = List.from(_rects);
 
@@ -304,7 +433,8 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
         final box = context.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero);
         final relativePos = navBarBox.globalToLocal(position);
-        newRects[i] = Rect.fromLTWH(relativePos.dx, relativePos.dy, box.size.width, box.size.height);
+        newRects[i] = Rect.fromLTWH(
+            relativePos.dx, relativePos.dy, box.size.width, box.size.height);
       }
     }
     setState(() {
@@ -314,16 +444,19 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
 
   // Animates the top line to the specified item index.
   void _moveLine(int? index, {bool isInitial = false}) {
-    if (index == null || index < 0 || index >= _rects.length || _rects[index] == Rect.zero) {
-        // Hide the line if the mouse leaves the area
-        if(_hoverIndex == null) { 
-           final activeRect = _rects[_activeIndex];
-           setState(() {
-             _lineLeft = activeRect.left;
-             _lineWidth = activeRect.width;
-           });
-        }
-        return;
+    if (index == null ||
+        index < 0 ||
+        index >= _rects.length ||
+        _rects[index] == Rect.zero) {
+      // Hide the line if the mouse leaves the area
+      if (_hoverIndex == null) {
+        final activeRect = _rects[_activeIndex];
+        setState(() {
+          _lineLeft = activeRect.left;
+          _lineWidth = activeRect.width;
+        });
+      }
+      return;
     }
     final rect = _rects[index];
     if (isInitial) {
@@ -360,7 +493,8 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
     final theme = Theme.of(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final accentColor = theme.primaryColor;
-    final inactiveColor = themeProvider.isDarkMode ? Colors.white70 : Colors.black54;
+    final inactiveColor =
+        themeProvider.isDarkMode ? Colors.white70 : Colors.black54;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -410,15 +544,17 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
                   final isHovered = index == _hoverIndex;
 
                   final textStyle = theme.textTheme.labelLarge?.copyWith(
-                    letterSpacing: 3.5,
-                    fontWeight: FontWeight.bold,
-                    color: isActive || isHovered ? accentColor : inactiveColor,
-                  ) ??
-                  TextStyle(
-                    color: isActive || isHovered ? accentColor : inactiveColor,
-                    fontWeight: FontWeight.bold,
-                  );
-                  
+                        letterSpacing: 3.5,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isActive || isHovered ? accentColor : inactiveColor,
+                      ) ??
+                      TextStyle(
+                        color:
+                            isActive || isHovered ? accentColor : inactiveColor,
+                        fontWeight: FontWeight.bold,
+                      );
+
                   Widget textWidget = Text(
                     (item['label'] as String).toUpperCase(),
                     style: textStyle,
@@ -444,14 +580,15 @@ class _DesktopNavState extends State<_DesktopNav> with TickerProviderStateMixin 
                       onTap: () => _setActiveIndex(index),
                       behavior: HitTestBehavior.opaque,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10.0, horizontal: 16.0),
                         child: textWidget,
                       ),
                     ),
                   );
                 }),
               ),
-              
+
               // 4. The animated triangle indicator below the active item
               if (_rects[_activeIndex] != Rect.zero)
                 AnimatedBuilder(
@@ -496,7 +633,7 @@ class _TrianglePainter extends CustomPainter {
       ..lineTo(size.width * 0.5, 0)
       ..lineTo(size.width, size.height)
       ..close();
-      
+
     canvas.drawPath(path, paint);
   }
 
@@ -505,7 +642,6 @@ class _TrianglePainter extends CustomPainter {
     return oldDelegate.color != color;
   }
 }
-
 
 class _AuthButton extends StatelessWidget {
   final String label;

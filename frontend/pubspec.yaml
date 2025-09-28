@@ -47,10 +47,11 @@ dependencies:
   flutter_typeahead: ^4.0.0
   google_generative_ai: ^0.2.0
   video_player: ^2.9.2
+  url_launcher: ^6.2.5
+  shared_preferences: ^2.2.2
   speech_to_text: ^6.6.0
   flutter_tts: ^3.8.5
   flutter_svg: ^2.0.10+1
-  shared_preferences: ^2.2.2
   
   
 

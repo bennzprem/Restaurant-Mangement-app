@@ -10,13 +10,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'cart_provider.dart';
 import 'auth_provider.dart';
-import 'widgets/address_map_picker.dart';
+import 'providers/delivery_location_provider.dart';
 import 'widgets/header_widget.dart';
 import 'widgets/checkout_step.dart';
+import 'widgets/address_selection_dialog.dart';
 import 'widgets/order_summary_card.dart';
+import 'widgets/order_tracking_button.dart';
+import 'widgets/order_status_modal.dart';
+import 'services/order_tracking_service.dart';
 import 'models.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart' as http;
+import 'order_location_picker.dart';
 import 'dart:convert';
 
 // 2. Added the main StatefulWidget class definition
@@ -30,93 +33,350 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   Razorpay? _razorpay;
-  late CartProvider _cart;
-  late AuthProvider _auth;
   String? _prefetchedOrderId;
   int _prefetchedAmountPaise = 0;
   bool _isPrefetching = false;
-  String? _addressLine;
-  String? _addressLine2;
-  String? _city;
-  String? _stateProvince;
-  String? _pincode;
   String? _contactNumber;
   AddressDetails? _savedAddress;
+  final OrderTrackingService _orderTrackingService = OrderTrackingService();
+  bool _isTrackingInitialized = false;
 
   // Helper method to calculate total amount including fees
-  double get _totalAmountWithFees {
+  double _getTotalAmountWithFees(CartProvider cart) {
     final deliveryFee = 41.0;
     final gstAndCharges = 74.69;
-    return _cart.totalAmount + deliveryFee + gstAndCharges;
+    return cart.totalAmount + deliveryFee + gstAndCharges;
   }
 
   @override
   void initState() {
     super.initState();
+
     if (!kIsWeb) {
       _razorpay = Razorpay();
       _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     }
     _loadSavedAddress();
+    _initializeOrderTracking();
+  }
+
+  void _initializeOrderTracking() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.isLoggedIn && authProvider.user != null) {
+        await _orderTrackingService.startTracking(authProvider.user!.id);
+        setState(() {
+          _isTrackingInitialized = true;
+        });
+      }
+    });
+  }
+
+  void _showOrderTrackingModal() {
+    final activeOrders = _orderTrackingService.activeOrders;
+    if (activeOrders.isEmpty) return;
+
+    // Show the first active order (you can modify this to show a list)
+    final order = activeOrders.first;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        elevation: 10,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.grey[50]!,
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delivery_dining,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Order Status',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Order #${order.id}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Status indicator
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(order.status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _getStatusColor(order.status).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getStatusIcon(order.status),
+                      color: _getStatusColor(order.status),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      order.status,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(order.status),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Order details
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      Icons.attach_money,
+                      'Total Amount',
+                      '₹${order.totalAmount.toStringAsFixed(0)}',
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      Icons.location_on,
+                      'Delivery Address',
+                      order.deliveryAddress,
+                      Colors.blue,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // You can add more actions here like calling restaurant
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Track Order',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Colors.orange;
+      case 'ready for pickup':
+        return Colors.blue;
+      case 'out for delivery':
+        return Colors.purple;
+      case 'delivered':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Helper method to get status icon
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Icons.restaurant;
+      case 'ready for pickup':
+        return Icons.store;
+      case 'out for delivery':
+        return Icons.delivery_dining;
+      case 'delivered':
+        return Icons.check_circle;
+      default:
+        return Icons.info;
+    }
+  }
+
+  // Helper method to build detail rows
+  Widget _buildDetailRow(
+      IconData icon, String label, String value, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadSavedAddress() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.isLoggedIn) {
-      final prefs = await SharedPreferences.getInstance();
-      final addressJson = prefs.getString('address_${auth.user!.id}');
-      if (addressJson != null) {
-        final addressData = jsonDecode(addressJson);
-        setState(() {
-          _savedAddress = AddressDetails(
-            houseNo: addressData['houseNo'] ?? '',
-            area: addressData['area'] ?? '',
-            city: addressData['city'] ?? '',
-            state: addressData['state'] ?? '',
-            pincode: addressData['pincode'] ?? '',
-          );
-        });
+      try {
+        // Try to get default address from API
+        final defaultAddress =
+            await ApiService().getDefaultAddress(auth.user!.id);
+        if (defaultAddress != null) {
+          setState(() {
+            _savedAddress = defaultAddress.toAddressDetails();
+          });
+        }
+      } catch (e) {
+        print('Error loading saved address: $e');
+        // Fallback to SharedPreferences for backward compatibility
+        final prefs = await SharedPreferences.getInstance();
+        final addressJson = prefs.getString('address_${auth.user!.id}');
+        if (addressJson != null) {
+          final addressData = jsonDecode(addressJson);
+          setState(() {
+            _savedAddress = AddressDetails(
+              houseNo: addressData['houseNo'] ?? '',
+              area: addressData['area'] ?? '',
+              city: addressData['city'] ?? '',
+              state: addressData['state'] ?? '',
+              pincode: addressData['pincode'] ?? '',
+            );
+          });
+        }
       }
     }
   }
 
-  Future<void> _saveAddress(AddressDetails address) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.isLoggedIn) {
-      final prefs = await SharedPreferences.getInstance();
-      final addressJson = jsonEncode({
-        'houseNo': address.houseNo,
-        'area': address.area,
-        'city': address.city,
-        'state': address.state,
-        'pincode': address.pincode,
-      });
-      await prefs.setString('address_${auth.user!.id}', addressJson);
-      setState(() {
-        _savedAddress = address;
-      });
-    }
-  }
-
-  Future<Map<String, String>> _reverseGeocodeNominatim(LatLng pos) async {
-    final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}');
-    final res = await http.get(uri, headers: {'User-Agent': 'byteeat-app'});
-    if (res.statusCode != 200) return {};
-    final data = json.decode(res.body);
-    final addr = (data['address'] ?? {}) as Map<String, dynamic>;
-    return {
-      'full': data['display_name'] ?? '',
-      'road': addr['road'] ?? addr['residential'] ?? addr['pedestrian'] ?? '',
-      'city': addr['city'] ?? addr['town'] ?? addr['village'] ?? '',
-      'state': addr['state'] ?? '',
-      'postcode': addr['postcode'] ?? '',
-    };
-  }
-
   @override
   void dispose() {
+    _orderTrackingService.stopTracking();
     if (!kIsWeb) {
       _razorpay?.clear();
     }
@@ -125,13 +385,13 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> _prefetchOrder() async {
     if (_isPrefetching) return;
-    _cart = Provider.of<CartProvider>(context, listen: false);
-    _auth = Provider.of<AuthProvider>(context, listen: false);
-    if (_auth.user == null || _cart.items.isEmpty) return;
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.user == null || cart.items.isEmpty) return;
     _isPrefetching = true;
     try {
       final apiService = ApiService();
-      final totalAmount = _totalAmountWithFees;
+      final totalAmount = _getTotalAmountWithFees(cart);
 
       final orderId = await apiService.createRazorpayOrder(totalAmount);
       setState(() {
@@ -147,10 +407,10 @@ class _CartScreenState extends State<CartScreen> {
 
   void _openCheckout() {
     // providers
-    _cart = Provider.of<CartProvider>(context, listen: false);
-    _auth = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    if (_auth.user == null) {
+    if (auth.user == null) {
       showLoginPrompt(context);
       return;
     }
@@ -182,7 +442,7 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
         'handler': js.allowInterop((response) {
@@ -210,7 +470,73 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
+          'contact': _contactNumber ?? ''
+        },
+      };
+      _razorpay!.open(options);
+    }
+  }
+
+  void _proceedToPayment() {
+    // providers
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    if (auth.user == null) {
+      showLoginPrompt(context);
+      return;
+    }
+
+    if (_prefetchedOrderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preparing payment... please try again.')),
+      );
+      // trigger prefetch for next click
+      _prefetchOrder();
+      return;
+    }
+
+    final String keyId = 'rzp_test_R9IWhVRyO9Ga0k';
+
+    if (kIsWeb) {
+      final options = {
+        'key': keyId,
+        'order_id': _prefetchedOrderId,
+        'amount': _prefetchedAmountPaise,
+        'currency': 'INR',
+        'name': 'ByteEat',
+        'description': 'Food Order Payment',
+        'prefill': {
+          'email': auth.user?.email ?? '',
+          'contact': _contactNumber ?? ''
+        },
+        'handler': js.allowInterop((response) {
+          _handlePaymentSuccess(PaymentSuccessResponse(
+            response['razorpay_payment_id'] ?? '',
+            response['razorpay_order_id'] ?? '',
+            response['razorpay_signature'] ?? '',
+            null,
+          ));
+        }),
+        'modal': {
+          'ondismiss': js.allowInterop(() {
+            // optional: notify user
+          })
+        }
+      };
+      final ctor = js.context['Razorpay'];
+      final instance = js.JsObject(ctor, [js.JsObject.jsify(options)]);
+      instance.callMethod('open');
+    } else {
+      final options = {
+        'key': keyId,
+        'order_id': _prefetchedOrderId,
+        'amount': _prefetchedAmountPaise,
+        'name': 'ByteEat',
+        'description': 'Food Order Payment',
+        'prefill': {
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
       };
@@ -219,205 +545,128 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _promptAddressThenPay() async {
-    final formKey = GlobalKey<FormState>();
-    final addressController = TextEditingController(text: _addressLine ?? '');
-    final address2Controller = TextEditingController(text: _addressLine2 ?? '');
-    final cityController = TextEditingController(text: _city ?? '');
-    final stateController = TextEditingController(text: _stateProvince ?? '');
-    final pincodeController = TextEditingController(text: _pincode ?? '');
-    final phoneController = TextEditingController(text: _contactNumber ?? '');
+    // Check if delivery location is already set
+    final locationProvider =
+        Provider.of<DeliveryLocationProvider>(context, listen: false);
+    if (locationProvider.isLocationSet &&
+        locationProvider.selectedLocation != null) {
+      // Use the selected delivery location - proceed directly to payment
+      _proceedToPayment();
+      return;
+    }
 
-    final confirmed = await showDialog<bool>(
+    // Check if user has saved addresses
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user != null) {
+        final savedAddresses =
+            await ApiService().getSavedAddresses(authProvider.user!.id);
+
+        if (savedAddresses.isNotEmpty) {
+          // Show address selection dialog
+          await _showAddressSelectionDialog();
+          return;
+        }
+      }
+    } catch (e) {
+      print('Error loading saved addresses: $e');
+    }
+
+    // If no saved addresses, navigate to order location picker
+    await _showOrderLocationPicker();
+  }
+
+  Future<void> _showAddressSelectionDialog() async {
+    final result = await showDialog<dynamic>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delivery Details'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Address line 1',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  validator: (v) => (v == null || v.trim().length < 8)
-                      ? 'Please enter a valid address'
-                      : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: address2Controller,
-                  decoration: const InputDecoration(
-                    labelText: 'Address line 2 (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: cityController,
-                        decoration: const InputDecoration(
-                          labelText: 'City',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) => (v == null || v.trim().length < 2)
-                            ? 'Enter city'
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextFormField(
-                        controller: stateController,
-                        decoration: const InputDecoration(
-                          labelText: 'State',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) => (v == null || v.trim().length < 2)
-                            ? 'Enter state'
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: pincodeController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Pincode',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) =>
-                            (v == null || !RegExp(r'^\d{6}$').hasMatch(v))
-                                ? 'Enter 6-digit pincode'
-                                : null,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextFormField(
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'Contact Number',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) =>
-                            (v == null || !RegExp(r'^\d{10}$').hasMatch(v))
-                                ? 'Enter 10-digit number'
-                                : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.map),
-                    label: const Text('Pick on map'),
-                    onPressed: () async {
-                      final start = const LatLng(12.9716, 77.5946);
-                      final picked = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AddressMapPicker(initial: start),
-                        ),
-                      );
-                      if (picked is LatLng) {
-                        final details = await _reverseGeocodeNominatim(picked);
-                        if (details.isNotEmpty) {
-                          addressController.text =
-                              details['road'] ?? addressController.text;
-                          cityController.text =
-                              details['city'] ?? cityController.text;
-                          stateController.text =
-                              details['state'] ?? stateController.text;
-                          pincodeController.text =
-                              details['postcode'] ?? pincodeController.text;
-                          setState(() {});
-                        }
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.of(ctx).pop(true);
-              }
-            },
-            child: const Text('Add Address'),
-          ),
-        ],
+      builder: (context) => AddressSelectionDialog(
+        onAddressSelected: (address) {
+          Navigator.of(context).pop(address);
+        },
       ),
     );
 
-    if (confirmed == true) {
-      setState(() {
-        _addressLine = addressController.text.trim();
-        _addressLine2 = address2Controller.text.trim().isEmpty
-            ? null
-            : address2Controller.text.trim();
-        _city = cityController.text.trim();
-        _stateProvince = stateController.text.trim();
-        _pincode = pincodeController.text.trim();
-        _contactNumber = phoneController.text.trim();
-      });
-
-      // Save the address for future use
-      final addressDetails = AddressDetails(
-        houseNo: _addressLine ?? '',
-        area: _addressLine2 ?? '',
-        city: _city ?? '',
-        state: _stateProvince ?? '',
-        pincode: _pincode ?? '',
-      );
-      await _saveAddress(addressDetails);
-
-      if (_prefetchedOrderId == null) {
-        await _prefetchOrder();
+    if (result != null) {
+      if (result == 'ADD_NEW') {
+        // User wants to add a new address - show delivery form
+        await _showDeliveryForm();
+      } else if (result is SavedAddress) {
+        // Use the selected saved address
+        setState(() {
+          _savedAddress = result.toAddressDetails();
+        });
+        _proceedToPayment();
       }
-      _openCheckout();
     }
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+  Future<void> _showDeliveryForm() async {
+    // Navigate to delivery form for adding new address
+    final result = await Navigator.push<AddressDetails>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OrderLocationPicker(),
+      ),
+    );
+
+    if (result != null) {
+      // Use the address from the delivery form
+      setState(() {
+        _savedAddress = result;
+      });
+      _proceedToPayment();
+    }
+  }
+
+  Future<void> _showOrderLocationPicker() async {
+    // Navigate to the order location picker which will lead to delivery information page
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OrderLocationPicker(),
+      ),
+    );
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     final apiService = ApiService();
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final locationProvider =
+        Provider.of<DeliveryLocationProvider>(context, listen: false);
 
-    // Use the saved address
-    final addressString = _savedAddress != null
-        ? _savedAddress.toString()
-        : 'No address provided';
+    // Use delivery location if available, otherwise fall back to saved address
+    String addressString;
+    Map<String, double>? coordinates;
 
-    // Use the stored member variables, NOT Provider.of(context)
+    if (locationProvider.isLocationSet &&
+        locationProvider.selectedLocation != null) {
+      addressString = locationProvider.fullAddress;
+      // Get coordinates from the location provider
+      coordinates = await locationProvider.getCurrentLocationCoordinates();
+    } else if (_savedAddress != null) {
+      addressString = _savedAddress.toString();
+    } else {
+      addressString = 'No address provided';
+    }
+
+    // Use the providers directly
     apiService.placeOrder(
-      _cart.items.values.toList(),
-      _totalAmountWithFees,
-      _auth.user!.id,
+      cart.items.values.toList(),
+      _getTotalAmountWithFees(cart),
+      auth.user!.id,
       addressString,
     );
 
-    _cart.clearCart();
+    // Save coordinates for delivery tracking
+    if (coordinates != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('last_order_latitude', coordinates['latitude']!);
+      await prefs.setDouble('last_order_longitude', coordinates['longitude']!);
+      await prefs.setString('last_order_address', addressString);
+    }
+
+    cart.clearCart();
 
     if (mounted) {
       Navigator.of(context).pop();
