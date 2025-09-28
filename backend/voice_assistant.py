@@ -15,10 +15,10 @@ class VoiceAssistant:
             api_key = os.environ.get("GROQ_API_KEY")
             if not api_key: raise ValueError("GROQ_API_KEY environment variable not set.")
             client = Groq(api_key=api_key)
-            print("✓ VoiceAssistant: Groq AI Model configured successfully.")
+            print("VoiceAssistant: Groq AI Model configured successfully.")
             return client
         except Exception as e:
-            print(f"✗ ERROR: VoiceAssistant Groq AI Model configuration failed: {e}")
+            print(f"ERROR: VoiceAssistant Groq AI Model configuration failed: {e}")
             return None
 
     def get_intent_and_entities(self, user_text: str, menu_list: list, category_list: list, conversation_context: dict = None):

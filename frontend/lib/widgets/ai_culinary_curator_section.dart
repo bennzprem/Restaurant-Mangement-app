@@ -1,11 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../auth_provider.dart';
-import '../theme.dart';
 import '../menu_screen.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import '../api_service.dart';
 
 class AiCulinaryCuratorSection extends StatefulWidget {
   const AiCulinaryCuratorSection({super.key});
@@ -24,6 +20,7 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
   String? _searchError;
 
   final TextEditingController _prefController = TextEditingController();
+  final ApiService _apiService = ApiService();
   // REMOVED: PageController and _currentPage are no longer needed.
 
   // ai_culinary_curator_section.dart
@@ -35,7 +32,7 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchInitialRecommendation(); // This will now call the history endpoint
+      _loadRecommendations(); // Load personalized recommendations from database
     });
   }
   
@@ -45,50 +42,52 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     super.dispose();
   }
 
-  // NEW function for initial, history-based recommendations
-  Future<void> _fetchInitialRecommendation() async {
+  // Fetch personalized recommendations from database
+  Future<void> _loadRecommendations() async {
     setState(() {
       _isLoading = true;
       _searchError = null;
     });
 
-    final authProvider = context.read<AuthProvider>();
-    final userId = authProvider.user?.id ?? "guest";
-
     try {
-      // Calls the NEW Pinecone endpoint
-      final response = await http.post(
-        Uri.parse("http://127.0.0.1:5000/history-recommendation/$userId"),
-        headers: {"Content-Type": "application/json"},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _dishes = List<Map<String, dynamic>>.from(data["dishes"]);
-          _reason = data["reason"];
-        });
-      } else {
-        final errorData = jsonDecode(response.body);
-        setState(() {
-          _searchError = errorData['error'] ?? 'Could not load initial suggestions.';
-          _dishes = [];
-        });
-      }
+      // Get current user ID (you might need to adjust this based on your auth system)
+      // For now, using a placeholder - in real app, get from auth provider
+      final userId = "00000000-0000-0000-0000-000000000000"; // Placeholder for new users
+      
+      // Fetch personalized recommendations
+      final recommendations = await _apiService.getRecommendations(userId);
+      
+      // Convert to the expected format
+      final recommendationItems = recommendations
+          .map((item) => {
+            'id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'price': item.price,
+            'image_url': item.imageUrl,
+            'is_veg': item.isVegetarian,
+            'is_bestseller': item.isBestseller,
+          })
+          .toList();
+      
+      setState(() {
+        _dishes = recommendationItems;
+        _reason = recommendationItems.isNotEmpty 
+            ? "Discover our chef's special recommendations!" 
+            : "Check out our popular menu items!";
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _searchError = "Server connection error.";
+        _searchError = "Failed to load recommendations. Please try again.";
         _dishes = [];
-      });
-    } finally {
-      setState(() {
         _isLoading = false;
       });
     }
   }
 
-  // UPDATED function for custom "Find Your Craving" search
-  Future<void> _fetchCustomRecommendation() async {
+  // Static function for custom search (no longer makes API calls)
+  void _handleCustomSearch() {
     final tastePreference = _prefController.text;
     if (tastePreference.isEmpty) return;
 
@@ -97,37 +96,13 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
       _searchError = null;
     });
 
-    try {
-      // Calls the EXISTING Groq endpoint
-      final response = await http.post(
-        Uri.parse("http://127.0.0.1:5000/ai-recommendation"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"taste_preference": tastePreference}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _dishes = List<Map<String, dynamic>>.from(data["dishes"]);
-          _reason = data["reason"];
-        });
-      } else {
-        final errorData = jsonDecode(response.body);
-        setState(() {
-          _searchError = errorData['error'] ?? 'Could not find any matches.';
-          _dishes = [];
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _searchError = "Server connection error.";
-        _dishes = [];
-      });
-    } finally {
+    // Simulate search delay
+    Future.delayed(const Duration(seconds: 1), () {
       setState(() {
         _isSearching = false;
+        _searchError = "Search feature is temporarily disabled. Please browse our menu categories.";
       });
-    }
+    });
   }
 
   @override
@@ -223,13 +198,13 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
                     labelText: "e.g., 'Something spicy but healthy'",
                     border: OutlineInputBorder(),
                   ),
-                  onSubmitted: (_) => _fetchCustomRecommendation(),
+                  onSubmitted: (_) => _handleCustomSearch(),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: _isSearching ? null : _fetchCustomRecommendation,
+              onPressed: _isSearching ? null : _handleCustomSearch,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
               ),

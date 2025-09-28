@@ -16,13 +16,10 @@ import razorpay
 from urllib.parse import quote
 
 from dotenv import load_dotenv  # <-- ADD THIS LINE
-# Import your existing ByteBot class and the new VoiceAssistant class
-import groq
+# Import your existing VoiceAssistant class
 import json
-from bytebot import ByteBot
 import random
 from voice_assistant import VoiceAssistant
-import random
 load_dotenv()
 
 # --- CONFIGURATION: FILL IN YOUR CREDENTIALS HERE ---
@@ -55,6 +52,10 @@ FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611'
 app = Flask(__name__)
 CORS(app)
 
+# Register recommendation blueprint
+from recommendation.routes import recommendation_bp
+app.register_blueprint(recommendation_bp)
+
 # Define Headers for all Supabase REST API calls
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -66,8 +67,7 @@ SUPABASE_HEADERS = {
 # Initialize Supabase client (for auth routes using the python library)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Initialize all AI Services
-groq_client = groq.Groq(api_key=os.environ.get("GROQ_API_KEY"))
+# Initialize AI Services
 voice_assistant_service = VoiceAssistant(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
 
 # Initialize Twilio client
@@ -1063,9 +1063,8 @@ def handle_menu_item_preflight(item_id):
 def handle_menu_availability_preflight(item_id):
     return _build_cors_preflight_response()
 
-@app.route('/recommendation/<string:user_id>', methods=['OPTIONS'])
-def handle_recommendation_preflight(user_id):
-    return _build_cors_preflight_response()
+# Recommendation preflight handler - REMOVED
+# This feature has been removed as requested
 
 def _build_cors_preflight_response():
     response = jsonify({'message': 'CORS preflight successful'})
@@ -1196,7 +1195,7 @@ def get_user_reservations():
         reservations_response = supabase.table('reservations').select('*, tables(*)').eq('user_id', user_id).order('reservation_time', desc=True).execute()
 
         return jsonify(reservations_response.data), 200
-        
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1401,7 +1400,7 @@ def create_category():
         else:
             print(f"Supabase response: {response.status_code} - {response.text}")
             return jsonify({"error": "Failed to create category"}), 500
-            
+        
     except Exception as e:
         print(f"Error creating category: {e}")
         import traceback
@@ -1884,7 +1883,7 @@ def toggle_table_occupancy(table_id):
             'occupied': True,
             'active_session_code': session_code,
         }), 200
-
+        
     except Exception as e:
         print(f"Error toggling table occupancy: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
@@ -1895,156 +1894,16 @@ def toggle_table_occupancy(table_id):
 # with this single, updated block of code.
 # app.py
 
-def _get_structured_filters_from_groq(query: str) -> dict:
-    """
-    Uses Groq's LLM and forces it to use the provided tool.
-    """
-    try:
-        chat_completion = groq_client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a culinary assistant. You must use the 'find_dishes' tool to structure the user's request for a database search."
-                },
-                {
-                    "role": "user",
-                    "content": query,
-                }
-            ],
-            model="llama3-8b-8192",
-            tools=[
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "find_dishes",
-                        "description": "Finds dishes based on various criteria.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "dietary": {"type": "string", "description": "e.g., 'vegetarian', 'non-vegetarian', 'vegan'"},
-                                "attributes": {"type": "array", "items": {"type": "string"}, "description": "Describes flavors, temperatures, or textures. e.g., ['sweet', 'spicy', 'hot', 'cold', 'sour', 'crispy']"},
-                                "course": {"type": "string", "description": "e.g., 'starter', 'main course', 'dessert', 'beverage'"},
-                                "cuisine": {"type": "string", "description": "e.g., 'indian', 'chinese', 'italian'"},
-                            },
-                            "required": [],
-                        },
-                    },
-                }
-            ],
-            # --- THIS IS THE FIX ---
-            # We are forcing the model to use our tool.
-            tool_choice="required",
-        )
-
-        if not chat_completion.choices[0].message.tool_calls:
-            print("Groq failed to use the required tool.")
-            return {}
-
-        tool_call = chat_completion.choices[0].message.tool_calls[0]
-        arguments = json.loads(tool_call.function.arguments)
-        return arguments
-
-    except Exception as e:
-        print(f"Error calling Groq API: {e}")
-        return {}
-@app.route('/ai-recommendation', methods=['POST'])
-def get_ai_recommendation():
-    """
-    New endpoint that uses the improved Groq NLU and queries Supabase directly.
-    """
-    try:
-        data = request.get_json() or {}
-        taste_pref = data.get("taste_preference")
-        if not taste_pref:
-            return jsonify({"error": "taste_preference is required"}), 400
-
-        filters = _get_structured_filters_from_groq(taste_pref)
-        if not filters:
-            return jsonify({"error": "Could not understand the craving. Please try rephrasing."}), 400
-
-        query_params = {"select": "*", "limit": "3"}
-        all_tags = []
-
-        if filters.get('dietary'):
-            diet = filters['dietary'].lower()
-            if diet in ['vegetarian', 'veg']:
-                query_params['is_veg'] = 'eq.true'
-            elif diet in ['non-vegetarian', 'non-veg']:
-                query_params['is_veg'] = 'eq.false'
-            if diet == 'vegan':
-                 all_tags.append('vegan')
-
-        # UPDATED: Collects tags from the new 'attributes' key and others
-        for key in ['attributes', 'course', 'cuisine']:
-            value = filters.get(key)
-            if isinstance(value, list):
-                all_tags.extend(value)
-            elif isinstance(value, str):
-                all_tags.append(value)
-        
-        if all_tags:
-            tags_string = ",".join(f'"{tag.lower()}"' for tag in set(all_tags))
-            query_params['tags'] = f'cs.%7B{tags_string}%7D'
-            
-        api_url = f"{SUPABASE_URL}/rest/v1/menu_items"
-        response = requests.get(api_url, params=query_params, headers=SUPABASE_HEADERS)
-        response.raise_for_status()
-        
-        dishes = response.json()
-        
-        reason = f"Here are some suggestions for '{taste_pref}'."
-        if not dishes:
-            reason = f"Sorry, we couldn't find a perfect match for '{taste_pref}'."
-
-        return jsonify({"dishes": dishes, "reason": reason}), 200
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+# Groq structured filters function - REMOVED
+# This feature has been removed as requested
+# AI recommendation endpoint - REMOVED
+# This feature has been removed as requested
 
 # app.py
 
 # ADD THIS ENTIRE NEW ENDPOINT
-@app.route('/history-recommendation/<string:user_id>', methods=['POST'])
-def get_history_recommendation(user_id):
-    """
-    Provides initial recommendations based on a user's order history using Pinecone
-    or shows bestsellers for guests/new users.
-    """
-    try:
-        # --- Logic for history-based or bestseller recommendations ---
-        if user_id != 'guest':
-            # 1. Get user's most recently ordered item's name
-            orders_res = supabase.table("orders").select("id").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
-            if orders_res.data:
-                last_order_id = orders_res.data[0]["id"]
-                last_items_res = supabase.table("order_items").select("menu_items(name, description)").eq("order_id", last_order_id).limit(1).execute()
-                
-                if last_items_res.data and last_items_res.data[0].get('menu_items'):
-                    last_item_details = last_items_res.data[0]['menu_items']
-                    # Use the last item's name + description as a query for Pinecone to find similar items
-                    query_text = f"{last_item_details['name']} {last_item_details.get('description', '')}"
-                    search_results = byte_bot_service.semantic_search(query_text, k=3)
-                    
-                    if search_results and search_results.get('matches'):
-                        dishes = [match['metadata'] for match in search_results['matches']]
-                        return jsonify({"dishes": dishes, "reason": f"Because you recently enjoyed {last_item_details['name']}."}), 200
-
-        # 2. Fallback for guests or users with no history: Bestsellers
-        bestseller_res = supabase.table("menu_items").select("*").eq("is_bestseller", True).limit(10).execute()
-        if bestseller_res.data:
-            num_to_sample = min(3, len(bestseller_res.data))
-            dishes = random.sample(bestseller_res.data, num_to_sample)
-            return jsonify({"dishes": dishes, "reason": "Check out some of our bestsellers!"}), 200
-        
-        # Final fallback if no bestsellers are found
-        return jsonify({"error": "Could not determine initial recommendations."}), 404
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+# History recommendation endpoint - REMOVED
+# This feature has been removed as requested
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
