@@ -15,6 +15,9 @@ import 'widgets/header_widget.dart';
 import 'widgets/checkout_step.dart';
 import 'widgets/address_selection_dialog.dart';
 import 'widgets/order_summary_card.dart';
+import 'widgets/order_tracking_button.dart';
+import 'widgets/order_status_modal.dart';
+import 'services/order_tracking_service.dart';
 import 'models.dart';
 import 'order_location_picker.dart';
 import 'dart:convert';
@@ -30,30 +33,312 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   Razorpay? _razorpay;
-  late CartProvider _cart;
-  late AuthProvider _auth;
   String? _prefetchedOrderId;
   int _prefetchedAmountPaise = 0;
   bool _isPrefetching = false;
   String? _contactNumber;
   AddressDetails? _savedAddress;
+  final OrderTrackingService _orderTrackingService = OrderTrackingService();
+  bool _isTrackingInitialized = false;
 
   // Helper method to calculate total amount including fees
-  double get _totalAmountWithFees {
+  double _getTotalAmountWithFees(CartProvider cart) {
     final deliveryFee = 41.0;
     final gstAndCharges = 74.69;
-    return _cart.totalAmount + deliveryFee + gstAndCharges;
+    return cart.totalAmount + deliveryFee + gstAndCharges;
   }
 
   @override
   void initState() {
     super.initState();
+
     if (!kIsWeb) {
       _razorpay = Razorpay();
       _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     }
     _loadSavedAddress();
+    _initializeOrderTracking();
+  }
+
+  void _initializeOrderTracking() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.isLoggedIn && authProvider.user != null) {
+        await _orderTrackingService.startTracking(authProvider.user!.id);
+        setState(() {
+          _isTrackingInitialized = true;
+        });
+      }
+    });
+  }
+
+  void _showOrderTrackingModal() {
+    final activeOrders = _orderTrackingService.activeOrders;
+    if (activeOrders.isEmpty) return;
+
+    // Show the first active order (you can modify this to show a list)
+    final order = activeOrders.first;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        elevation: 10,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.grey[50]!,
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delivery_dining,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Order Status',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Order #${order.id}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Status indicator
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(order.status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _getStatusColor(order.status).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getStatusIcon(order.status),
+                      color: _getStatusColor(order.status),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      order.status,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(order.status),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Order details
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      Icons.attach_money,
+                      'Total Amount',
+                      '₹${order.totalAmount.toStringAsFixed(0)}',
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      Icons.location_on,
+                      'Delivery Address',
+                      order.deliveryAddress,
+                      Colors.blue,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // You can add more actions here like calling restaurant
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Track Order',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Colors.orange;
+      case 'ready for pickup':
+        return Colors.blue;
+      case 'out for delivery':
+        return Colors.purple;
+      case 'delivered':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Helper method to get status icon
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Icons.restaurant;
+      case 'ready for pickup':
+        return Icons.store;
+      case 'out for delivery':
+        return Icons.delivery_dining;
+      case 'delivered':
+        return Icons.check_circle;
+      default:
+        return Icons.info;
+    }
+  }
+
+  // Helper method to build detail rows
+  Widget _buildDetailRow(
+      IconData icon, String label, String value, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadSavedAddress() async {
@@ -91,6 +376,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   void dispose() {
+    _orderTrackingService.stopTracking();
     if (!kIsWeb) {
       _razorpay?.clear();
     }
@@ -99,13 +385,13 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> _prefetchOrder() async {
     if (_isPrefetching) return;
-    _cart = Provider.of<CartProvider>(context, listen: false);
-    _auth = Provider.of<AuthProvider>(context, listen: false);
-    if (_auth.user == null || _cart.items.isEmpty) return;
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.user == null || cart.items.isEmpty) return;
     _isPrefetching = true;
     try {
       final apiService = ApiService();
-      final totalAmount = _totalAmountWithFees;
+      final totalAmount = _getTotalAmountWithFees(cart);
 
       final orderId = await apiService.createRazorpayOrder(totalAmount);
       setState(() {
@@ -121,10 +407,10 @@ class _CartScreenState extends State<CartScreen> {
 
   void _openCheckout() {
     // providers
-    _cart = Provider.of<CartProvider>(context, listen: false);
-    _auth = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    if (_auth.user == null) {
+    if (auth.user == null) {
       showLoginPrompt(context);
       return;
     }
@@ -156,7 +442,7 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
         'handler': js.allowInterop((response) {
@@ -184,7 +470,7 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
       };
@@ -194,10 +480,10 @@ class _CartScreenState extends State<CartScreen> {
 
   void _proceedToPayment() {
     // providers
-    _cart = Provider.of<CartProvider>(context, listen: false);
-    _auth = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    if (_auth.user == null) {
+    if (auth.user == null) {
       showLoginPrompt(context);
       return;
     }
@@ -222,7 +508,7 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
         'handler': js.allowInterop((response) {
@@ -250,7 +536,7 @@ class _CartScreenState extends State<CartScreen> {
         'name': 'ByteEat',
         'description': 'Food Order Payment',
         'prefill': {
-          'email': _auth.user?.email ?? '',
+          'email': auth.user?.email ?? '',
           'contact': _contactNumber ?? ''
         },
       };
@@ -344,6 +630,8 @@ class _CartScreenState extends State<CartScreen> {
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     final apiService = ApiService();
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
     final locationProvider =
         Provider.of<DeliveryLocationProvider>(context, listen: false);
 
@@ -362,11 +650,11 @@ class _CartScreenState extends State<CartScreen> {
       addressString = 'No address provided';
     }
 
-    // Use the stored member variables, NOT Provider.of(context)
+    // Use the providers directly
     apiService.placeOrder(
-      _cart.items.values.toList(),
-      _totalAmountWithFees,
-      _auth.user!.id,
+      cart.items.values.toList(),
+      _getTotalAmountWithFees(cart),
+      auth.user!.id,
       addressString,
     );
 
@@ -378,7 +666,7 @@ class _CartScreenState extends State<CartScreen> {
       await prefs.setString('last_order_address', addressString);
     }
 
-    _cart.clearCart();
+    cart.clearCart();
 
     if (mounted) {
       Navigator.of(context).pop();

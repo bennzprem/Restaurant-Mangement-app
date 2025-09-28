@@ -14,6 +14,9 @@ import '../widgets/about_section.dart';
 import '../widgets/ai_culinary_curator_section.dart';
 import '../widgets/culinary_philosophy_section.dart';
 import '../widgets/footer_widget.dart';
+import '../widgets/order_tracking_button.dart';
+import '../widgets/order_status_modal.dart';
+import '../services/order_tracking_service.dart';
 
 import 'theme.dart'; // Your AppTheme
 
@@ -25,6 +28,63 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final OrderTrackingService _orderTrackingService = OrderTrackingService();
+  bool _isTrackingInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    print('🏠 HomePage initState');
+    // Check if service already has orders (for hot restart)
+    if (_orderTrackingService.hasActiveOrders) {
+      print('🔍 Service already has orders, initializing immediately');
+      setState(() {
+        _isTrackingInitialized = true;
+      });
+    }
+    // Listen to service changes
+    _orderTrackingService.addListener(_onServiceChanged);
+    _initializeOrderTracking();
+  }
+
+  void _onServiceChanged() {
+    print(
+        '🔄 Service changed: hasOrders=${_orderTrackingService.hasActiveOrders}');
+    if (_orderTrackingService.hasActiveOrders && !_isTrackingInitialized) {
+      setState(() {
+        _isTrackingInitialized = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _orderTrackingService.removeListener(_onServiceChanged);
+    _orderTrackingService.stopTracking();
+    super.dispose();
+  }
+
+  void _initializeOrderTracking() async {
+    print('🚀 Initializing order tracking...');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProvider = context.read<AuthProvider>();
+      print(
+          '🔍 Auth state: isLoggedIn=${authProvider.isLoggedIn}, user=${authProvider.user?.id}');
+      if (authProvider.isLoggedIn && authProvider.user != null) {
+        print('🔍 Starting tracking for user: ${authProvider.user!.id}');
+        await _orderTrackingService.startTracking(authProvider.user!.id);
+        print('🔍 Tracking initialized, setting state...');
+        setState(() {
+          _isTrackingInitialized = true;
+        });
+        print(
+            '🔍 State updated: _isTrackingInitialized=$_isTrackingInitialized');
+      } else {
+        print('❌ User not logged in, skipping tracking initialization');
+      }
+    });
+  }
+
   void _handleNavigation(BuildContext context, String serviceType) {
     switch (serviceType) {
       case 'Delivery':
@@ -47,6 +107,300 @@ class _HomePageState extends State<HomePage> {
         );
         break;
     }
+  }
+
+  void _showOrderTrackingModal() {
+    print('🛵 Order tracking button clicked!');
+    print(
+        '🔍 Service state: hasActiveOrders=${_orderTrackingService.hasActiveOrders}, count=${_orderTrackingService.activeOrderCount}');
+    final activeOrders = _orderTrackingService.activeOrders;
+    print('📋 Active orders count: ${activeOrders.length}');
+    print('📋 Active orders details: $activeOrders');
+
+    if (activeOrders.isEmpty) {
+      print('❌ No active orders found');
+      // Show a test dialog anyway
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('No Active Orders'),
+          content: const Text('You have no active orders to track.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show the first active order (you can modify this to show a list)
+    final order = activeOrders.first;
+    print('📦 Showing order: ${order.id}, Status: ${order.status}');
+
+    // Show enhanced order status modal
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        elevation: 10,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.grey[50]!,
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delivery_dining,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Order Status',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Order #${order.id}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Status indicator
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(order.status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _getStatusColor(order.status).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getStatusIcon(order.status),
+                      color: _getStatusColor(order.status),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      order.status,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(order.status),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Order details
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      Icons.attach_money,
+                      'Total Amount',
+                      '₹${order.totalAmount.toStringAsFixed(0)}',
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      Icons.location_on,
+                      'Delivery Address',
+                      order.deliveryAddress,
+                      Colors.blue,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // You can add more actions here like calling restaurant
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Track Order',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Colors.orange;
+      case 'ready for pickup':
+        return Colors.blue;
+      case 'out for delivery':
+        return Colors.purple;
+      case 'delivered':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Helper method to get status icon
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'preparing':
+        return Icons.restaurant;
+      case 'ready for pickup':
+        return Icons.store;
+      case 'out for delivery':
+        return Icons.delivery_dining;
+      case 'delivered':
+        return Icons.check_circle;
+      default:
+        return Icons.info;
+    }
+  }
+
+  // Helper method to build detail rows
+  Widget _buildDetailRow(
+      IconData icon, String label, String value, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -102,6 +456,23 @@ class _HomePageState extends State<HomePage> {
             right: 0,
             child: HeaderWidget(active: HeaderActive.home),
           ),
+
+          // Order tracking button
+          if (_isTrackingInitialized && authProvider.isLoggedIn)
+            ChangeNotifierProvider.value(
+              value: _orderTrackingService,
+              child: Consumer<OrderTrackingService>(
+                builder: (context, orderService, child) {
+                  print(
+                      '🔄 Consumer rebuild: count=${orderService.activeOrderCount}, hasOrders=${orderService.hasActiveOrders}');
+                  return OrderTrackingButton(
+                    onTap: _showOrderTrackingModal,
+                    orderCount: orderService.activeOrderCount,
+                    isVisible: orderService.hasActiveOrders,
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );

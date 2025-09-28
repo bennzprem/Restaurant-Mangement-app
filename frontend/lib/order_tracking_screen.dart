@@ -30,7 +30,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle_outline, color: AppTheme.primaryColor, size: 100),
+              const Icon(Icons.check_circle_outline,
+                  color: AppTheme.primaryColor, size: 100),
               const SizedBox(height: 20),
               Text(
                 'Order Placed Successfully!',
@@ -47,26 +48,30 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 future: _statusFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator(color: AppTheme.primaryColor);
+                    return const CircularProgressIndicator(
+                        color: AppTheme.primaryColor);
                   }
                   if (snapshot.hasError) {
-                    return const Text('Could not fetch status.', style: TextStyle(color: Colors.red));
+                    return const Text('Could not fetch status.',
+                        style: TextStyle(color: Colors.red));
                   }
                   return Chip(
                     label: Text(
                       'Status: ${snapshot.data}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                     backgroundColor: AppTheme.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   );
                 },
               ),
               const SizedBox(height: 40),
-               ElevatedButton(
+              ElevatedButton(
                 child: const Text('Back to Menu'),
-                onPressed: () => Navigator.of(context)
-                  .popUntil((route) => route.isFirst),
+                onPressed: () =>
+                    Navigator.of(context).popUntil((route) => route.isFirst),
               ),
             ],
           ),
