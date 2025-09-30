@@ -86,8 +86,8 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
     }
   }
 
-  // Static function for custom search (no longer makes API calls)
-  void _handleCustomSearch() {
+  // AI-powered custom search using Groq LLM + Pinecone
+  void _handleCustomSearch() async {
     final tastePreference = _prefController.text;
     if (tastePreference.isEmpty) return;
 
@@ -96,13 +96,38 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
       _searchError = null;
     });
 
-    // Simulate search delay
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      // Use the new AI-powered craving search
+      final searchResults = await _apiService.findCraving(tastePreference);
+      
+      // Convert to the expected format
+      final searchItems = searchResults
+          .map((item) => {
+            'id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'price': item.price,
+            'image_url': item.imageUrl,
+            'is_veg': item.isVegetarian,
+            'is_bestseller': item.isBestseller,
+          })
+          .toList();
+      
       setState(() {
+        _dishes = searchItems;
+        _reason = searchItems.isNotEmpty 
+            ? "AI found these perfect matches for your craving!" 
+            : "No matches found. Try browsing our menu categories!";
         _isSearching = false;
-        _searchError = "Search feature is temporarily disabled. Please browse our menu categories.";
+        _searchError = null; // Clear any previous errors
       });
-    });
+    } catch (e) {
+      setState(() {
+        _searchError = "Search failed. Please try again or browse our menu categories.";
+        _dishes = [];
+        _isSearching = false;
+      });
+    }
   }
 
   @override
@@ -189,9 +214,9 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: Expanded(
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: TextField(
                   controller: _prefController,
                   decoration: const InputDecoration(
@@ -218,7 +243,7 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
             ),
           ],
         ),
-        if (_searchError != null && _dishes.isNotEmpty)
+        if (_searchError != null)
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
             child: Text(_searchError!, style: const TextStyle(color: Colors.red)),
