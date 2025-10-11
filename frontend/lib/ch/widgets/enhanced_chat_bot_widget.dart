@@ -69,9 +69,34 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
   }
 
   void _addWelcomeMessage() {
+    final authProvider = context.read<AuthProvider>();
+    final isLoggedIn = authProvider.isLoggedIn;
+    final userName = authProvider.user?.name;
+
+    // Get current time for greeting
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    String timeGreeting;
+    if (hour < 12) {
+      timeGreeting = "Good morning";
+    } else if (hour < 17) {
+      timeGreeting = "Good afternoon";
+    } else {
+      timeGreeting = "Good evening";
+    }
+
+    String welcomeMessage;
+    if (isLoggedIn && userName != null && userName.isNotEmpty) {
+      welcomeMessage =
+          "✨ $timeGreeting, $userName! I'm ByteBot — here to help you find delicious moments. Tap to chat or say 'Hey ByteBot' to begin.";
+    } else {
+      welcomeMessage =
+          "✨ $timeGreeting! I'm ByteBot — here to help you find delicious moments. Tap to chat or say 'Hey ByteBot' to begin.";
+    }
+
     _addMessage(ChatMessage(
-      text:
-          "Hello! I'm your restaurant assistant. I can help you with menu items, reservations, orders, and any questions about our restaurant. How can I assist you today?",
+      text: welcomeMessage,
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -294,17 +319,20 @@ Provide a helpful response:
           right: 20,
           child: ScaleTransition(
             scale: _isOpen ? _scaleAnimation : _pulseAnimation,
-            child: FloatingActionButton(
-              onPressed: _toggleChat,
-              backgroundColor: Theme.of(context).primaryColor,
-              elevation: 6,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  _isOpen ? Icons.close : Icons.chat_bubble,
-                  key: ValueKey(_isOpen),
-                  color: Colors.white,
-                  size: 28,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: FloatingActionButton(
+                onPressed: _toggleChat,
+                backgroundColor: Theme.of(context).primaryColor,
+                elevation: 6,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isOpen ? Icons.close : Icons.chat_bubble,
+                    key: ValueKey(_isOpen),
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
@@ -349,7 +377,7 @@ Provide a helpful response:
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Restaurant Assistant',
+                  'ByteBot',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

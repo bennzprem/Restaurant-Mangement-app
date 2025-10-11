@@ -75,7 +75,7 @@ class _ServiceSelectionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: AppTheme.primaryColor),
+              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(

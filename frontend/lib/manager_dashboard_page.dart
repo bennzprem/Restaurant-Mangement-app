@@ -159,8 +159,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
-              foregroundColor: AppTheme.white,
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Create'),
           ),
@@ -309,7 +309,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please login to access manager dashboard.'),
-            backgroundColor: AppTheme.warningColor,
+            backgroundColor: Colors.orange,
           ),
         );
       });
@@ -326,7 +326,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Access denied. Manager privileges required.'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       });
@@ -338,19 +338,19 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.customLightGrey,
+      backgroundColor: Colors.grey[100]!,
       appBar: AppBar(
         title: const Text(
           'Manager Dashboard',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.white,
+            color: Colors.white,
           ),
         ),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             // Navigate to home instead of just popping
             Navigator.of(context).pushNamedAndRemoveUntil(
@@ -361,7 +361,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.white),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               // Show confirmation dialog
               final shouldLogout = await showDialog<bool>(
@@ -377,8 +377,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.errorColor,
-                        foregroundColor: AppTheme.white,
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
                       ),
                       child: const Text('Logout'),
                     ),
@@ -415,10 +415,10 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
               Container(
                 width: constraints.maxWidth < 800 ? 200 : 250,
                 decoration: BoxDecoration(
-                  color: AppTheme.white,
+                  color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -430,10 +430,10 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
                         border: Border(
                           bottom: BorderSide(
-                            color: AppTheme.grey.withOpacity(0.2),
+                            color: Colors.grey.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
@@ -443,12 +443,12 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
+                              color: Theme.of(context).primaryColor,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
                               Icons.manage_accounts,
-                              color: AppTheme.white,
+                              color: Colors.white,
                               size: 24,
                             ),
                           ),
@@ -463,14 +463,14 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.customBlack,
+                                    color: Colors.black,
                                   ),
                                 ),
                                 Text(
                                   'Manager',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.customGrey,
+                                    color: Colors.grey[600]!,
                                   ),
                                 ),
                               ],
@@ -525,7 +525,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                             title: 'Settings',
                             index: 7,
                           ),
-                          const Divider(color: AppTheme.grey, height: 32),
+                          const Divider(color: Colors.grey, height: 32),
                           _buildLogoutItem(),
                         ],
                       ),
@@ -555,21 +555,21 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
-        color: AppTheme.transparent,
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => setState(() => _selectedIndex = index),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.transparent,
+              color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? AppTheme.white : AppTheme.customGrey,
+                  color: isSelected ? Colors.white : Colors.grey[600]!,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -578,7 +578,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? AppTheme.white : AppTheme.customGrey,
+                    color: isSelected ? Colors.white : Colors.grey[600]!,
                   ),
                 ),
               ],
@@ -593,7 +593,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
-        color: AppTheme.transparent,
+        color: Colors.transparent,
         child: InkWell(
           onTap: () async {
             // Show confirmation dialog
@@ -610,8 +610,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.errorColor,
-                      foregroundColor: AppTheme.white,
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
                     child: const Text('Logout'),
                   ),
@@ -641,14 +641,14 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.transparent,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.logout,
-                  color: AppTheme.errorColor,
+                  color: Colors.red,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -657,7 +657,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.errorColor,
+                    color: Colors.red,
                   ),
                 ),
               ],
@@ -705,7 +705,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.customBlack,
+                  color: Colors.black,
                 ),
               ),
               Row(children: [
@@ -720,8 +720,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                       : const Icon(Icons.refresh),
                   label: Text(_isLoading ? 'Loading...' : 'Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: AppTheme.white,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -735,8 +735,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   icon: const Icon(Icons.table_restaurant),
                   label: const Text('Add Table'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.successColor,
-                    foregroundColor: AppTheme.white,
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -771,7 +771,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                         ? '...'
                         : _getStaffStats()['total'].toString(),
                     icon: Icons.people,
-                    color: AppTheme.infoColor,
+                    color: Colors.blue,
                     change: _isLoading
                         ? ''
                         : '${_getStaffStats()['total']} employees',
@@ -783,7 +783,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                         ? '...'
                         : _getOrderStats()['pending'].toString(),
                     icon: Icons.shopping_cart,
-                    color: AppTheme.warningColor,
+                    color: Colors.orange,
                     change: _isLoading
                         ? ''
                         : '${_getOrderStats()['pending']} pending',
@@ -795,7 +795,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                         ? '...'
                         : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)}',
                     icon: Icons.attach_money,
-                    color: AppTheme.successColor,
+                    color: Colors.green,
                     change: _isLoading
                         ? ''
                         : '₹${_getOrderStats()['totalRevenue'].toStringAsFixed(0)} total',
@@ -805,7 +805,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     title: 'Menu Items',
                     value: _isLoading ? '...' : _menuItems.length.toString(),
                     icon: Icons.restaurant_menu,
-                    color: AppTheme.purpleColor,
+                    color: Colors.purple,
                     change: _isLoading ? '' : '${_menuItems.length} items',
                     isPositive: true,
                   ),
@@ -820,11 +820,11 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -841,7 +841,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.customBlack,
+                        color: Colors.black,
                       ),
                     ),
                     TextButton(
@@ -862,7 +862,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     child: Center(
                       child: Text(
                         'No staff members found',
-                        style: TextStyle(color: AppTheme.grey),
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ),
                   ),
@@ -886,11 +886,11 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -914,8 +914,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isPositive
-                      ? AppTheme.successColor.withOpacity(0.1)
-                      : AppTheme.errorColor.withOpacity(0.1),
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -924,8 +924,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isPositive
-                        ? AppTheme.successColor
-                        : AppTheme.errorColor,
+                        ? Colors.green
+                        : Colors.red,
                   ),
                 ),
               ),
@@ -937,7 +937,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.customBlack,
+              color: Colors.black,
             ),
           ),
           const SizedBox(height: 4),
@@ -945,7 +945,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             title,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.customGrey,
+              color: Colors.grey[600]!,
             ),
           ),
         ],
@@ -986,14 +986,14 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.customBlack,
+                    color: Colors.black,
                   ),
                 ),
                 Text(
                   staff.email ?? 'No email',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.customGrey,
+                    color: Colors.grey[600]!,
                   ),
                 ),
               ],
@@ -1052,7 +1052,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return const Center(
       child: Text(
         'Orders Management - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+        style: TextStyle(fontSize: 24, color: Colors.grey),
       ),
     );
   }
@@ -1061,7 +1061,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return const Center(
       child: Text(
         'Menu Management - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+        style: TextStyle(fontSize: 24, color: Colors.grey),
       ),
     );
   }
@@ -1070,7 +1070,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return const Center(
       child: Text(
         'Analytics - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+        style: TextStyle(fontSize: 24, color: Colors.grey),
       ),
     );
   }
@@ -1079,7 +1079,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return const Center(
       child: Text(
         'Schedule Management - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+        style: TextStyle(fontSize: 24, color: Colors.grey),
       ),
     );
   }
@@ -1098,7 +1098,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.customBlack,
+                  color: Colors.black,
                 ),
               ),
               ElevatedButton.icon(
@@ -1106,8 +1106,8 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 icon: const Icon(Icons.add),
                 label: const Text('Add Table'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successColor,
-                  foregroundColor: AppTheme.white,
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
@@ -1117,7 +1117,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
             children: [
               Text(
                 'Use Add Table to register a table and optional code for QR.',
-                style: TextStyle(color: AppTheme.customGrey),
+                style: TextStyle(color: Colors.grey[600]!),
               ),
               const Spacer(),
               TextButton.icon(
@@ -1133,11 +1133,11 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.white,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -1145,7 +1145,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
               ),
               child: Column(
                 children: const [
-                  Icon(Icons.table_bar, color: AppTheme.grey),
+                  Icon(Icons.table_bar, color: Colors.grey),
                   SizedBox(height: 8),
                   Text('No tables loaded. Tap Refresh to fetch tables.'),
                 ],
@@ -1168,7 +1168,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -1264,7 +1264,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
     return const Center(
       child: Text(
         'Settings - Coming Soon',
-        style: TextStyle(fontSize: 24, color: AppTheme.grey),
+        style: TextStyle(fontSize: 24, color: Colors.grey),
       ),
     );
   }

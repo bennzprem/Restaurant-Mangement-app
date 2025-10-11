@@ -44,7 +44,7 @@ class _WaiterTableClaimPageState extends State<WaiterTableClaimPage> {
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppTheme.successColor,
+          backgroundColor: Theme.of(context).successColor,
           content: Text('Claimed table ${res['tableNumber']} successfully'),
         ),
       );
@@ -61,7 +61,7 @@ class _WaiterTableClaimPageState extends State<WaiterTableClaimPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: Theme.of(context).errorColor,
           content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );

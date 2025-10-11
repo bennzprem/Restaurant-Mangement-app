@@ -189,7 +189,7 @@ class _BookTablePageState extends State<BookTablePage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.errorColor,
+        backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -274,13 +274,13 @@ class _BookTablePageState extends State<BookTablePage>
                           children: [
                             const CircularProgressIndicator(
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.primaryColor),
+                                  Theme.of(context).primaryColor),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Checking availability...',
                               style: TextStyle(
-                                color: isDark ? Colors.white : AppTheme.darkTextColor,
+                                color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -316,13 +316,13 @@ class _BookTablePageState extends State<BookTablePage>
                   ? _checkAvailabilityAndProceed
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
-                shadowColor: AppTheme.primaryColor.withOpacity(0.3),
+                shadowColor: Theme.of(context).primaryColor.withOpacity(0.3),
               ),
               child: Text(
                 'Check Availability & Proceed',
@@ -364,12 +364,12 @@ class _BookTablePageState extends State<BookTablePage>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.people_outline,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
               ),
@@ -379,7 +379,7 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 ),
               ),
             ],
@@ -399,14 +399,14 @@ class _BookTablePageState extends State<BookTablePage>
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppTheme.primaryColor
+                        ? Theme.of(context).primaryColor
                         : (isDark
                             ? const Color(0xFF2A2A2A)
                             : const Color(0xFFF8F9FA)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? AppTheme.primaryColor
+                          ? Theme.of(context).primaryColor
                           : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       width: 2,
                     ),
@@ -430,7 +430,7 @@ class _BookTablePageState extends State<BookTablePage>
                               ? Colors.white
                               : (isDark
                                   ? Colors.white
-                                  : AppTheme.darkTextColor),
+                                  : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                         ),
                       ),
                     ],
@@ -468,12 +468,12 @@ class _BookTablePageState extends State<BookTablePage>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
               ),
@@ -483,7 +483,7 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 ),
               ),
             ],
@@ -509,14 +509,14 @@ class _BookTablePageState extends State<BookTablePage>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppTheme.primaryColor
+                          ? Theme.of(context).primaryColor
                           : (isDark
                               ? const Color(0xFF2A2A2A)
                               : const Color(0xFFF8F9FA)),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
-                            ? AppTheme.primaryColor
+                            ? Theme.of(context).primaryColor
                             : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                         width: 2,
                       ),
@@ -533,7 +533,7 @@ class _BookTablePageState extends State<BookTablePage>
                                 ? Colors.white
                                 : (isDark
                                     ? Colors.grey[400]
-                                    : AppTheme.lightTextColor),
+                                    : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -546,7 +546,7 @@ class _BookTablePageState extends State<BookTablePage>
                                 ? Colors.white
                                 : (isDark
                                     ? Colors.white
-                                    : AppTheme.darkTextColor),
+                                    : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -559,7 +559,7 @@ class _BookTablePageState extends State<BookTablePage>
                                 ? Colors.white
                                 : (isDark
                                     ? Colors.grey[400]
-                                    : AppTheme.lightTextColor),
+                                    : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey),
                           ),
                         ),
                       ],
@@ -598,12 +598,12 @@ class _BookTablePageState extends State<BookTablePage>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.access_time_outlined,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
               ),
@@ -613,7 +613,7 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 ),
               ),
             ],
@@ -637,14 +637,14 @@ class _BookTablePageState extends State<BookTablePage>
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppTheme.primaryColor
+                          ? Theme.of(context).primaryColor
                           : (isDark
                               ? const Color(0xFF2A2A2A)
                               : const Color(0xFFF8F9FA)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? AppTheme.primaryColor
+                            ? Theme.of(context).primaryColor
                             : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                         width: 2,
                       ),
@@ -657,7 +657,7 @@ class _BookTablePageState extends State<BookTablePage>
                         fontWeight: FontWeight.w600,
                         color: isSelected
                             ? Colors.white
-                            : (isDark ? Colors.white : AppTheme.darkTextColor),
+                            : (isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                       ),
                     ),
                   ),
@@ -710,7 +710,7 @@ class _BookTablePageState extends State<BookTablePage>
                     color: isPast
                         ? (isDark ? const Color(0xFF1A1A1A) : Colors.grey[100])
                         : (isSelected
-                            ? AppTheme.primaryColor
+                            ? Theme.of(context).primaryColor
                             : (isDark
                                 ? const Color(0xFF2A2A2A)
                                 : const Color(0xFFF8F9FA))),
@@ -719,7 +719,7 @@ class _BookTablePageState extends State<BookTablePage>
                       color: isPast
                           ? (isDark ? Colors.grey[800]! : Colors.grey[300]!)
                           : (isSelected
-                              ? AppTheme.primaryColor
+                              ? Theme.of(context).primaryColor
                               : (isDark
                                   ? Colors.grey[700]!
                                   : Colors.grey[300]!)),
@@ -737,7 +737,7 @@ class _BookTablePageState extends State<BookTablePage>
                               ? Colors.white
                               : (isDark
                                   ? Colors.white
-                                  : AppTheme.darkTextColor)),
+                                  : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black)),
                       decoration: isPast ? TextDecoration.lineThrough : null,
                     ),
                   ),
@@ -782,12 +782,12 @@ class _BookTablePageState extends State<BookTablePage>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.celebration_outlined,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
               ),
@@ -797,7 +797,7 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 ),
               ),
             ],
@@ -816,14 +816,14 @@ class _BookTablePageState extends State<BookTablePage>
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppTheme.primaryColor
+                        ? Theme.of(context).primaryColor
                         : (isDark
                             ? const Color(0xFF2A2A2A)
                             : const Color(0xFFF8F9FA)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? AppTheme.primaryColor
+                          ? Theme.of(context).primaryColor
                           : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       width: 2,
                     ),
@@ -835,7 +835,7 @@ class _BookTablePageState extends State<BookTablePage>
                       fontWeight: FontWeight.w600,
                       color: isSelected
                           ? Colors.white
-                          : (isDark ? Colors.white : AppTheme.darkTextColor),
+                          : (isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                     ),
                   ),
                 ),

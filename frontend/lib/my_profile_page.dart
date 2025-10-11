@@ -93,10 +93,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final avatarUrl = user?.avatarUrl; // This comes from your AppUser model
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).backgroundColor,
       appBar: AppBar(
         title: const Text('My Profile'),
-        backgroundColor: AppTheme.surfaceColor,
+        backgroundColor: Theme.of(context).surfaceColor,
         elevation: 1,
       ),
       body: ListView(
@@ -106,7 +106,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
           Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
+              color: Theme.of(context).surfaceColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -116,7 +116,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: AppTheme.primaryLight,
+                      backgroundColor: Theme.of(context).primaryLight,
                       // Display the uploaded image if it exists
                       backgroundImage:
                           avatarUrl != null ? NetworkImage(avatarUrl) : null,
@@ -127,7 +127,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                   : 'U',
                               style: const TextStyle(
                                 fontSize: 40,
-                                color: AppTheme.darkTextColor,
+                                color: Theme.of(context).darkTextColor,
                               ),
                             )
                           : null,
@@ -137,7 +137,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       right: 0,
                       child: CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppTheme.darkTextColor,
+                        backgroundColor: Theme.of(context).darkTextColor,
                         child: IconButton(
                           icon: const Icon(
                             Icons.edit,
@@ -291,7 +291,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         title.toUpperCase(),
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppTheme.lightTextColor,
+              color: Theme.of(context).lightTextColor,
             ),
       ),
     );
@@ -308,7 +308,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(icon, color: AppTheme.darkTextColor),
+        leading: Icon(icon, color: Theme.of(context).darkTextColor),
         title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,

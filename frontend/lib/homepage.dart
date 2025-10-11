@@ -607,7 +607,7 @@ class _ServiceSelectionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(icon, size: 40, color: AppTheme.primaryColor),
+              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -618,19 +618,19 @@ class _ServiceSelectionCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.customBlack,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
                       style: const TextStyle(
-                          fontSize: 16, color: AppTheme.customGrey),
+                          fontSize: 16, color: Colors.grey[600]!),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: AppTheme.primaryColor),
+              const Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
             ],
           ),
         ),
@@ -837,11 +837,11 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Nunito',
-                  color: isDark ? AppTheme.white : AppTheme.black)),
+                  color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 24),
           if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
             )
           else
             Row(

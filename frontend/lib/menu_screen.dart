@@ -711,7 +711,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 height: 160,
-                                color: AppTheme.primaryLight,
+                                color: Theme.of(context).primaryLight,
                                 alignment: Alignment.center,
                                 child: Icon(
                                   Icons.restaurant,
@@ -1499,7 +1499,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
-                                    color: AppTheme.primaryLight,
+                                    color: Theme.of(context).primaryLight,
                                     alignment: Alignment.center,
                                     child: Icon(
                                       Icons.restaurant,

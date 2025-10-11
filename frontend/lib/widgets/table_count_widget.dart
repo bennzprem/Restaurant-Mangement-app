@@ -169,7 +169,7 @@ class _TableCountWidgetState extends State<TableCountWidget> {
                     Icon(
                       Icons.table_restaurant,
                       size: 32,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -223,15 +223,15 @@ class _TableCountWidgetState extends State<TableCountWidget> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.primaryLight,
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+            border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
           ),
           child: Column(
             children: [
               Icon(
                 Icons.info_outline,
-                color: AppTheme.primaryColor,
+                color: Theme.of(context).primaryColor,
                 size: 24,
               ),
               const SizedBox(height: 8),
@@ -240,7 +240,7 @@ class _TableCountWidgetState extends State<TableCountWidget> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
               const SizedBox(height: 8),

@@ -27,7 +27,11 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Restaurant',
-        theme: AppTheme.theme,
+        theme: ThemeData(
+          primarySwatch: Colors.green,
+          primaryColor: const Color(0xFF2E7D32),
+          useMaterial3: true,
+        ),
         home: const MenuScreen(),
         debugShowCheckedModeBanner: false,
       ),

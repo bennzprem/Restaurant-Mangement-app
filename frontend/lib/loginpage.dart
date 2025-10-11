@@ -9,7 +9,7 @@ import 'dart:html' as html;
 import 'phone-login_page.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
-import 'login-bg.dart';
+import 'signup-bg.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -172,7 +172,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorData['error'] ?? 'Invalid Credentials'),
-                backgroundColor: AppTheme.errorColor.withOpacity(0.8),
+                backgroundColor: Colors.red.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -219,7 +219,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorData['error'] ?? 'Invalid Credentials'),
-                backgroundColor: AppTheme.errorColor.withOpacity(0.8),
+                backgroundColor: Colors.red.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -264,8 +264,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
     // Define background colors based on theme - making animations more visible
     final Color waveColor = isDark
-        ? AppTheme.primaryColor.withOpacity(0.8)
-        : AppTheme.primaryColor.withOpacity(0.6);
+        ? Theme.of(context).primaryColor.withOpacity(0.8)
+        : Theme.of(context).primaryColor.withOpacity(0.6);
     final Color backgroundColor =
         isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA);
 
@@ -279,9 +279,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             toolbarHeight: 0),
         body: Stack(
           children: [
-            // Add the LoginAnimatedBackground widget here, behind the main content.
-            LoginAnimatedBackground(
-              waveColor: waveColor,
+            // Add the AnimatedBackground widget here, behind the main content.
+            AnimatedBackground(
+              particleColor: waveColor,
               backgroundColor: backgroundColor,
             ),
             SafeArea(
@@ -335,8 +335,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Container(
-              // Use a more transparent color to see the background animation better.
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
+              // Use a more opaque color for better glassmorphism effect.
+              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.88),
               child: _buildNoScrollFormSection(),
             ),
           ),
@@ -374,11 +374,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   width: MediaQuery.of(context).size.width < 600 ? 50 : 60,
                   height: MediaQuery.of(context).size.width < 600 ? 50 : 60,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).primaryColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -396,7 +396,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.darkTextColor,
+                    color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -406,7 +406,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   'Welcome back to your food journey',
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
-                    color: AppTheme.lightTextColor,
+                    color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -437,7 +437,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: isMobile ? 22 : 28,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -446,7 +446,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 'Sign in to continue to your account',
                 style: TextStyle(
                   fontSize: isMobile ? 13 : 15,
-                  color: isDark ? Colors.grey[300] : AppTheme.lightTextColor,
+                  color: isDark ? Colors.grey[300] : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -538,12 +538,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           value: _rememberMe,
           onChanged: (v) => setState(() => _rememberMe = v ?? false),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          activeColor: AppTheme.primaryColor,
+          activeColor: Theme.of(context).primaryColor,
           checkColor: Colors.white,
           fillColor:
               WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
             if (states.contains(WidgetState.selected)) {
-              return AppTheme.primaryColor;
+              return Theme.of(context).primaryColor;
             }
             return isDark ? Colors.grey[600]! : Colors.grey[300]!;
           }),
@@ -551,7 +551,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         Text(
           'Remember me',
           style: TextStyle(
-            color: isDark ? Colors.grey[300] : AppTheme.darkTextColor,
+            color: isDark ? Colors.grey[300] : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -563,7 +563,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           child: Text(
             'Forgot Password?',
             style: TextStyle(
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).primaryColor,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -591,7 +591,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.grey[300] : AppTheme.darkTextColor,
+            color: isDark ? Colors.grey[300] : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
           ),
         ),
         const SizedBox(height: 4),
@@ -601,10 +601,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           keyboardType: keyboardType,
           style: TextStyle(
             fontSize: 14,
-            color: isDark ? Colors.white : AppTheme.darkTextColor,
+            color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
             fontWeight: FontWeight.w500,
           ),
-          cursorColor: AppTheme.primaryColor,
+          cursorColor: Theme.of(context).primaryColor,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
@@ -614,7 +614,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).primaryColor,
               size: 18,
             ),
             suffixIcon: isPassword
@@ -623,7 +623,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       _isPasswordVisible
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                       size: 18,
                     ),
                     onPressed: () => setState(
@@ -644,7 +644,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -670,13 +670,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
-          shadowColor: AppTheme.primaryColor.withOpacity(0.3),
+          shadowColor: Theme.of(context).primaryColor.withOpacity(0.3),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -740,7 +740,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           icon: Icons.g_mobiledata_outlined,
           label: 'Sign in with Google',
           backgroundColor: isDark ? Colors.grey[800]! : Colors.white,
-          textColor: isDark ? Colors.white : AppTheme.darkTextColor,
+          textColor: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
           borderColor: isDark ? Colors.grey[600]! : Colors.grey[300]!,
         ),
         const SizedBox(height: 6),
@@ -754,7 +754,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           icon: Icons.phone_android_outlined,
           label: 'Login with Phone',
           backgroundColor: isDark ? Colors.grey[800]! : Colors.grey[50]!,
-          textColor: isDark ? Colors.white : AppTheme.darkTextColor,
+          textColor: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
           borderColor: isDark ? Colors.grey[600]! : Colors.grey[300]!,
         ),
       ],
@@ -814,7 +814,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             TextSpan(
               text: 'Sign Up',
               style: TextStyle(
-                color: AppTheme.primaryColor,
+                color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
               ),
               recognizer: TapGestureRecognizer()

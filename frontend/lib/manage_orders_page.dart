@@ -450,7 +450,7 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> {
                       : const Icon(Icons.refresh),
                   label: Text(_isLoading ? 'Loading...' : 'Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -769,7 +769,7 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> {
                                                 label: const Text('View'),
                                                 style: TextButton.styleFrom(
                                                   foregroundColor:
-                                                      AppTheme.primaryColor,
+                                                      Theme.of(context).primaryColor,
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
@@ -796,7 +796,7 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> {
                                                   ),
                                                   decoration: BoxDecoration(
                                                     color:
-                                                        AppTheme.primaryColor,
+                                                        Theme.of(context).primaryColor,
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             8),

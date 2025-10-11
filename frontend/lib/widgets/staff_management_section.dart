@@ -81,7 +81,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.customBlack,
+                  color: Colors.black,
                 ),
               ),
               ElevatedButton.icon(
@@ -95,8 +95,8 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                     : const Icon(Icons.refresh),
                 label: Text(widget.isLoading ? 'Loading...' : 'Refresh'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: AppTheme.white,
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -123,15 +123,15 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
-                              BorderSide(color: AppTheme.grey.withOpacity(0.3)),
+                              BorderSide(color: Colors.grey.withOpacity(0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                              color: AppTheme.primaryColor, width: 2),
+                              color: Theme.of(context).primaryColor, width: 2),
                         ),
                         filled: true,
-                        fillColor: AppTheme.customLightGrey.withOpacity(0.3),
+                        fillColor: Colors.grey[100]!.withOpacity(0.3),
                       ),
                     ),
                   ),
@@ -144,9 +144,9 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                           horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
                         border:
-                            Border.all(color: AppTheme.grey.withOpacity(0.3)),
+                            Border.all(color: Colors.grey.withOpacity(0.3)),
                         borderRadius: BorderRadius.circular(12),
-                        color: AppTheme.customLightGrey.withOpacity(0.3),
+                        color: Colors.grey[100]!.withOpacity(0.3),
                       ),
                       child: DropdownButton<String>(
                         value: _selectedRole,
@@ -187,7 +187,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
             '${_filteredStaff.length} staff members found',
             style: TextStyle(
               fontSize: 16,
-              color: AppTheme.customGrey,
+              color: Colors.grey[600]!,
             ),
           ),
           const SizedBox(height: 16),
@@ -201,11 +201,11 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
-                          color: AppTheme.white,
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.black.withOpacity(0.05),
+                              color: Colors.black.withOpacity(0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -217,7 +217,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                             const Text(
                               'No staff members found',
                               style:
-                                  TextStyle(fontSize: 18, color: AppTheme.grey),
+                                  TextStyle(fontSize: 18, color: Colors.grey),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -244,11 +244,11 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -287,7 +287,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.customBlack,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -295,7 +295,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                   staff.email ?? 'No email provided',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.customGrey,
+                    color: Colors.grey[600]!,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -323,7 +323,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                         'Joined ${DateFormat('MMM dd, yyyy').format(staff.createdAt!)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.customGrey,
+                          color: Colors.grey[600]!,
                         ),
                       ),
                     ],
@@ -471,14 +471,14 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                     SnackBar(
                       content: Text(
                           '${staff.name}\'s role updated to ${selectedRole.toUpperCase()}'),
-                      backgroundColor: AppTheme.successColor,
+                      backgroundColor: Colors.green,
                     ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error updating role: $e'),
-                      backgroundColor: AppTheme.errorColor,
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }

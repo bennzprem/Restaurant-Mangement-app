@@ -113,7 +113,7 @@ class _WaiterCartList extends StatelessWidget {
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                      backgroundColor: AppTheme.errorColor,
+                                      backgroundColor: Theme.of(context).errorColor,
                                       content: Text('Failed: $e')),
                                 );
                               }

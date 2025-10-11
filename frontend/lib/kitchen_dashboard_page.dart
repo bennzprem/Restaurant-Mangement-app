@@ -34,7 +34,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load orders: $e'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -49,7 +49,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Order status updated to $newStatus'),
-            backgroundColor: AppTheme.successColor,
+            backgroundColor: Colors.green,
           ),
         );
       }
@@ -58,7 +58,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update order: $e'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -70,7 +70,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kitchen Dashboard'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -132,14 +132,14 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.primaryColor),
+                    border: Border.all(color: Theme.of(context).primaryColor),
                   ),
                   child: Text(
                     order['status'],
                     style: const TextStyle(
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -203,7 +203,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
                 Row(
@@ -212,7 +212,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                       onPressed: () =>
                           _updateOrderStatus(order['order_id'], 'Ready'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.successColor,
+                        backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Mark Ready'),
@@ -222,7 +222,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                       onPressed: () =>
                           _updateOrderStatus(order['order_id'], 'Completed'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Complete'),
@@ -304,7 +304,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
               Text(
                 '₹${(item['price'] * item['quantity']).toStringAsFixed(0)}',
                 style: const TextStyle(
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

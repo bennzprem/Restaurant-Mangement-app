@@ -74,7 +74,7 @@ class _MenuScreenState extends State<MenuScreen>
           if (snapshot.connectionState == ConnectionState.waiting ||
               _tabController == null) {
             return const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
             );
           }
           if (snapshot.hasError) {
@@ -90,9 +90,9 @@ class _MenuScreenState extends State<MenuScreen>
               TabBar(
                 controller: _tabController,
                 isScrollable: true,
-                labelColor: AppTheme.darkTextColor,
+                labelColor: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 unselectedLabelColor: Colors.grey,
-                indicatorColor: AppTheme.primaryColor,
+                indicatorColor: Theme.of(context).primaryColor,
                 tabs: menuCategories.map((cat) => Tab(text: cat.name)).toList(),
               ),
               Expanded(
@@ -147,7 +147,7 @@ class MenuItemCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
       elevation: 4,
-      shadowColor: AppTheme.primaryColor.withOpacity(0.5),
+      shadowColor: Theme.of(context).primaryColor.withOpacity(0.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -188,7 +188,7 @@ class MenuItemCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.buttonColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ],
@@ -214,7 +214,7 @@ class MenuItemCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(
                     Icons.add_shopping_cart,
-                    color: AppTheme.buttonColor,
+                    color: Theme.of(context).primaryColor,
                   ),
                   onPressed: () {
                     cart.addItem(item);
@@ -222,7 +222,7 @@ class MenuItemCard extends StatelessWidget {
                       SnackBar(
                         content: Text('${item.name} added to cart!'),
                         duration: const Duration(seconds: 1),
-                        backgroundColor: AppTheme.darkTextColor,
+                        backgroundColor: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                       ),
                     );
                   },
@@ -246,7 +246,7 @@ class MenuItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      shadowColor: AppTheme.primaryColor.withOpacity(0.5),
+      shadowColor: Theme.of(context).primaryColor.withOpacity(0.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       clipBehavior: Clip.antiAlias, // Ensures content respects the rounded corners
       child: Column(
@@ -299,7 +299,7 @@ class MenuItemCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.darkTextColor,
+                    color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
