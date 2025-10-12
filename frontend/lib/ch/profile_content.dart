@@ -54,6 +54,25 @@ class _ProfileContentState extends State<ProfileContent> {
     _emailController = TextEditingController(text: user?.email ?? '');
     _nickNameController =
         TextEditingController(text: user?.name.split(' ').first ?? '');
+
+    // Load saved profile data
+    _loadSavedProfileData();
+  }
+
+  Future<void> _loadSavedProfileData() async {
+    try {
+      // For now, we'll initialize with empty values
+      // In a real implementation, you'd fetch this from the backend
+      // The values will be loaded when the user data is refreshed
+      setState(() {
+        _selectedGender = null;
+        _selectedCountry = null;
+        _selectedLanguage = null;
+        _selectedTimeZone = null;
+      });
+    } catch (e) {
+      print('Error loading saved profile data: $e');
+    }
   }
 
   @override
@@ -71,25 +90,33 @@ class _ProfileContentState extends State<ProfileContent> {
 
   Future<void> _saveAdditionalProfileInfo(String userId) async {
     try {
-      // For now, we'll just store this in local state
-      // In a real app, you'd save this to your backend/database
-      print('Saving additional profile info:');
-      print('Nickname: ${_nickNameController.text}');
-      print('Gender: $_selectedGender');
-      print('Country: $_selectedCountry');
-      print('Language: $_selectedLanguage');
-      print('Time Zone: $_selectedTimeZone');
+      // Prepare the profile data
+      Map<String, dynamic> profileData = {};
 
-      // You can add API calls here to save to your backend
-      // await ApiService().updateUserProfile(userId, {
-      //   'nickname': _nickNameController.text,
-      //   'gender': _selectedGender,
-      //   'country': _selectedCountry,
-      //   'language': _selectedLanguage,
-      //   'timezone': _selectedTimeZone,
-      // });
+      if (_nickNameController.text.isNotEmpty) {
+        profileData['nickname'] = _nickNameController.text;
+      }
+      if (_selectedGender != null) {
+        profileData['gender'] = _selectedGender;
+      }
+      if (_selectedCountry != null) {
+        profileData['country'] = _selectedCountry;
+      }
+      if (_selectedLanguage != null) {
+        profileData['language'] = _selectedLanguage;
+      }
+      if (_selectedTimeZone != null) {
+        profileData['timezone'] = _selectedTimeZone;
+      }
+
+      // Only make API call if there's data to save
+      if (profileData.isNotEmpty) {
+        await ApiService().updateUserProfileInfo(userId, profileData);
+        print('✅ Profile info saved to database successfully');
+      }
     } catch (e) {
-      print('Error saving additional profile info: $e');
+      print('❌ Error saving additional profile info: $e');
+      rethrow; // Re-throw to show error to user
     }
   }
 

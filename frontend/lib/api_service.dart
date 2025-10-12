@@ -138,6 +138,21 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> fetchOrderDetails(int orderId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/orders/$orderId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to fetch order details: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching order details: $e');
+      throw Exception('Failed to fetch order details: $e');
+    }
+  }
+
   Future<List<MenuItem>> fetchFavorites(String userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/users/$userId/favorites'),
@@ -274,7 +289,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List<dynamic> recommendations = data['recommendations'] ?? [];
-        
+
         return recommendations.map((item) => MenuItem.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load recommendations');
@@ -303,7 +318,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List<dynamic> matches = data['matches'] ?? [];
-        
+
         // Convert the matches to MenuItem objects
         return matches.map((match) {
           // Create a MenuItem from the match data
@@ -403,6 +418,29 @@ class ApiService {
     } catch (e) {
       print('❌ Upload failed: $e');
       return null;
+    }
+  }
+
+  Future<void> updateUserProfileInfo(
+      String userId, Map<String, dynamic> profileData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(profileData),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Profile info updated successfully');
+      } else {
+        print('❌ Failed to update profile info: ${response.body}');
+        throw Exception('Failed to update profile info');
+      }
+    } catch (e) {
+      print('❌ Error updating profile info: $e');
+      rethrow;
     }
   }
 

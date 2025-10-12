@@ -914,13 +914,28 @@ def get_all_orders():
 
 @app.route('/orders/<int:order_id>/items', methods=['GET'])
 def get_order_items(order_id):
-    """Returns all items for a specific order."""
+    """Returns all items for a specific order with menu item details."""
     try:
-        api_url = f"{SUPABASE_URL}/rest/v1/order_items?order_id=eq.{order_id}"
+        # Join order_items with menu_items to get the actual food names and details
+        api_url = f"{SUPABASE_URL}/rest/v1/order_items?select=quantity,price_at_order,menu_items(name,description,image_url,price)&order_id=eq.{order_id}"
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
         
-        response_data = jsonify(response.json())
+        raw_items = response.json() or []
+        items = []
+        
+        for item in raw_items:
+            menu_item = item.get('menu_items') or {}
+            items.append({
+                'quantity': item.get('quantity', 1),
+                'price': item.get('price_at_order', 0),
+                'name': menu_item.get('name', 'Unknown Item'),
+                'description': menu_item.get('description', ''),
+                'image_url': menu_item.get('image_url', ''),
+                'original_price': menu_item.get('price', 0)
+            })
+        
+        response_data = jsonify(items)
         response_data.headers.add('Access-Control-Allow-Origin', '*')
         return response_data, 200
     except Exception as e:
@@ -1091,6 +1106,40 @@ def upload_profile_picture(user_id):
 
     except Exception as e:
         print(f"An error occurred in upload_profile_picture: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/users/<string:user_id>/profile', methods=['PUT'])
+def update_user_profile_info(user_id):
+    try:
+        data = request.get_json()
+        
+        # Extract the additional profile fields
+        profile_data = {}
+        if 'nickname' in data:
+            profile_data['nickname'] = data['nickname']
+        if 'gender' in data:
+            profile_data['gender'] = data['gender']
+        if 'country' in data:
+            profile_data['country'] = data['country']
+        if 'language' in data:
+            profile_data['language'] = data['language']
+        if 'timezone' in data:
+            profile_data['timezone'] = data['timezone']
+        
+        if not profile_data:
+            return jsonify({"error": "No profile data provided"}), 400
+        
+        # Update the user's profile information
+        result = supabase.table('users').update(profile_data).eq('id', user_id).execute()
+        
+        if result.data:
+            return jsonify({"message": "Profile updated successfully", "data": result.data[0]}), 200
+        else:
+            return jsonify({"error": "Failed to update profile"}), 500
+            
+    except Exception as e:
+        print(f"An error occurred in update_user_profile_info: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 
