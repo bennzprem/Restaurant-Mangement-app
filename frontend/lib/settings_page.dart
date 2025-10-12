@@ -90,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading settings: $e'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -110,14 +110,14 @@ class _SettingsPageState extends State<SettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Settings saved successfully!'),
-          backgroundColor: AppTheme.successColor,
+          backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error saving settings: $e'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -157,7 +157,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.customBlack,
+                  color: Colors.black,
                 ),
               ),
               ElevatedButton.icon(
@@ -171,8 +171,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     : const Icon(Icons.save),
                 label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: AppTheme.white,
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -398,7 +398,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildSectionCard(
             title: 'Danger Zone',
             icon: Icons.warning,
-            color: AppTheme.errorColor,
+            color: Colors.red,
             children: [
               _buildDangerButton(
                 title: 'Reset All Settings',
@@ -431,11 +431,11 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -449,12 +449,12 @@ class _SettingsPageState extends State<SettingsPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (color ?? AppTheme.primaryColor).withOpacity(0.1),
+                  color: (color ?? Theme.of(context).primaryColor).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
-                  color: color ?? AppTheme.primaryColor,
+                  color: color ?? Theme.of(context).primaryColor,
                   size: 20,
                 ),
               ),
@@ -464,7 +464,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.customBlack,
+                  color: Colors.black,
                 ),
               ),
             ],
@@ -487,17 +487,17 @@ class _SettingsPageState extends State<SettingsPage> {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor),
+        prefixIcon: Icon(icon, color: Theme.of(context).primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.grey.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
         ),
         filled: true,
-        fillColor: AppTheme.customLightGrey.withOpacity(0.3),
+        fillColor: Colors.grey[100]!.withOpacity(0.3),
       ),
     );
   }
@@ -510,22 +510,22 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
   }) {
     return ListTile(
-      leading: Icon(icon, color: AppTheme.primaryColor),
+      leading: Icon(icon, color: Theme.of(context).primaryColor),
       title: Text(
         title,
         style: const TextStyle(
           fontWeight: FontWeight.w600,
-          color: AppTheme.customBlack,
+          color: Colors.black,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: AppTheme.customGrey),
+        style: TextStyle(color: Colors.grey[600]!),
       ),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppTheme.primaryColor,
+        activeColor: Theme.of(context).primaryColor,
       ),
       contentPadding: EdgeInsets.zero,
     );
@@ -542,12 +542,12 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
   }) {
     return ListTile(
-      leading: Icon(icon, color: AppTheme.primaryColor),
+      leading: Icon(icon, color: Theme.of(context).primaryColor),
       title: Text(
         title,
         style: const TextStyle(
           fontWeight: FontWeight.w600,
-          color: AppTheme.customBlack,
+          color: Colors.black,
         ),
       ),
       subtitle: Column(
@@ -555,7 +555,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Text(
             subtitle,
-            style: const TextStyle(color: AppTheme.customGrey),
+            style: TextStyle(color: Colors.grey[600]!),
           ),
           const SizedBox(height: 8),
           Slider(
@@ -564,13 +564,13 @@ class _SettingsPageState extends State<SettingsPage> {
             max: max,
             divisions: divisions,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryColor,
+            activeColor: Theme.of(context).primaryColor,
           ),
           Text(
             '${value.toStringAsFixed(value % 1 == 0 ? 0 : 1)}${title.contains('Radius') ? ' km' : title.contains('Fee') || title.contains('Amount') ? ' ₹' : title.contains('Time') ? ' min' : ''}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).primaryColor,
             ),
           ),
         ],
@@ -588,17 +588,17 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
   }) {
     return ListTile(
-      leading: Icon(icon, color: AppTheme.primaryColor),
+      leading: Icon(icon, color: Theme.of(context).primaryColor),
       title: Text(
         title,
         style: const TextStyle(
           fontWeight: FontWeight.w600,
-          color: AppTheme.customBlack,
+          color: Colors.black,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: AppTheme.customGrey),
+        style: TextStyle(color: Colors.grey[600]!),
       ),
       trailing: DropdownButton<String>(
         value: value,
@@ -626,14 +626,14 @@ class _SettingsPageState extends State<SettingsPage> {
               day,
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
-                color: AppTheme.customBlack,
+                color: Colors.black,
               ),
             ),
           ),
           Switch(
             value: _isOpen[day] ?? true,
             onChanged: (value) => setState(() => _isOpen[day] = value),
-            activeColor: AppTheme.primaryColor,
+            activeColor: Theme.of(context).primaryColor,
           ),
           const SizedBox(width: 16),
           if (_isOpen[day] ?? true) ...[
@@ -644,18 +644,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.grey.withOpacity(0.3)),
+                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     _formatTime(_openingHours[day]!),
-                    style: const TextStyle(color: AppTheme.customBlack),
+                    style: const TextStyle(color: Colors.black),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            const Text('to', style: TextStyle(color: AppTheme.customGrey)),
+            Text('to', style: TextStyle(color: Colors.grey[600]!)),
             const SizedBox(width: 8),
             Expanded(
               child: InkWell(
@@ -664,12 +664,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.grey.withOpacity(0.3)),
+                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     _formatTime(_closingHours[day]!),
-                    style: const TextStyle(color: AppTheme.customBlack),
+                    style: const TextStyle(color: Colors.black),
                   ),
                 ),
               ),
@@ -679,7 +679,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Text(
                 'Closed',
                 style: TextStyle(
-                  color: AppTheme.errorColor,
+                  color: Colors.red,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -700,16 +700,16 @@ class _SettingsPageState extends State<SettingsPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.1),
+        color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
       ),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
-            Icon(icon, color: AppTheme.errorColor),
+            Icon(icon, color: Colors.red),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -719,13 +719,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.errorColor,
+                      color: Colors.red,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppTheme.customGrey,
+                    style: TextStyle(
+                      color: Colors.grey[600]!,
                       fontSize: 12,
                     ),
                   ),
@@ -733,7 +733,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const Icon(Icons.arrow_forward_ios,
-                color: AppTheme.errorColor, size: 16),
+                color: Colors.red, size: 16),
           ],
         ),
       ),
@@ -779,8 +779,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _resetSettings();
             },
             style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
-            child: const Text('Reset', style: TextStyle(color: AppTheme.white)),
+                ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Reset', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -805,9 +805,9 @@ class _SettingsPageState extends State<SettingsPage> {
               // Implement delete functionality
             },
             style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
+                ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child:
-                const Text('Delete', style: TextStyle(color: AppTheme.white)),
+                const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -837,7 +837,7 @@ class _SettingsPageState extends State<SettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Settings reset to default values'),
-        backgroundColor: AppTheme.successColor,
+        backgroundColor: Colors.green,
       ),
     );
   }

@@ -183,7 +183,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                       onChanged: (newValue) {
                         setState(() => _addCake = newValue!);
                       },
-                      activeColor: AppTheme.accentColor,
+                      activeColor: Theme.of(context).custom.accentColor,
                       contentPadding: EdgeInsets.zero,
                     ),
                 ],
@@ -198,7 +198,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentColor,
+              backgroundColor: Theme.of(context).custom.accentColor,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: _isLoading ? null : _confirmAndBook,

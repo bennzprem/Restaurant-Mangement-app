@@ -169,12 +169,12 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withOpacity(0.1),
+                                    color: Theme.of(context).primaryColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(
                                     Icons.restaurant_outlined,
-                                    color: AppTheme.primaryColor,
+                                    color: Theme.of(context).primaryColor,
                                     size: 24,
                                   ),
                                 ),
@@ -188,7 +188,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
                                         style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white : AppTheme.darkTextColor,
+                                          color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -196,7 +196,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
                                         'Choose your preferred method to start ordering',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: isDark ? Colors.grey[400] : AppTheme.lightTextColor,
+                                          color: isDark ? Colors.grey[400] : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
                                         ),
                                       ),
                                     ],
@@ -258,13 +258,13 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               Icons.qr_code_scanner,
               size: 40,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).primaryColor,
             ),
           ),
           const SizedBox(height: 20),
@@ -273,7 +273,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppTheme.darkTextColor,
+              color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
             ),
           ),
           const SizedBox(height: 8),
@@ -282,7 +282,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? Colors.grey[400] : AppTheme.lightTextColor,
+              color: isDark ? Colors.grey[400] : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
             ),
           ),
           const SizedBox(height: 24),
@@ -291,7 +291,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             child: ElevatedButton(
               onPressed: _scanQrCode,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -336,12 +336,12 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.keyboard_outlined,
-                  color: AppTheme.accentColor,
+                  color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
               ),
@@ -351,7 +351,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppTheme.darkTextColor,
+                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
                 ),
               ),
             ],
@@ -362,7 +362,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey[300] : AppTheme.lightTextColor,
+              color: isDark ? Colors.grey[300] : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
             ),
           ),
           const SizedBox(height: 8),
@@ -373,7 +373,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
               fontSize: 18,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
-              color: isDark ? Colors.white : AppTheme.darkTextColor,
+              color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
             ),
             decoration: InputDecoration(
               hintText: 'E.G., TBL000',
@@ -398,7 +398,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).primaryColor,
                   width: 2,
                 ),
               ),
@@ -411,7 +411,7 @@ class _OrderFromTablePageState extends State<OrderFromTablePage> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _validateCodeAndProceed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(

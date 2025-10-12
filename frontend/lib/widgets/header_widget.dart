@@ -311,6 +311,7 @@ class HeaderWidget extends StatelessWidget {
                     builder: (context, auth, child) {
                       // This logic now handles both logged-in and logged-out states
                       bool isLoggedIn = auth.isLoggedIn;
+                      bool isOnSignupPage = active == HeaderActive.signup;
                       IconData iconData = isLoggedIn
                           ? Icons.person_outline
                           : Icons.person_add_alt_1_rounded;
@@ -326,13 +327,15 @@ class HeaderWidget extends StatelessWidget {
 
                       return Container(
                         decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
+                          color: isOnSignupPage 
+                              ? Theme.of(context).primaryColor.withOpacity(0.2)
+                              : (themeProvider.isDarkMode
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color: Theme.of(context).primaryColor,
-                            width: 2,
+                            width: isOnSignupPage ? 3 : 2,
                           ),
                         ),
                         child: IconButton(
@@ -390,7 +393,7 @@ class _DesktopNavState extends State<_DesktopNav>
     super.initState();
     _activeIndex =
         _navItems.indexWhere((item) => item['active'] == widget.active);
-    if (_activeIndex == -1) _activeIndex = 0;
+    if (_activeIndex == -1) _activeIndex = -1; // No active navigation item
 
     _triangleController = AnimationController(
       vsync: this,
@@ -412,9 +415,11 @@ class _DesktopNavState extends State<_DesktopNav>
     // Calculate item positions after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _calculatePositions();
-      _moveLine(_activeIndex, isInitial: true);
-      _triangleController.forward(
-          from: 1.0); // Show triangle in final position initially
+      if (_activeIndex >= 0) {
+        _moveLine(_activeIndex, isInitial: true);
+        _triangleController.forward(
+            from: 1.0); // Show triangle in final position initially
+      }
     });
   }
 
@@ -449,7 +454,7 @@ class _DesktopNavState extends State<_DesktopNav>
         index >= _rects.length ||
         _rects[index] == Rect.zero) {
       // Hide the line if the mouse leaves the area
-      if (_hoverIndex == null) {
+      if (_hoverIndex == null && _activeIndex >= 0) {
         final activeRect = _rects[_activeIndex];
         setState(() {
           _lineLeft = activeRect.left;
@@ -501,7 +506,9 @@ class _DesktopNavState extends State<_DesktopNav>
         // Recalculate positions if the screen is resized
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _calculatePositions();
-          _moveLine(_hoverIndex ?? _activeIndex, isInitial: true);
+          if (_activeIndex >= 0) {
+            _moveLine(_hoverIndex ?? _activeIndex, isInitial: true);
+          }
         });
 
         return SizedBox(
@@ -590,7 +597,7 @@ class _DesktopNavState extends State<_DesktopNav>
               ),
 
               // 4. The animated triangle indicator below the active item
-              if (_rects[_activeIndex] != Rect.zero)
+              if (_activeIndex >= 0 && _rects[_activeIndex] != Rect.zero)
                 AnimatedBuilder(
                   animation: _triangleAnimation,
                   builder: (context, child) {

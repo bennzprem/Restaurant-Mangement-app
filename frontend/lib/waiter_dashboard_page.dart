@@ -28,7 +28,7 @@ class WaiterDashboardPage extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Access denied. Waiter role required.'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       });
@@ -38,7 +38,7 @@ class WaiterDashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Waiter Dashboard'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -146,7 +146,7 @@ class _ActionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -161,7 +161,7 @@ class _ActionChip extends StatelessWidget {
           children: [
             Stack(
               children: [
-                Icon(icon, color: AppTheme.primaryColor),
+                Icon(icon, color: Theme.of(context).primaryColor),
                 if (badge != null)
                   Positioned(
                     right: -6,
@@ -169,7 +169,7 @@ class _ActionChip extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppTheme.errorColor,
+                        color: Colors.red,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       constraints: const BoxConstraints(

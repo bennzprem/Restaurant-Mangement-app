@@ -69,9 +69,9 @@ class _WaiterOrderStatusPageState extends State<WaiterOrderStatusPage> {
       case 'Preparing':
         return Colors.orange;
       case 'Ready':
-        return AppTheme.successColor;
+        return Colors.green;
       case 'Completed':
-        return AppTheme.primaryColor;
+        return Theme.of(context).primaryColor;
       default:
         return Colors.grey;
     }
@@ -95,7 +95,7 @@ class _WaiterOrderStatusPageState extends State<WaiterOrderStatusPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.orderId} Status'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
       ),
       body: Center(
         child: Column(

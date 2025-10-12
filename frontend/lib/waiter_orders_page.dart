@@ -56,7 +56,7 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load orders: $e'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -98,9 +98,9 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
       case 'Preparing':
         return Colors.orange;
       case 'Ready':
-        return AppTheme.successColor;
+        return Colors.green;
       case 'Completed':
-        return AppTheme.primaryColor;
+        return Theme.of(context).primaryColor;
       case 'Paid':
         return Colors.green;
       default:
@@ -113,7 +113,7 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Table Orders'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh))
         ],
@@ -212,7 +212,7 @@ class _OrderTileState extends State<_OrderTile> {
             const SnackBar(
               content:
                   Text('Cash payment received! Order completed. Table freed.'),
-              backgroundColor: AppTheme.successColor,
+              backgroundColor: Colors.green,
             ),
           );
         }
@@ -222,7 +222,7 @@ class _OrderTileState extends State<_OrderTile> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              backgroundColor: AppTheme.errorColor,
+              backgroundColor: Colors.red,
               content: Text('Payment failed: $e')),
         );
       }
@@ -287,7 +287,7 @@ class _OrderTileState extends State<_OrderTile> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.credit_card),
@@ -453,7 +453,7 @@ class _OrderTileState extends State<_OrderTile> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppTheme.successColor,
+                      color: Colors.green,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Text(
@@ -561,7 +561,7 @@ class _OrderTileState extends State<_OrderTile> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         (o.status == 'Ready' || o.status == 'Completed')
-                            ? AppTheme.primaryColor
+                            ? Theme.of(context).primaryColor
                             : Colors.grey,
                     foregroundColor: Colors.white,
                   ),

@@ -93,223 +93,65 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final avatarUrl = user?.avatarUrl; // This comes from your AppUser model
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
-      body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Side Navigation (optional, for visual context)
-            _buildSideNav(),
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Theme.of(context).backgroundColor,
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        backgroundColor: Theme.of(context).surfaceColor,
+        elevation: 1,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24.0),
+        children: [
+          // --- Profile Header ---
+          Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                // THIS IS THE NEW PROFILE PICTURE WIDGET
+                Stack(
                   children: [
-                    _buildHeader(userName),
-                    const SizedBox(height: 30),
-                    _buildProfileCard(userName, userEmail, avatarUrl),
-                    const SizedBox(height: 30),
-                    _buildFormSection(),
-                    const SizedBox(height: 30),
-                    _buildEmailAddressSection(userEmail),
-                    const SizedBox(height: 30),
-                    _buildDashboardSection(),
-                    const SizedBox(height: 30),
-                    _buildSettingsSection(authProvider),
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Theme.of(context).primaryLight,
+                      // Display the uploaded image if it exists
+                      backgroundImage:
+                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null
+                          ? Text(
+                              userName.isNotEmpty
+                                  ? userName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                color: Theme.of(context).darkTextColor,
+                              ),
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Theme.of(context).darkTextColor,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onPressed: _pickAndUploadImage,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // A simple representation of the side navigation bar
-  Widget _buildSideNav() {
-    return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(vertical: 30),
-      color: Colors.white,
-      child: Column(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.dashboard_rounded, color: Color(0xFF4A5568)),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 20),
-          IconButton(
-            icon:
-                const Icon(Icons.access_time_rounded, color: Color(0xFFCBD5E0)),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 20),
-          IconButton(
-            icon: const Icon(Icons.person_outline_rounded,
-                color: Color(0xFF4A5568)),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 20),
-          IconButton(
-            icon: const Icon(Icons.mail_outline_rounded,
-                color: Color(0xFFCBD5E0)),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 20),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFFCBD5E0)),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(String userName) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome, $userName",
-              style: GoogleFonts.inter(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF2D3748),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              DateTime.now().toString().split(' ')[0], // Current date
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                  )
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.search, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Search",
-                    style: GoogleFonts.inter(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Icon(Icons.notifications_none_outlined, color: Colors.grey),
-            const SizedBox(width: 16),
-            const CircleAvatar(
-              backgroundImage: NetworkImage(
-                  'https://placehold.co/100x100/A8D5E2/333333?text=A'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileCard(
-      String userName, String userEmail, String? avatarUrl) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFE0F7FA),
-            Color(0xFFFFF9C4),
-            Color(0xFFFFE0B2),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: const Color(0xFF4A90E2),
-                backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl == null
-                    ? Text(
-                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                        style: GoogleFonts.inter(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _pickAndUploadImage,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4A90E2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userName,
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2D3748),
-                  ),
-                ),
+                const SizedBox(height: 16),
+                Text(userName, style: Theme.of(context).textTheme.displayLarge),
                 const SizedBox(height: 4),
                 Text(
                   userEmail,
@@ -716,7 +558,21 @@ class _MyProfilePageState extends State<MyProfilePage> {
     );
   }
 
-  // Helper widget for each clickable option
+  // Helper widget for section titles (Logic is unchanged)
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).lightTextColor,
+            ),
+      ),
+    );
+  }
+
+  // Helper widget for each clickable option (Logic is unchanged)
   Widget _buildProfileOption(
     BuildContext context, {
     required IconData icon,
@@ -730,15 +586,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF4A90E2)),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF2D3748),
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFF4A90E2)),
+        leading: Icon(icon, color: Theme.of(context).darkTextColor),
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
+        trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
     );

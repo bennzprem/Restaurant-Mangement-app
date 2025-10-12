@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:provider/provider.dart';
+import 'package:restaurant_app/auth_provider.dart';
 
 class ChatBotWidget extends StatefulWidget {
   const ChatBotWidget({super.key});
@@ -42,11 +44,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
     );
 
     // Add welcome message
-    _addMessage(ChatMessage(
-      text: "Hello! I'm your restaurant assistant. How can I help you today?",
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
+    _addWelcomeMessage();
   }
 
   @override
@@ -55,6 +53,40 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _addWelcomeMessage() {
+    final authProvider = context.read<AuthProvider>();
+    final isLoggedIn = authProvider.isLoggedIn;
+    final userName = authProvider.user?.name;
+
+    // Get current time for greeting
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    String timeGreeting;
+    if (hour < 12) {
+      timeGreeting = "Good morning";
+    } else if (hour < 17) {
+      timeGreeting = "Good afternoon";
+    } else {
+      timeGreeting = "Good evening";
+    }
+
+    String welcomeMessage;
+    if (isLoggedIn && userName != null && userName.isNotEmpty) {
+      welcomeMessage =
+          "✨ $timeGreeting, $userName! I'm ByteBot — your friendly dining guide. Tap the chat or say 'Hi ByteBot' to get started.";
+    } else {
+      welcomeMessage =
+          "✨ $timeGreeting! I'm ByteBot — your friendly dining guide. Tap the chat or say 'Hi ByteBot' to get started.";
+    }
+
+    _addMessage(ChatMessage(
+      text: welcomeMessage,
+      isUser: false,
+      timestamp: DateTime.now(),
+    ));
   }
 
   void _toggleChat() {
@@ -132,9 +164,9 @@ class _ChatBotWidgetState extends State<ChatBotWidget>
 
   Future<String> _sendToGeminiAI(String message) async {
     try {
-      // Create context for restaurant assistant
+      // Create context for ByteBot (restaurant assistant)
       final prompt = '''
-You are a helpful restaurant assistant chatbot. You help customers with:
+You are ByteBot, a helpful restaurant assistant chatbot. You help customers with:
 - Menu inquiries
 - Reservation questions
 - Order status
@@ -227,7 +259,7 @@ Please provide a helpful, friendly response focused on restaurant services.
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Restaurant Assistant',
+                                  'ByteBot',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -347,15 +379,18 @@ Please provide a helpful, friendly response focused on restaurant services.
         Positioned(
           bottom: 20,
           right: 20,
-          child: FloatingActionButton(
-            onPressed: _toggleChat,
-            backgroundColor: Colors.blue,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                _isOpen ? Icons.close : Icons.chat,
-                key: ValueKey(_isOpen),
-                color: Colors.white,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: FloatingActionButton(
+              onPressed: _toggleChat,
+              backgroundColor: Colors.blue,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  _isOpen ? Icons.close : Icons.chat,
+                  key: ValueKey(_isOpen),
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

@@ -8,6 +8,90 @@ import 'package:flutter/material.dart';
 *
 */
 
+// Custom theme extension to add missing theme properties
+@immutable
+class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
+  const CustomThemeExtension({
+    required this.accentColor,
+    required this.primaryLight,
+    required this.successColor,
+    required this.errorColor,
+    required this.warningColor,
+    required this.white,
+    required this.black,
+    required this.transparent,
+    required this.customBlack,
+    required this.customGrey,
+    required this.customLightGrey,
+  });
+
+  final Color accentColor;
+  final Color primaryLight;
+  final Color successColor;
+  final Color errorColor;
+  final Color warningColor;
+  final Color white;
+  final Color black;
+  final Color transparent;
+  final Color customBlack;
+  final Color customGrey;
+  final Color customLightGrey;
+
+  @override
+  CustomThemeExtension copyWith({
+    Color? accentColor,
+    Color? primaryLight,
+    Color? successColor,
+    Color? errorColor,
+    Color? warningColor,
+    Color? white,
+    Color? black,
+    Color? transparent,
+    Color? customBlack,
+    Color? customGrey,
+    Color? customLightGrey,
+  }) {
+    return CustomThemeExtension(
+      accentColor: accentColor ?? this.accentColor,
+      primaryLight: primaryLight ?? this.primaryLight,
+      successColor: successColor ?? this.successColor,
+      errorColor: errorColor ?? this.errorColor,
+      warningColor: warningColor ?? this.warningColor,
+      white: white ?? this.white,
+      black: black ?? this.black,
+      transparent: transparent ?? this.transparent,
+      customBlack: customBlack ?? this.customBlack,
+      customGrey: customGrey ?? this.customGrey,
+      customLightGrey: customLightGrey ?? this.customLightGrey,
+    );
+  }
+
+  @override
+  CustomThemeExtension lerp(ThemeExtension<CustomThemeExtension>? other, double t) {
+    if (other is! CustomThemeExtension) {
+      return this;
+    }
+    return CustomThemeExtension(
+      accentColor: Color.lerp(accentColor, other.accentColor, t)!,
+      primaryLight: Color.lerp(primaryLight, other.primaryLight, t)!,
+      successColor: Color.lerp(successColor, other.successColor, t)!,
+      errorColor: Color.lerp(errorColor, other.errorColor, t)!,
+      warningColor: Color.lerp(warningColor, other.warningColor, t)!,
+      white: Color.lerp(white, other.white, t)!,
+      black: Color.lerp(black, other.black, t)!,
+      transparent: Color.lerp(transparent, other.transparent, t)!,
+      customBlack: Color.lerp(customBlack, other.customBlack, t)!,
+      customGrey: Color.lerp(customGrey, other.customGrey, t)!,
+      customLightGrey: Color.lerp(customLightGrey, other.customLightGrey, t)!,
+    );
+  }
+}
+
+// Helper extension to access custom theme properties
+extension CustomTheme on ThemeData {
+  CustomThemeExtension get custom => extension<CustomThemeExtension>()!;
+}
+
 /*BASIC ONE [THE DEFAULT] 
 // lib/theme.dart 
 import 'package:flutter/material.dart';
@@ -172,6 +256,23 @@ class AppTheme {
           // textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
       ),
+    ).copyWith(
+      // Add custom theme extensions
+      extensions: <ThemeExtension<dynamic>>[
+        CustomThemeExtension(
+          accentColor: accentColor,
+          primaryLight: primaryLight,
+          successColor: successColor,
+          errorColor: errorColor,
+          warningColor: warningColor,
+          white: white,
+          black: black,
+          transparent: transparent,
+          customBlack: customBlack,
+          customGrey: customGrey,
+          customLightGrey: customLightGrey,
+        ),
+      ],
     );
   }
 }

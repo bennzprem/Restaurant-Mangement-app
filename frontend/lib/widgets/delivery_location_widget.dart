@@ -19,7 +19,7 @@ class DeliveryLocationWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: locationProvider.isLocationSet
-                  ? AppTheme.primaryColor.withOpacity(0.3)
+                  ? Theme.of(context).primaryColor.withOpacity(0.3)
                   : Colors.grey.withOpacity(0.3),
               width: 1.0,
             ),
@@ -44,14 +44,14 @@ class DeliveryLocationWidget extends StatelessWidget {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: locationProvider.isLocationSet
-                            ? AppTheme.primaryColor.withOpacity(0.1)
+                            ? Theme.of(context).primaryColor.withOpacity(0.1)
                             : Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
                         Icons.location_on,
                         color: locationProvider.isLocationSet
-                            ? AppTheme.primaryColor
+                            ? Theme.of(context).primaryColor
                             : Colors.grey[600],
                         size: 16,
                       ),

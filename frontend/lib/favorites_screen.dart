@@ -41,8 +41,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Consumer<FavoritesProvider>(
               builder: (context, provider, child) {
                 if (provider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                  return Center(
+                    child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
                   );
                 }
 
@@ -53,7 +53,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       style: TextStyle(
                         color: Theme.of(context).brightness == Brightness.dark 
                             ? Colors.red[300] 
-                            : AppTheme.errorColor, 
+                            : Colors.red, 
                         fontSize: 18
                       ),
                     ),
@@ -69,7 +69,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         fontSize: 18, 
                         color: Theme.of(context).brightness == Brightness.dark 
                             ? Colors.grey[400] 
-                            : AppTheme.grey
+                            : Colors.grey
                       ),
                     ),
                   );
@@ -100,11 +100,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : AppTheme.white,
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : AppTheme.black.withOpacity(0.08),
+            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -131,11 +131,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 120,
                   width: 120,
-                  color: AppTheme.primaryLight,
-                  child: const Icon(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(
                     Icons.restaurant,
                     size: 40,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
               ),
@@ -159,7 +159,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppTheme.customBlack,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -206,7 +206,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     item.description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? Colors.grey[400] : AppTheme.customGrey,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600]!,
                       height: 1.3,
                     ),
                     maxLines: 2,
@@ -222,10 +222,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       // Price
                       Text(
                         '₹${item.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                          color: Theme.of(context).primaryColor,
                         ),
                       ),
 
@@ -237,13 +237,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.grey[700] : AppTheme.customLightGrey,
+                                color: isDark ? Colors.grey[700] : Colors.grey[100]!,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 'Unavailable',
                                 style: TextStyle(
-                                  color: isDark ? Colors.grey[400] : AppTheme.grey,
+                                  color: isDark ? Colors.grey[400] : Colors.grey,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -258,8 +258,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   child: ElevatedButton(
                                     onPressed: () => cart.addItem(item),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.primaryColor,
-                                      foregroundColor: AppTheme.black,
+                                      backgroundColor: Theme.of(context).primaryColor,
+                                      foregroundColor: Colors.black,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -297,9 +297,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.primaryColor.withOpacity(0.2) : AppTheme.primaryColor.withOpacity(0.1),
+        color: isDark ? Theme.of(context).primaryColor.withOpacity(0.2) : Theme.of(context).primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryColor),
+        border: Border.all(color: Theme.of(context).primaryColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -307,7 +307,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.remove, size: 16, color: AppTheme.primaryColor),
+              icon: Icon(Icons.remove, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.removeSingleItem(item.id),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -320,14 +320,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppTheme.customBlack,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
           ),
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+              icon: Icon(Icons.add, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.addItem(item),
               splashRadius: 16,
               constraints: const BoxConstraints(),

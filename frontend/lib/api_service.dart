@@ -264,6 +264,72 @@ class ApiService {
     }
   }
 
+  Future<List<MenuItem>> getRecommendations(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/recommendations/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> recommendations = data['recommendations'] ?? [];
+        
+        return recommendations.map((item) => MenuItem.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load recommendations');
+      }
+    } catch (e) {
+      print('Error fetching recommendations: $e');
+      // Fallback to bestseller items if recommendation fails
+      final allMenuItems = await getAllMenuItems();
+      final bestsellers = allMenuItems
+          .where((item) => item.isBestseller == true)
+          .take(3)
+          .toList();
+      return bestsellers;
+    }
+  }
+
+  // AI-powered craving search using Groq LLM + Pinecone
+  Future<List<MenuItem>> findCraving(String craving) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/find_craving'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'craving': craving}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> matches = data['matches'] ?? [];
+        
+        // Convert the matches to MenuItem objects
+        return matches.map((match) {
+          // Create a MenuItem from the match data
+          return MenuItem(
+            id: match['id'],
+            name: match['name'],
+            description: match['description'],
+            price: (match['metadata']?['price'] ?? 0.0).toDouble(),
+            imageUrl: match['metadata']?['image_url'] ?? '',
+            isVegetarian: match['metadata']?['is_veg'] ?? false,
+            isBestseller: match['metadata']?['is_bestseller'] ?? false,
+            isAvailable: match['metadata']?['is_available'] ?? true,
+            categoryId: match['metadata']?['category_id'] ?? 1,
+            isVegan: false, // Not available in search results
+            isGlutenFree: false, // Not available in search results
+            containsNuts: false, // Not available in search results
+          );
+        }).toList();
+      } else {
+        throw Exception('Failed to search craving: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to search craving: $e');
+    }
+  }
+
   // In class ApiService...
   // In lib/api_service.dart...
   // In class ApiService...

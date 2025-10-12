@@ -31,7 +31,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.check_circle_outline,
-                  color: AppTheme.primaryColor, size: 100),
+                  color: Theme.of(context).primaryColor, size: 100),
               const SizedBox(height: 20),
               Text(
                 'Order Placed Successfully!',
@@ -49,7 +49,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator(
-                        color: AppTheme.primaryColor);
+                        color: Theme.of(context).primaryColor);
                   }
                   if (snapshot.hasError) {
                     return const Text('Could not fetch status.',
@@ -61,7 +61,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       style: const TextStyle(
                           color: Colors.white, fontWeight: FontWeight.bold),
                     ),
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: Theme.of(context).primaryColor,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   );

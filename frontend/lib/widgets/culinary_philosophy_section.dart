@@ -27,7 +27,7 @@ class CulinaryPhilosophySection extends StatelessWidget {
                 const TextSpan(text: "The "),
                 TextSpan(
                   text: "ByteEat Experience",
-                  style: TextStyle(color: AppTheme.primaryColor),
+                  style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
               ],
             ),
@@ -116,13 +116,13 @@ class __PhilosophyCardState extends State<_PhilosophyCard> {
             color: isDark ? const Color(0xFF1A1D21) : Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: _isHovered ? AppTheme.primaryColor : Colors.transparent,
+              color: _isHovered ? Theme.of(context).primaryColor : Colors.transparent,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: _isHovered 
-                  ? AppTheme.primaryColor.withOpacity(0.1) 
+                  ? Theme.of(context).primaryColor.withOpacity(0.1) 
                   : (isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.1)),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
@@ -131,7 +131,7 @@ class __PhilosophyCardState extends State<_PhilosophyCard> {
           ),
           child: Column(
             children: [
-              Icon(widget.icon, size: 48, color: AppTheme.primaryColor),
+              Icon(widget.icon, size: 48, color: Theme.of(context).primaryColor),
               const SizedBox(height: 24),
               Text(
                 widget.title,

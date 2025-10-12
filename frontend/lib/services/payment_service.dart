@@ -87,7 +87,7 @@ class PaymentService {
         },
         'theme': {
           'color':
-              '#${AppTheme.primaryColor.value.toRadixString(16).substring(2)}',
+              '#${Theme.of(context).primaryColor.value.toRadixString(16).substring(2)}',
         }
       };
 
@@ -108,7 +108,7 @@ class PaymentService {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment was cancelled or failed'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -120,7 +120,7 @@ class PaymentService {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Payment failed: ${e.toString()}'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Colors.red,
           ),
         );
       }
