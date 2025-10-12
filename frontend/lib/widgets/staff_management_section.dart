@@ -127,7 +127,7 @@ class _StaffManagementSectionState extends State<StaffManagementSection> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
+                          borderSide: BorderSide(
                               color: Theme.of(context).primaryColor, width: 2),
                         ),
                         filled: true,

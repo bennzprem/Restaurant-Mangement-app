@@ -494,7 +494,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Theme.of(context).primaryColor, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
         ),
         filled: true,
         fillColor: Colors.grey[100]!.withOpacity(0.3),
@@ -520,7 +520,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: Colors.grey[600]!),
+        style: TextStyle(color: Colors.grey[600]!),
       ),
       trailing: Switch(
         value: value,
@@ -555,7 +555,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Text(
             subtitle,
-            style: const TextStyle(color: Colors.grey[600]!),
+            style: TextStyle(color: Colors.grey[600]!),
           ),
           const SizedBox(height: 8),
           Slider(
@@ -568,7 +568,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           Text(
             '${value.toStringAsFixed(value % 1 == 0 ? 0 : 1)}${title.contains('Radius') ? ' km' : title.contains('Fee') || title.contains('Amount') ? ' ₹' : title.contains('Time') ? ' min' : ''}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Theme.of(context).primaryColor,
             ),
@@ -598,7 +598,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: Colors.grey[600]!),
+        style: TextStyle(color: Colors.grey[600]!),
       ),
       trailing: DropdownButton<String>(
         value: value,
@@ -655,7 +655,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text('to', style: TextStyle(color: Colors.grey[600]!)),
+            Text('to', style: TextStyle(color: Colors.grey[600]!)),
             const SizedBox(width: 8),
             Expanded(
               child: InkWell(
@@ -724,7 +724,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.grey[600]!,
                       fontSize: 12,
                     ),

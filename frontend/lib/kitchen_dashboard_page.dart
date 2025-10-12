@@ -138,7 +138,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
                   ),
                   child: Text(
                     order['status'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Theme.of(context).primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
@@ -200,7 +200,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
               children: [
                 Text(
                   'Total: ₹${order['total_amount'].toStringAsFixed(0)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).primaryColor,
@@ -303,7 +303,7 @@ class _KitchenDashboardPageState extends State<KitchenDashboardPage> {
               ),
               Text(
                 '₹${(item['price'] * item['quantity']).toStringAsFixed(0)}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

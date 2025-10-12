@@ -147,7 +147,7 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                               ),
                             ),
                             backgroundColor: booking.status == 'confirmed'
-                                ? Theme.of(context).accentColor
+                                ? Theme.of(context).custom.accentColor
                                 : Colors.grey,
                           ),
                         ],

@@ -92,7 +92,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       // Handle error silently for now
     }
   }
-
   Map<String, int> _getUserStats() {
     final totalUsers = _users.length;
     final adminUsers = _users.where((user) => user.role == 'admin').length;
@@ -102,7 +101,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final deliveryUsers =
         _users.where((user) => user.role == 'delivery').length;
     final kitchenUsers = _users.where((user) => user.role == 'kitchen').length;
-
     return {
       'total': totalUsers,
       'admin': adminUsers,
@@ -112,7 +110,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       'kitchen': kitchenUsers,
     };
   }
-
   Map<String, dynamic> _getOrderStats() {
     final totalOrders = _ordersCount > 0 ? _ordersCount : _orders.length;
     final completedOrders =

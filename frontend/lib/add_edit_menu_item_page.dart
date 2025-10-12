@@ -101,7 +101,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading categories: $e'),
-          backgroundColor: Theme.of(context).errorColor,
+          backgroundColor: Theme.of(context).custom.errorColor,
         ),
       );
     }
@@ -130,10 +130,10 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).customBlack,
+            color: Theme.of(context).custom.customBlack,
           ),
         ),
       ],
@@ -152,11 +152,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).white,
+        color: Theme.of(context).custom.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).black.withOpacity(0.05),
+            color: Theme.of(context).custom.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -188,11 +188,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Theme.of(context).white,
+          fillColor: Theme.of(context).custom.white,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           labelStyle: TextStyle(
-            color: Theme.of(context).customGrey,
+            color: Theme.of(context).custom.customGrey,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -231,17 +231,17 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).customBlack,
+                    color: Theme.of(context).custom.customBlack,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Theme.of(context).customGrey,
+                    color: Theme.of(context).custom.customGrey,
                   ),
                 ),
               ],
@@ -264,7 +264,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
     return Container(
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: Theme.of(context).customLightGrey,
+      color: Theme.of(context).custom.customLightGrey,
     );
   }
 
@@ -275,9 +275,9 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please select a category'),
-          backgroundColor: Theme.of(context).errorColor,
+          backgroundColor: Theme.of(context).custom.errorColor,
         ),
       );
       return;
@@ -324,7 +324,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
           content: Text(widget.menuItem != null
               ? 'Menu item updated successfully!'
               : 'Menu item added successfully!'),
-          backgroundColor: Theme.of(context).successColor,
+          backgroundColor: Theme.of(context).custom.successColor,
         ),
       );
 
@@ -337,7 +337,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: Theme.of(context).errorColor,
+          backgroundColor: Theme.of(context).custom.errorColor,
         ),
       );
     }
@@ -346,7 +346,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).customLightGrey,
+      backgroundColor: Theme.of(context).custom.customLightGrey,
       appBar: AppBar(
         title: Text(
           widget.menuItem != null ? 'Edit Menu Item' : 'Add New Menu Item',
@@ -355,15 +355,15 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
             fontSize: 20,
           ),
         ),
-        backgroundColor: Theme.of(context).white,
-        foregroundColor: Theme.of(context).customBlack,
+        backgroundColor: Theme.of(context).custom.white,
+        foregroundColor: Theme.of(context).custom.customBlack,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).customLightGrey,
+              color: Theme.of(context).custom.customLightGrey,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.arrow_back_ios, size: 18),
@@ -388,8 +388,8 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Theme.of(context).white,
-                    Theme.of(context).customLightGrey,
+                    Theme.of(context).custom.white,
+                    Theme.of(context).custom.customLightGrey,
                   ],
                 ),
               ),
@@ -407,7 +407,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                           gradient: LinearGradient(
                             colors: [
                               Theme.of(context).primaryColor.withOpacity(0.1),
-                              Theme.of(context).customLightGrey,
+                              Theme.of(context).custom.customLightGrey,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
@@ -598,11 +598,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).white,
+                          color: Theme.of(context).custom.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).black.withOpacity(0.05),
+                              color: Theme.of(context).custom.black.withOpacity(0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -614,15 +614,15 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: _isAvailable
-                                    ? Theme.of(context).successColor.withOpacity(0.1)
-                                    : Theme.of(context).errorColor.withOpacity(0.1),
+                                    ? Theme.of(context).custom.successColor.withOpacity(0.1)
+                                    : Theme.of(context).custom.errorColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
                                 _isAvailable
                                     ? Icons.check_circle
                                     : Icons.cancel,
-                                color: _isAvailable ? Theme.of(context).successColor : Theme.of(context).errorColor,
+                                color: _isAvailable ? Theme.of(context).custom.successColor : Theme.of(context).custom.errorColor,
                                 size: 24,
                               ),
                             ),
@@ -633,10 +633,10 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                                 children: [
                                   Text(
                                     'Available for Order',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).customBlack,
+                                      color: Theme.of(context).custom.customBlack,
                                     ),
                                   ),
                                   Text(
@@ -645,7 +645,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                                         : 'Item is currently unavailable',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Theme.of(context).customGrey,
+                                      color: Theme.of(context).custom.customGrey,
                                     ),
                                   ),
                                 ],
@@ -659,12 +659,12 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                                 });
                               },
                               thumbColor: WidgetStateProperty.resolveWith(
-                                  (states) => Theme.of(context).white),
+                                  (states) => Theme.of(context).custom.white),
                                                              trackColor: WidgetStateProperty.resolveWith(
                                    (states) =>
                                        states.contains(WidgetState.selected)
-                                           ? Theme.of(context).successColor.withOpacity(0.5)
-                                           : Theme.of(context).customLightGrey),
+                                           ? Theme.of(context).custom.successColor.withOpacity(0.5)
+                                           : Theme.of(context).custom.customLightGrey),
                             ),
                           ],
                         ),
@@ -678,11 +678,11 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
 
                       Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).white,
+                          color: Theme.of(context).custom.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).black.withOpacity(0.05),
+                              color: Theme.of(context).custom.black.withOpacity(0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -710,7 +710,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                               title: 'Gluten-Free',
                               subtitle: 'Contains no gluten',
                               icon: Icons.grain,
-                              color: Theme.of(context).warningColor,
+                              color: Theme.of(context).custom.warningColor,
                               value: _isGlutenFree,
                               onChanged: (value) {
                                 setState(() {
@@ -725,7 +725,7 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                               title: 'Contains Nuts',
                               subtitle: 'May contain nuts or nut traces',
                               icon: Icons.warning,
-                              color: Theme.of(context).errorColor,
+                              color: Theme.of(context).custom.errorColor,
                               value: _containsNuts,
                               onChanged: (value) {
                                 setState(() {
@@ -764,9 +764,9 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                         child: ElevatedButton(
                           onPressed: _isSaving ? null : _saveMenuItem,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).transparent,
-                            foregroundColor: Theme.of(context).white,
-                            shadowColor: Theme.of(context).transparent,
+                            backgroundColor: Theme.of(context).custom.transparent,
+                            foregroundColor: Theme.of(context).custom.white,
+                            shadowColor: Theme.of(context).custom.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -775,14 +775,14 @@ class _AddEditMenuItemPageState extends State<AddEditMenuItemPage> {
                               ? Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const SizedBox(
+                                    SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).white),
+                                                Theme.of(context).custom.white),
                                       ),
                                     ),
                                     const SizedBox(width: 12),

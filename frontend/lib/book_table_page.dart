@@ -272,7 +272,7 @@ class _BookTablePageState extends State<BookTablePage>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const CircularProgressIndicator(
+                            CircularProgressIndicator(
                               valueColor: AlwaysStoppedAnimation<Color>(
                                   Theme.of(context).primaryColor),
                             ),

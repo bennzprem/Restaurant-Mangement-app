@@ -624,13 +624,13 @@ class _ServiceSelectionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 16, color: Colors.grey[600]!),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
             ],
           ),
         ),
@@ -840,7 +840,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
                   color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 24),
           if (_isLoading)
-            const Center(
+            Center(
               child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
             )
           else

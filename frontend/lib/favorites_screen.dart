@@ -41,7 +41,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Consumer<FavoritesProvider>(
               builder: (context, provider, child) {
                 if (provider.isLoading) {
-                  return const Center(
+                  return Center(
                     child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
                   );
                 }
@@ -132,7 +132,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   height: 120,
                   width: 120,
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  child: const Icon(
+                  child: Icon(
                     Icons.restaurant,
                     size: 40,
                     color: Theme.of(context).primaryColor,
@@ -222,7 +222,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       // Price
                       Text(
                         '₹${item.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).primaryColor,
@@ -307,7 +307,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.remove, size: 16, color: Theme.of(context).primaryColor),
+              icon: Icon(Icons.remove, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.removeSingleItem(item.id),
               splashRadius: 16,
               constraints: const BoxConstraints(),
@@ -327,7 +327,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: IconButton(
-              icon: const Icon(Icons.add, size: 16, color: Theme.of(context).primaryColor),
+              icon: Icon(Icons.add, size: 16, color: Theme.of(context).primaryColor),
               onPressed: () => cart.addItem(item),
               splashRadius: 16,
               constraints: const BoxConstraints(),
