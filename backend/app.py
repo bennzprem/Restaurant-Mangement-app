@@ -1083,6 +1083,9 @@ def upload_profile_picture(user_id):
             user_id,
             {'user_metadata': {'avatar_url': public_url_response}}
         )
+        
+        # ALSO update the avatar_Url column in the users table
+        supabase.table('users').update({'avatar_Url': public_url_response}).eq('id', user_id).execute()
 
         return jsonify({"message": "Profile picture uploaded successfully", "url": public_url_response}), 200
 

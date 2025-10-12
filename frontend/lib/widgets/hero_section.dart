@@ -211,7 +211,8 @@ class _HeroSectionState extends State<HeroSection> {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFDAE952).withOpacity(0.2),
+                                      color: const Color(0xFFDAE952)
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(50),
                                       border: Border.all(
                                         color: const Color(0xFFDAE952),
@@ -257,14 +258,16 @@ class _HeroSectionState extends State<HeroSection> {
                                         Navigator.pushNamed(context, '/menu');
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFDAE952),
+                                        backgroundColor:
+                                            const Color(0xFFDAE952),
                                         foregroundColor: Colors.black,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 16,
                                           horizontal: 24,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         elevation: 4,
                                       ),
@@ -288,7 +291,8 @@ class _HeroSectionState extends State<HeroSection> {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFDAE952).withOpacity(0.2),
+                                      color: const Color(0xFFDAE952)
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(50),
                                       border: Border.all(
                                         color: const Color(0xFFDAE952),
@@ -334,14 +338,16 @@ class _HeroSectionState extends State<HeroSection> {
                                         Navigator.pushNamed(context, '/signup');
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFDAE952),
+                                        backgroundColor:
+                                            const Color(0xFFDAE952),
                                         foregroundColor: Colors.black,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 16,
                                           horizontal: 24,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         elevation: 4,
                                       ),
@@ -543,9 +549,9 @@ class _DynamicActionButtons extends StatefulWidget {
   final VoidCallback onOrderNow;
   final VoidCallback onExplore;
   final VoidCallback onPickup;
-  
+
   const _DynamicActionButtons({
-    super.key, 
+    super.key,
     required this.mode,
     required this.onOrderNow,
     required this.onExplore,
@@ -624,7 +630,8 @@ class _DynamicActionButtonsState extends State<_DynamicActionButtons>
           'onTap': () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const OrderFromTablePage()),
+              MaterialPageRoute(
+                  builder: (context) => const OrderFromTablePage()),
             );
           }
         },

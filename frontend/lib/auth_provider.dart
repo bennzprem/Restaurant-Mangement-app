@@ -42,7 +42,7 @@ class AuthProvider with ChangeNotifier {
     try {
       final response = await _supabase
           .from('users')
-          .select('role, name') // Correctly fetches name
+          .select('role, name, avatar_Url') // Fixed: use avatar_Url (capital U)
           .eq('id', authUser.id)
           .single();
 
@@ -51,6 +51,7 @@ class AuthProvider with ChangeNotifier {
         email: authUser.email!,
         role: response['role'] ?? 'user',
         name: response['name'] ?? '', // Correctly uses name
+        avatarUrl: response['avatar_Url'], // Fixed: use avatar_Url (capital U)
       );
     } catch (e) {
       print('Error fetching user profile: $e');
@@ -80,6 +81,17 @@ class AuthProvider with ChangeNotifier {
     final currentUser = _supabase.auth.currentUser;
     if (currentUser != null) {
       await _fetchUserProfile(currentUser);
+    }
+  }
+
+  /// Manually refresh the authentication state
+  Future<void> refreshAuthState() async {
+    final currentUser = _supabase.auth.currentUser;
+    if (currentUser != null) {
+      await _fetchUserProfile(currentUser);
+    } else {
+      _user = null;
+      notifyListeners();
     }
   }
 }

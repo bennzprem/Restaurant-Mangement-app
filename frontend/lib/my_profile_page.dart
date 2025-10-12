@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'auth_provider.dart';
-import 'theme.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
 import 'order_history_page.dart';
@@ -93,94 +93,500 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final avatarUrl = user?.avatarUrl; // This comes from your AppUser model
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        backgroundColor: AppTheme.surfaceColor,
-        elevation: 1,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24.0),
-        children: [
-          // --- Profile Header ---
-          Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                // THIS IS THE NEW PROFILE PICTURE WIDGET
-                Stack(
+      backgroundColor: const Color(0xFFF7F8FC),
+      body: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Side Navigation (optional, for visual context)
+            _buildSideNav(),
+            // Main Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: AppTheme.primaryLight,
-                      // Display the uploaded image if it exists
-                      backgroundImage:
-                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl == null
-                          ? Text(
-                              userName.isNotEmpty
-                                  ? userName[0].toUpperCase()
-                                  : 'U',
-                              style: const TextStyle(
-                                fontSize: 40,
-                                color: AppTheme.darkTextColor,
-                              ),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppTheme.darkTextColor,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.edit,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          onPressed: _pickAndUploadImage,
-                        ),
-                      ),
-                    ),
+                    _buildHeader(userName),
+                    const SizedBox(height: 30),
+                    _buildProfileCard(userName, userEmail, avatarUrl),
+                    const SizedBox(height: 30),
+                    _buildFormSection(),
+                    const SizedBox(height: 30),
+                    _buildEmailAddressSection(userEmail),
+                    const SizedBox(height: 30),
+                    _buildDashboardSection(),
+                    const SizedBox(height: 30),
+                    _buildSettingsSection(authProvider),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text(userName, style: Theme.of(context).textTheme.displayLarge),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // A simple representation of the side navigation bar
+  Widget _buildSideNav() {
+    return Container(
+      width: 80,
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      color: Colors.white,
+      child: Column(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_rounded, color: Color(0xFF4A5568)),
+            onPressed: () {},
+          ),
+          const SizedBox(height: 20),
+          IconButton(
+            icon:
+                const Icon(Icons.access_time_rounded, color: Color(0xFFCBD5E0)),
+            onPressed: () {},
+          ),
+          const SizedBox(height: 20),
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded,
+                color: Color(0xFF4A5568)),
+            onPressed: () {},
+          ),
+          const SizedBox(height: 20),
+          IconButton(
+            icon: const Icon(Icons.mail_outline_rounded,
+                color: Color(0xFFCBD5E0)),
+            onPressed: () {},
+          ),
+          const SizedBox(height: 20),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFFCBD5E0)),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(String userName) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Welcome, $userName",
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2D3748),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              DateTime.now().toString().split(' ')[0], // Current date
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 10,
+                  )
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Search",
+                    style: GoogleFonts.inter(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Icon(Icons.notifications_none_outlined, color: Colors.grey),
+            const SizedBox(width: 16),
+            const CircleAvatar(
+              backgroundImage: NetworkImage(
+                  'https://placehold.co/100x100/A8D5E2/333333?text=A'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard(
+      String userName, String userEmail, String? avatarUrl) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE0F7FA),
+            Color(0xFFFFF9C4),
+            Color(0xFFFFE0B2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 2,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: const Color(0xFF4A90E2),
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _pickAndUploadImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4A90E2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D3748),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(userEmail, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  userEmail,
+                  style: GoogleFonts.inter(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
-// --- ch start - christo
-          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            ),
+            child: Text(
+              "Edit",
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // --- NEW: USER DASHBOARD SECTION ---
-          _buildSectionHeader(context, 'My Dashboard'),
+  Widget _buildFormSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildTextField("Full Name")),
+              const SizedBox(width: 20),
+              Expanded(child: _buildTextField("Nick Name")),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildDropdownField(
+                      "Gender", ["Male", "Female", "Other"])),
+              const SizedBox(width: 20),
+              Expanded(
+                  child:
+                      _buildDropdownField("Country", ["USA", "Canada", "UK"])),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildDropdownField(
+                      "Language", ["English", "Spanish", "French"])),
+              const SizedBox(width: 20),
+              Expanded(
+                  child:
+                      _buildDropdownField("Time Zone", ["EST", "PST", "CST"])),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            hintText: "Your $label",
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+            filled: true,
+            fillColor: const Color(0xFFF7F8FC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField(String label, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            hintText: "Select $label",
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+            filled: true,
+            fillColor: const Color(0xFFF7F8FC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          items: items.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: GoogleFonts.inter()),
+            );
+          }).toList(),
+          onChanged: (_) {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmailAddressSection(String userEmail) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "My email Address",
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFE3F2FD),
+                ),
+                child: const Icon(Icons.mail_outline, color: Color(0xFF4A90E2)),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userEmail,
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "1 month ago",
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.add, color: Color(0xFF4A90E2)),
+            label: Text(
+              "Add Email Address",
+              style: GoogleFonts.inter(color: Color(0xFF4A90E2)),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF4A90E2)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "My Dashboard",
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 20),
           FutureBuilder<List<dynamic>>(
             future: _statsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                // Show a simple loading indicator while fetching data
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return const Center(child: Text('Could not load stats.'));
+                return Center(
+                    child: Text('Could not load stats.',
+                        style: GoogleFonts.inter()));
               }
               if (!snapshot.hasData) {
-                return const Center(child: Text('No stats available.'));
+                return Center(
+                    child: Text('No stats available.',
+                        style: GoogleFonts.inter()));
               }
 
-              // snapshot.data contains a list: [orderList, reservationList]
               final orderCount = snapshot.data![0].length.toString();
               final reservationCount = snapshot.data![1].length.toString();
 
-              // This is the Row you already built, but now with real data
               return Row(
                 children: [
                   Expanded(
@@ -188,7 +594,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       context,
                       icon: Icons.history,
                       label: 'Total Orders',
-                      value: orderCount, // Use real data
+                      value: orderCount,
                       color: Colors.orange,
                     ),
                   ),
@@ -198,7 +604,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       context,
                       icon: Icons.calendar_today,
                       label: 'Reservations',
-                      value: reservationCount, // Use real data
+                      value: reservationCount,
                       color: Colors.blue,
                     ),
                   ),
@@ -206,16 +612,37 @@ class _MyProfilePageState extends State<MyProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 24),
-// ------------------------------------
-          // --- ch end - christo
+        ],
+      ),
+    );
+  }
 
-          // // --- Settings Section ---
-          // _buildSectionHeader(context, 'Account Settings'),
-          // const SizedBox(height: 24),
-
-          // --- Settings Section (Logic is unchanged) ---
-          _buildSectionHeader(context, 'Account Settings'),
+  Widget _buildSettingsSection(AuthProvider authProvider) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Account Settings",
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 20),
           _buildProfileOption(
             context,
             icon: Icons.edit_outlined,
@@ -254,63 +681,64 @@ class _MyProfilePageState extends State<MyProfilePage> {
           ),
           _buildProfileOption(
             context,
-            icon: Icons.calendar_month_outlined, // Icon for reservations
+            icon: Icons.calendar_month_outlined,
             title: 'My Reservations',
             onTap: () {
-              // This uses the named route you created in main.dart
               Navigator.pushNamed(context, '/booking-history');
             },
           ),
-          const SizedBox(height: 24),
-
-          // --- Logout Button (Logic is unchanged) ---
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red[400],
-              foregroundColor: Colors.white,
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[400],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.logout),
+              label: Text(
+                'Logout',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+              ),
+              onPressed: () async {
+                await authProvider.signOut();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (route) => false);
+              },
             ),
-            icon: const Icon(Icons.logout),
-            label: const Text('Logout'),
-            onPressed: () async {
-              await authProvider.signOut();
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/', (route) => false);
-            },
           ),
         ],
       ),
     );
   }
 
-  // Helper widget for section titles (Logic is unchanged)
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.lightTextColor,
-            ),
-      ),
-    );
-  }
-
-  // Helper widget for each clickable option (Logic is unchanged)
+  // Helper widget for each clickable option
   Widget _buildProfileOption(
     BuildContext context, {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FC),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ListTile(
-        leading: Icon(icon, color: AppTheme.darkTextColor),
-        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
-        trailing: const Icon(Icons.chevron_right),
+        leading: Icon(icon, color: const Color(0xFF4A90E2)),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF2D3748),
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Color(0xFF4A90E2)),
         onTap: onTap,
       ),
     );
@@ -338,17 +766,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+            style: GoogleFonts.inter(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                ),
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
