@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:provider/provider.dart';
-import 'package:restaurant_app/auth_provider.dart';
+import '../../auth_provider.dart';
 
 class ChatBotWidget extends StatefulWidget {
   const ChatBotWidget({super.key});
@@ -187,25 +187,7 @@ Please provide a helpful, friendly response focused on restaurant services.
     }
   }
 
-  // Future method to save messages to Supabase
-  Future<void> _saveMessageToSupabase(ChatMessage message) async {
-    // Implement Supabase integration here
-    // Example:
-    /*
-    try {
-      await Supabase.instance.client
-        .from('chat_messages')
-        .insert({
-          'user_id': 'current_user_id', // Get from your auth provider
-          'message': message.text,
-          'is_user': message.isUser,
-          'timestamp': message.timestamp.toIso8601String(),
-        });
-    } catch (e) {
-      print('Error saving message: $e');
-    }
-    */
-  }
+  // Supabase persistence can be implemented later if needed
 
   @override
   Widget build(BuildContext context) {

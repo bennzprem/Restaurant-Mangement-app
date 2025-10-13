@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:restaurant_app/models.dart';
+import '../models.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api_service.dart';
 import '../auth_provider.dart';
@@ -25,7 +25,6 @@ class _UserDashboardPageState extends State<UserDashboardPage>
     with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late Future<Map<String, dynamic>> _dashboardDataFuture;
-  bool _isSidebarExpanded = false;
   late AnimationController _sidebarAnimationController;
   late Animation<double> _sidebarWidthAnimation;
 
@@ -113,11 +112,9 @@ class _UserDashboardPageState extends State<UserDashboardPage>
   Widget _buildSideNav() {
     return MouseRegion(
       onEnter: (_) {
-        setState(() => _isSidebarExpanded = true);
         _sidebarAnimationController.forward();
       },
       onExit: (_) {
-        setState(() => _isSidebarExpanded = false);
         _sidebarAnimationController.reverse();
       },
       child: AnimatedBuilder(
@@ -338,7 +335,7 @@ class _UserDashboardPageState extends State<UserDashboardPage>
 
         // --- FIX: Explicitly convert the lists to the correct type ---
         final List<Reservation> reservations =
-            List<Reservation>.from(snapshot.data!['reservations']);
+            (snapshot.data!['reservations'] as List).cast<Reservation>();
 
         final upcomingReservations = reservations
             .where((r) => r.reservationTime.isAfter(DateTime.now()))

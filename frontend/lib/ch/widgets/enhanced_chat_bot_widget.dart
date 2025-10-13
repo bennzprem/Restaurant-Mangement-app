@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:provider/provider.dart';
-import 'package:restaurant_app/auth_provider.dart';
+import '../../auth_provider.dart';
 import '../services/chat_service.dart';
 
 class EnhancedChatBotWidget extends StatefulWidget {

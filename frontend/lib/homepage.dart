@@ -10,16 +10,15 @@ import 'takeaway_page.dart';
 import 'api_service.dart';
 import 'models.dart';
 
-import '../widgets/header_widget.dart';
-import '../widgets/about_section.dart';
-import '../widgets/ai_culinary_curator_section.dart';
-import '../widgets/culinary_philosophy_section.dart';
-import '../widgets/footer_widget.dart';
-import '../widgets/order_tracking_button.dart';
-import '../widgets/order_status_modal.dart';
-import '../services/order_tracking_service.dart';
+import 'widgets/header_widget.dart';
+import 'widgets/about_section.dart';
+import 'widgets/ai_culinary_curator_section.dart';
+import 'widgets/culinary_philosophy_section.dart';
+import 'widgets/footer_widget.dart';
+import 'widgets/order_tracking_button.dart';
+import 'services/order_tracking_service.dart';
 
-import 'theme.dart'; // Your AppTheme
+// import 'theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -583,62 +582,7 @@ class _RoleQuickAccess extends StatelessWidget {
   }
 }
 
-class _ServiceSelectionCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _ServiceSelectionCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                          fontSize: 16, color: Colors.grey[600]!),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Removed unused _ServiceSelectionCard
 
 class _MenuCategoryCarousel extends StatefulWidget {
   const _MenuCategoryCarousel();
@@ -670,7 +614,7 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
     _scrollController.addListener(() {
       if (_scrollController.hasClients) {
         final currentOffset = _scrollController.offset;
-        final maxScrollExtent = _scrollController.position.maxScrollExtent;
+        // final maxScrollExtent = _scrollController.position.maxScrollExtent;
 
         // Update current index based on scroll position
         _currentScrollIndex = (currentOffset / 160.0).round();
@@ -842,7 +786,8 @@ class _MenuCategoryCarouselState extends State<_MenuCategoryCarousel> {
           const SizedBox(height: 24),
           if (_isLoading)
             Center(
-              child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
+              child: CircularProgressIndicator(
+                  color: Theme.of(context).primaryColor),
             )
           else
             Row(
