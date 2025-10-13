@@ -62,15 +62,43 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                 if (provider.favoriteItems.isEmpty) {
                   return Center(
-                    child: Text(
-                      'You have no favorite items yet.\nTap the heart icon to add some!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18, 
-                        color: Theme.of(context).brightness == Brightness.dark 
-                            ? Colors.grey[400] 
-                            : Colors.grey
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'You have no favorite items yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Explore the menu and tap the heart to add favorites.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[500]
+                                : Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            // Navigate to menu screen
+                            Navigator.pushNamed(context, '/menu');
+                          },
+                          icon: const Icon(Icons.restaurant_menu),
+                          label: const Text('Browse Menu'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }

@@ -1246,7 +1246,20 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                               padding: const EdgeInsets.symmetric(
                                   vertical: 24, horizontal: 16),
                               decoration: BoxDecoration(
-                                color: theme.cardColor,
+                                // Background image for all three cards with subtle overlay
+                                image: DecorationImage(
+                                  image: const AssetImage('assets/images/homepage.jpg'),
+                                  // Fill the card without obvious cropping; keep centered
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.center,
+                                  // Subtle, theme-aware opacity so the image is visible but muted
+                                  colorFilter: ColorFilter.mode(
+                                    (isDark
+                                            ? Colors.white.withOpacity(0.12)
+                                            : Colors.black.withOpacity(0.12)),
+                                    isDark ? BlendMode.lighten : BlendMode.darken,
+                                  ),
+                                ),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
                                   color: index == _selectedIndex

@@ -20,7 +20,13 @@ from dotenv import load_dotenv  # <-- ADD THIS LINE
 import json
 import random
 from voice_assistant import VoiceAssistant
-load_dotenv()
+load_dotenv()  
+# Import your existing ByteBot class and the new VoiceAssistant class
+from bytebot import ByteBot
+
+# Set GROQ_API_KEY if not already set
+if not os.environ.get('GROQ_API_KEY'):
+    os.environ['GROQ_API_KEY'] = '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'
 
 # --- CONFIGURATION: FILL IN YOUR CREDENTIALS HERE ---
 
@@ -68,7 +74,10 @@ SUPABASE_HEADERS = {
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize AI Services
+byte_bot_service = ByteBot(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
 voice_assistant_service = VoiceAssistant(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
+# Initialize all AI Services
+
 
 # Initialize Twilio client
 twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_SID else None
@@ -1991,8 +2000,15 @@ def handle_voice_command():
         
         # Step 5: AI Pass 2 - Formulate the final response based on verified facts
         final_ai_response = voice_assistant_service.formulate_response(user_text, intent, context_for_ai)
-        final_message = final_ai_response.get("confirmation_message", "I'm not sure how to answer that.")
-        new_context = final_ai_response.get("new_context")
+        
+        # Better error handling for AI responses
+        if "error" in final_ai_response:
+            print(f"AI response error: {final_ai_response['error']}")
+            final_message = "I'm having trouble processing that request. Please try again."
+        else:
+            final_message = final_ai_response.get("confirmation_message", "I'm not sure how to answer that.")
+        
+        new_context = final_ai_response.get("new_context", {})
 
         return jsonify({ "message": final_message, "action": action_required, "updated_cart": updated_cart_items, "new_context": new_context }), 200
 
@@ -2001,6 +2017,35 @@ def handle_voice_command():
         print("--- A FATAL ERROR OCCURRED ---")
         traceback.print_exc()
         return jsonify({"error": "A major server error occurred. Check the logs."}), 500
+
+@app.route('/bytebot-recommendation', methods=['GET'])
+def get_bytebot_recommendation():
+    """Endpoint to get a real-time AI dish recommendation."""
+    try:
+        response_data, status_code = byte_bot_service.get_recommendation()
+        # Ensure UI always loads by downgrading unexpected errors to 200 with placeholder
+        if status_code != 200:
+            return jsonify({
+                "dish": {
+                    "name": "Chef's Special",
+                    "description": "A delightful seasonal pick while ByteBot warms up.",
+                    "image_url": "https://via.placeholder.com/600x400.png?text=Chef%27s%20Special",
+                    "tags": ["popular", "seasonal"]
+                },
+                "reason": "Temporary recommendation shown while AI initializes."
+            }), 200
+        return jsonify(response_data), 200
+    except Exception as e:
+        return jsonify({
+            "dish": {
+                "name": "Chef's Special",
+                "description": "A delightful seasonal pick while ByteBot warms up.",
+                "image_url": "https://via.placeholder.com/600x400.png?text=Chef%27s%20Special",
+                "tags": ["popular", "seasonal"]
+            },
+            "reason": "Temporary recommendation shown while AI initializes.",
+            "note": f"server note: {str(e)}"
+        }), 200
 
 # --- CREATE TABLE (OPTIONAL SESSION CODE) ---
 
