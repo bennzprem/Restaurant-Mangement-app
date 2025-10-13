@@ -26,7 +26,7 @@ class VoiceAssistant:
         AI Pass 1: Identifies the user's goal (intent) and extracts key details (entities)
         like item names, ingredients, categories, or prices.
         """
-        if not self.model: return {"error": "AI model not available."}
+        if not self.model: return {"intent": "unknown", "entity_name": None}
 
         menu_for_prompt = ", ".join([f"'{item['name']}'" for item in menu_list])
         categories_for_prompt = ", ".join(f"'{cat}'" for cat in category_list)
@@ -99,7 +99,8 @@ class VoiceAssistant:
         AI Pass 2: Takes verified facts from our database and system and turns them into a
         natural, human-friendly sentence.
         """
-        if not self.model: return {"error": "AI model not available."}
+        if not self.model: 
+            return {"confirmation_message": "I'm currently having trouble connecting to my AI brain. Please try again in a moment.", "new_context": {}}
 
         facts_for_prompt = json.dumps(context_data, indent=2)
 
@@ -156,4 +157,4 @@ class VoiceAssistant:
             return json.loads(chat_completion.choices[0].message.content)
         except Exception as e:
             print(f"Error during AI response formulation: {e}")
-            return {"confirmation_message": "I'm sorry, I had a little trouble with that request.", "new_context": {}}
+            return {"confirmation_message": "I'm sorry, I had a little trouble with that request. Please try again.", "new_context": {}}
