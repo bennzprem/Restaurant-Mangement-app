@@ -1891,6 +1891,96 @@ def get_full_menu_with_categories():
         return [], []
 
 
+# --- Helper: fuzzy match a user-provided dish name to the closest menu item ---
+def _normalize_text(value: str) -> str:
+    try:
+        return re.sub(r"[^a-z0-9 ]+", "", (value or "").lower()).strip()
+    except Exception:
+        return (value or "").lower().strip()
+
+def find_best_menu_match(menu_list: list, query_name: str):
+    """Return the best matching menu item dict for the given query_name.
+    Prefers exact (case-insensitive) match; otherwise tries startswith, contains,
+    and simple token overlap scoring. Returns None if nothing reasonable found.
+    """
+    if not query_name:
+        return None
+    q_norm = _normalize_text(query_name)
+    if not q_norm:
+        return None
+
+    # 1) Exact (case-insensitive)
+    for item in menu_list:
+        if _normalize_text(item.get('name', '')) == q_norm:
+            return item
+
+    # 2) Startswith
+    starts = [it for it in menu_list if _normalize_text(it.get('name', '')).startswith(q_norm)]
+    if starts:
+        return starts[0]
+
+    # 3) Contains
+    contains = [it for it in menu_list if q_norm in _normalize_text(it.get('name', ''))]
+    if contains:
+        return contains[0]
+
+    # 4) Token overlap (simple score)
+    q_tokens = set(q_norm.split())
+    best = None
+    best_score = 0
+    for it in menu_list:
+        name_tokens = set(_normalize_text(it.get('name', '')).split())
+        score = len(q_tokens.intersection(name_tokens))
+        if score > best_score:
+            best_score = score
+            best = it
+    # Require at least 1 token overlap to avoid bad guesses
+    return best if best_score > 0 else None
+
+def find_similar_items(menu_list: list, query: str, max_results: int = 5):
+    """Find similar items when no exact matches are found"""
+    if not query:
+        return []
+    
+    normalized_query = _normalize_text(query)
+    if not normalized_query:
+        return []
+    
+    similar_items = []
+    
+    for item in menu_list:
+        item_name = _normalize_text(item.get('name', ''))
+        item_desc = _normalize_text(item.get('description', ''))
+        item_category = _normalize_text(item.get('category_name', ''))
+        
+        score = 0
+        
+        # Check for partial matches in name
+        if normalized_query in item_name:
+            score += 10
+        
+        # Check for partial matches in description
+        if normalized_query in item_desc:
+            score += 5
+            
+        # Check for partial matches in category
+        if normalized_query in item_category:
+            score += 3
+            
+        # Check for word overlap
+        query_words = set(normalized_query.split())
+        item_words = set(item_name.split())
+        overlap = len(query_words.intersection(item_words))
+        score += overlap * 2
+        
+        if score > 0:
+            similar_items.append((item['name'], score))
+    
+    # Sort by score and return top matches
+    similar_items.sort(key=lambda x: x[1], reverse=True)
+    return [item[0] for item in similar_items[:max_results]]
+
+
 @app.route('/')
 def index():
     return "ByteEat AI Backend is running!"
@@ -1951,6 +2041,32 @@ def handle_voice_command():
                 context_for_ai['matching_items'] = matching_items
                 context_for_ai['price_limit'] = price_limit
 
+        elif intent == "list_by_specific_type":
+            specific_type = intent_result.get("specific_type", "").lower()
+            if specific_type:
+                # Filter items based on specific type (ice cream, dessert, beverage, etc.)
+                matching_items = []
+                for item in menu_list:
+                    item_name = item['name'].lower()
+                    item_desc = item.get('description', '').lower()
+                    item_category = item.get('category_name', '').lower()
+                    
+                    # Check if the specific type matches the item
+                    if specific_type in item_name or specific_type in item_desc or specific_type in item_category:
+                        matching_items.append(item['name'])
+                
+                # If no exact matches found, find similar items
+                if not matching_items:
+                    similar_items = find_similar_items(menu_list, specific_type, max_results=5)
+                    context_for_ai['similar_items'] = similar_items
+                    context_for_ai['no_exact_match'] = True
+                else:
+                    context_for_ai['similar_items'] = []
+                    context_for_ai['no_exact_match'] = False
+                
+                context_for_ai['matching_items'] = matching_items
+                context_for_ai['specific_type'] = specific_type
+
         # --- EXISTING LOGIC FOR OTHER ACTIONS ---
         elif intent == "clear_cart":
             if is_logged_in:
@@ -1969,11 +2085,13 @@ def handle_voice_command():
             entity_name = intent_result.get("entity_name")
             dish_details = None
             if entity_name:
-                dish_details = next((item for item in menu_list if item['name'].lower() == entity_name.lower()), None)
+                # Fuzzy match against menu to be resilient to slight name mismatches
+                dish_details = find_best_menu_match(menu_list, entity_name)
             
             if dish_details:
                 context_for_ai.update(dish_details)
                 
+                # Only require login for placing orders, not for asking questions
                 if intent == "place_order":
                     if not is_logged_in:
                         action_required = "NAVIGATE_TO_LOGIN"
@@ -1995,8 +2113,31 @@ def handle_voice_command():
                                 updated_cart_items = cart_response.data
                                 context_for_ai['total_cart_price'] = round(total_price, 2)
                                 context_for_ai['item_added'] = entity_name
+                
+                # For ask_price and ask_about_dish, no login required - just provide the information
+                elif intent in ["ask_price", "ask_about_dish"]:
+                    # No login required for these intents - just provide menu information
+                    context_for_ai['item_found'] = True
+                    context_for_ai['item_name'] = dish_details['name']
+                    context_for_ai['item_price'] = dish_details['price']
+                    context_for_ai['item_description'] = dish_details.get('description', '')
+                
+                # For any other intent that finds a dish, provide basic info without login
+                else:
+                    context_for_ai['item_found'] = True
+                    context_for_ai['item_name'] = dish_details['name']
+                    context_for_ai['item_price'] = dish_details['price']
+                    context_for_ai['item_description'] = dish_details.get('description', '')
+                    
             elif entity_name:
-                context_for_ai['error'] = f"Could not find an item named '{entity_name}'."
+                # When no exact match found, suggest similar items
+                similar_items = find_similar_items(menu_list, entity_name, max_results=5)
+                if similar_items:
+                    context_for_ai['similar_items'] = similar_items
+                    context_for_ai['no_exact_match'] = True
+                    context_for_ai['query_item'] = entity_name
+                else:
+                    context_for_ai['error'] = f"Could not find an item named '{entity_name}'."
         
         # Step 5: AI Pass 2 - Formulate the final response based on verified facts
         final_ai_response = voice_assistant_service.formulate_response(user_text, intent, context_for_ai)

@@ -157,7 +157,7 @@ class HeaderWidget extends StatelessWidget {
 
             // Center - The new Navigation Bar implementation
             Center(
-              child: _DesktopNav(active: active),
+              child: _DesktopNav(key: ValueKey(active), active: active),
             ),
 
             // Right side - Action Buttons (ByteBot icon removed)
@@ -465,28 +465,7 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                             const SizedBox(width: 18),
                           ],
                         ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => setState(() => _dismissed = true),
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Close icon removed as requested
                       ],
                     ),
                   ),
@@ -648,7 +627,7 @@ class _SpeechBubblePainter extends CustomPainter {
 /// It manages the hover and active states to drive the animations.
 class _DesktopNav extends StatefulWidget {
   final HeaderActive active;
-  const _DesktopNav({required this.active});
+  const _DesktopNav({super.key, required this.active});
 
   @override
   State<_DesktopNav> createState() => _DesktopNavState();
@@ -705,6 +684,25 @@ class _DesktopNavState extends State<_DesktopNav>
             from: 1.0); // Show triangle in final position initially
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopNav oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.active != widget.active) {
+      final int newIndex =
+          _navItems.indexWhere((item) => item['active'] == widget.active);
+      setState(() {
+        _activeIndex = newIndex;
+      });
+      // Realign the top line to the new active after layout
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _calculatePositions();
+        if (_activeIndex >= 0) {
+          _moveLine(_activeIndex, isInitial: true);
+        }
+      });
+    }
   }
 
   // Recalculates the positions of nav items. This is crucial for responsiveness.

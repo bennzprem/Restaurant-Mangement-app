@@ -25,14 +25,10 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
   // Ensure we only speak the greeting once per overlay open
   bool _hasSpokenGreeting = false;
-  // Control the background wake-word listening loop
-  bool _wakeLoopActive = true;
   // Mic hover state for UI
   bool _isMicHovered = false;
   // Track if animation should be showing
   bool _showListeningAnimation = false;
-  // Track wake word listening timeout
-  bool _wakeWordTimeout = false;
 
   VoiceState _currentState = VoiceState.idle;
   String _lastWords = "";
@@ -89,16 +85,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
       CurvedAnimation(parent: _listeningController, curve: Curves.linear),
     );
 
-    // Start wake word timeout - stop listening for wake words after 10 seconds
-    Future.delayed(const Duration(seconds: 10), () {
-      if (mounted) {
-        setState(() {
-          _wakeWordTimeout = true;
-        });
-        _wakeLoopActive = false;
-        print('Wake word listening timeout - stopping wake word detection');
-      }
-    });
+    // Wake word detection disabled - no timeout needed
   }
 
   void _initSpeech() async {
@@ -111,79 +98,21 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         print('Speech recognition done, stopping listening');
         _stopListening();
       }
+      // Auto-stop listening after 12 seconds for faster response
+      if (status == 'listening' && _currentState == VoiceState.listening) {
+        Future.delayed(const Duration(seconds: 12), () {
+          if (_currentState == VoiceState.listening) {
+            print('Auto-stopping listening after 12 seconds for faster response');
+            _stopListening();
+          }
+        });
+      }
     };
     setState(() {});
-    // Start a lightweight wake-word loop to listen for "hey bytebot"
-    _startWakeLoop();
+    // Wake word detection disabled - only respond to mic tap
   }
 
-  // Lightweight loop that periodically listens for the wake phrase when idle
-  void _startWakeLoop() async {
-    _wakeLoopActive = true;
-    while (mounted && _wakeLoopActive && !_wakeWordTimeout) {
-      try {
-        // Only start wake word detection if we're truly idle and not listening
-        if (_currentState == VoiceState.idle && 
-            !_speechToText.isListening && 
-            !_showListeningAnimation &&
-            _currentState != VoiceState.listening &&
-            !_wakeWordTimeout) {
-          print('Starting wake word detection...'); // Debug log
-          await _speechToText.listen(
-            onResult: _onWakeResult,
-            listenFor: const Duration(seconds: 8),
-            pauseFor: const Duration(seconds: 2),
-            partialResults: true,
-            localeId: 'en_US',
-          );
-        }
-      } catch (e) {
-        print('Wake word detection error: $e'); // Debug log
-        // ignore listen errors and retry
-      }
-      // small delay before next loop iteration
-      await Future.delayed(const Duration(milliseconds: 1000));
-    }
-    print('Wake word loop stopped - timeout reached or overlay closed');
-  }
-
-  void _onWakeResult(SpeechRecognitionResult result) {
-    final words = result.recognizedWords.toLowerCase();
-    print('Wake word detected: "$words"'); // Debug log
-    
-    // More flexible wake word detection
-    if (words.contains('hey bytebot') || 
-        words.contains('hi bytebot') || 
-        words.contains('bytebot') ||
-        words.contains('hey byte bot') ||
-        words.contains('hi byte bot') ||
-        words.contains('hey bitebot') ||
-        words.contains('hi bitebot')) {
-      
-      print('Wake word matched! Starting listening...'); // Debug log
-      
-      // Stop the wake listener and start active listening
-      try {
-        _speechToText.stop();
-        print('Wake word speech recognition stopped');
-      } catch (e) {
-        print('Error stopping wake word speech recognition: $e');
-      }
-      
-      if (mounted) {
-        // Stop any ongoing speech first
-        _flutterTts.stop();
-        print('Stopped any ongoing speech');
-        // Immediately start listening with animation
-        print('Calling _startListening() from wake word detection');
-        _startListening();
-      } else {
-        print('Widget not mounted, cannot start listening');
-      }
-    } else {
-      print('Wake word not matched for: "$words"');
-    }
-  }
+  // Wake word detection methods removed - only respond to mic tap
 
   void _startListening() async {
     print('_startListening() called - starting listening with animation'); // Debug log
@@ -195,6 +124,13 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     
     // Stop any ongoing speech
     await _flutterTts.stop();
+
+    // Wake word detection disabled - no wake loop to stop
+
+    // Ensure the speech engine is initialized (in case user taps immediately)
+    try {
+      await _speechToText.initialize();
+    } catch (_) {}
     
     // Stop any existing animation
     _listeningController.stop();
@@ -213,13 +149,23 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     _listeningController.reset();
     _listeningController.repeat(reverse: true);
     
-    print('Animation started, beginning speech recognition for 10 seconds'); // Debug log
+    print('Animation started, beginning speech recognition for 20 seconds'); // Debug log
     
-    // Start speech recognition
+    // Start active listening
+    _startActiveListening();
+  }
+
+  void _startActiveListening() async {
+    print('_startActiveListening() called'); // Debug log
+    
+    // Start speech recognition with longer listening time for complete sentences
     await _speechToText.listen(
       onResult: _onSpeechResult,
-      listenFor: const Duration(seconds: 10),
-      pauseFor: const Duration(seconds: 2),
+      listenFor: const Duration(seconds: 20), // Increased to 20 seconds for complete sentences
+      pauseFor: const Duration(seconds: 2), // Reduced to 2 seconds for faster response
+      partialResults: true,
+      localeId: 'en_US',
+      cancelOnError: false, // Don't cancel on minor errors
     );
   }
 
@@ -234,11 +180,13 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         _sendCommandToBackend();
       } else {
         _currentState = VoiceState.idle;
+        // Wake word detection disabled - no wake loop to restart
       }
     });
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
+    print('Speech result: "${result.recognizedWords}" (final: ${result.finalResult})'); // Debug log
     setState(() {
       _lastWords = result.recognizedWords;
       _currentSpeechText = result.recognizedWords; // Show current speech
@@ -266,7 +214,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
           'text': _lastWords,
           'context': _conversationContext, // Send the memory to the backend
         }),
-      );
+      ).timeout(const Duration(seconds: 10)); // Add 10 second timeout for faster response
       
       print('Backend response status: ${response.statusCode}');
 
@@ -281,11 +229,10 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         print('Backend response action: "$action"');
 
         setState(() {
-          _aiResponse = message;
+          _aiResponse = message ?? "";
           _currentState = VoiceState.responding;
           _showListeningAnimation = false;
-          _currentSpeechText = ""; // Clear speech text when responding
-          // Receive and save the updated memory from the backend
+          _currentSpeechText = _aiResponse; // Mirror spoken text in UI
           if (newContext != null && newContext is Map) {
             _conversationContext = Map<String, dynamic>.from(newContext);
           }
@@ -294,18 +241,16 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         _listeningController.stop();
 
         print('Speaking response: "$_aiResponse"');
-        await _flutterTts.speak(_aiResponse);
-        
-        // Keep the response visible for a few seconds before clearing
-        await Future.delayed(const Duration(seconds: 3));
-        
-        // Return to idle state after speaking
-        if (mounted) {
-          setState(() {
-            _currentState = VoiceState.idle;
-            _aiResponse = ""; // Clear AI response when returning to idle
-          });
+        if (_aiResponse.isNotEmpty) {
+          // Set faster speech rate for quicker response
+          await _flutterTts.setSpeechRate(1.2); // Faster speech rate
+          await _flutterTts.speak(_aiResponse);
         }
+        
+        // Keep the response visible and don't clear it - stay in responding state
+        // This ensures the AI response stays on screen instead of reverting to greeting
+        
+        // Wake word detection disabled - no wake loop to restart
 
         // --- THIS IS THE FIX FOR REDIRECTION ---
         if (action == 'NAVIGATE_TO_LOGIN') {
@@ -330,25 +275,23 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         _aiResponse = "Sorry, I'm having trouble connecting. Please try again.";
         _currentState = VoiceState.responding;
         _showListeningAnimation = false;
-        _currentSpeechText = "";
+        _currentSpeechText = _aiResponse; // Show error text too
       });
       _listeningController.stop();
+      // Set faster speech rate for quicker response
+      await _flutterTts.setSpeechRate(1.2); // Faster speech rate
       await _flutterTts.speak(_aiResponse);
       
-      // Return to idle state after error
-      if (mounted) {
-        setState(() {
-          _currentState = VoiceState.idle;
-          _aiResponse = ""; // Clear AI response on error
-        });
-      }
+      // Keep error response visible instead of clearing it
+      // This ensures error messages stay on screen instead of reverting to greeting
+      
+      // Wake word detection disabled - no wake loop to restart
     }
   }
 
   @override
   void dispose() {
-    // stop wake loop and ongoing speech/listening
-    _wakeLoopActive = false;
+    // stop ongoing speech/listening
     try {
       _speechToText.stop();
     } catch (_) {}
@@ -392,6 +335,14 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     if (_currentState == VoiceState.responding && _aiResponse.isNotEmpty) {
       text = "ByteBot: \"$_aiResponse\"";
     }
+    // If processing (thinking), keep showing what the user said instead of greeting
+    else if (_currentState == VoiceState.processing) {
+      if (_lastWords.isNotEmpty) {
+        text = "You said: \"$_lastWords\"";
+      } else {
+        text = ""; // keep UI clean while thinking if nothing was captured
+      }
+    }
     // If listening and user is speaking, show speech text
     else if (_showListeningAnimation && _currentSpeechText.isNotEmpty) {
       text = "You said: \"$_currentSpeechText\"";
@@ -418,15 +369,15 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
       if (isLoggedIn && userName != null && userName.isNotEmpty) {
         text =
-            "$timeGreeting, $userName! I'm ByteBot, your friendly guide to a tastier day. Tap the mic or say 'Hey ByteBot' to speak.";
+            "$timeGreeting, $userName! I'm ByteBot, your friendly guide to a tastier day. Tap the mic to speak.";
       } else {
         text =
-            "$timeGreeting! I'm ByteBot, your friendly guide to a tastier day. Tap the mic or say 'Hey ByteBot' to speak.";
+            "$timeGreeting! I'm ByteBot, your friendly guide to a tastier day. Tap the mic to speak.";
       }
     }
 
-    // Speak the greeting once when overlay is shown (only if not listening and not responding)
-    if (!_hasSpokenGreeting && !_showListeningAnimation && _currentState != VoiceState.responding) {
+    // Speak the greeting once when overlay is shown (only when idle)
+    if (!_hasSpokenGreeting && !_showListeningAnimation && _currentState == VoiceState.idle) {
       _hasSpokenGreeting = true;
       Future.microtask(() {
         _flutterTts.speak(text).catchError((_) {});
@@ -462,14 +413,9 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
               try {
                 _clickController.forward(from: 0.0);
               } catch (_) {}
-              
-              // If already listening, stop it
-              if (_currentState == VoiceState.listening) {
-                _stopListening();
-              } else {
-                // Otherwise start listening
-                _startListening();
-              }
+
+              // Always start (will internally stop any existing sessions)
+              _startListening();
             },
             child: AnimatedBuilder(
               animation: Listenable.merge([

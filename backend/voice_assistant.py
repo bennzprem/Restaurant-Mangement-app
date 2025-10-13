@@ -52,6 +52,7 @@ class VoiceAssistant:
         - `list_by_category`: User asks for all items in a category (e.g., "what's in appetizers?").
         - `list_by_ingredient`: User asks for dishes containing a specific ingredient (e.g., "show me something with mushroom").
         - `list_by_price_under`: User asks for items below a certain price (e.g., "what's under 200?").
+        - `list_by_specific_type`: User asks for specific types like "ice creams", "desserts", "beverages", "pizzas" (e.g., "what ice creams do you have?").
         - `unknown`: The intent is unclear or is a simple greeting.
 
         **Available Menu Items:** {menu_for_prompt}
@@ -71,6 +72,12 @@ class VoiceAssistant:
 
         User Command: "list all chicken items"
         Output: {{"intent": "list_by_ingredient", "ingredient": "chicken"}}
+
+        User Command: "what ice creams do you have"
+        Output: {{"intent": "list_by_specific_type", "specific_type": "ice cream"}}
+
+        User Command: "show me desserts"
+        Output: {{"intent": "list_by_specific_type", "specific_type": "dessert"}}
 
         User Command: "what can I get for less than 300 rupees"
         Output: {{"intent": "list_by_price_under", "price_limit": 300}}
@@ -105,18 +112,17 @@ class VoiceAssistant:
         facts_for_prompt = json.dumps(context_data, indent=2)
 
         prompt = f"""
-        You are ByteBot, a friendly and helpful restaurant voice assistant.
-        Your job is to create a conversational response based ONLY on the verified facts provided.
+        You are ByteBot, a friendly restaurant voice assistant. Create a conversational response based on verified facts.
 
-        **User's original command:** "{user_text}"
-        **The user's intent was:** "{intent}"
-        **Verified facts from our database and system:**
-        {facts_for_prompt}
+        **User:** "{user_text}"
+        **Intent:** "{intent}"
+        **Facts:** {facts_for_prompt}
 
-        **Your Task & Rules:**
-        1.  Formulate a single `confirmation_message` based on the intent and verified facts.
-        2.  Determine the `new_context`. If a specific dish was discussed (e.g., from an `ask_price` or `place_order` intent), its name should become the `last_mentioned_item` in the new context.
-        3.  Return your entire response as a single JSON object containing `confirmation_message` and `new_context`.
+        **Rules:**
+        1. Be concise and specific
+        2. Only mention items that match the request exactly
+        3. For ice creams, only list actual ice cream items
+        4. Return JSON: {{"confirmation_message": "your response", "new_context": {{}}}}
 
         --- CRITICAL INSTRUCTIONS FOR SPECIFIC INTENTS ---
 
@@ -131,14 +137,19 @@ class VoiceAssistant:
             - Price Example: "The Classic Cold Coffee costs ₹150."
             - Description Example: "Paneer Tikka Skewers are tender cubes of fresh paneer marinated and grilled to perfection."
 
-        **If intent is `list_by_category`, `list_by_ingredient`, or `list_by_price_under`:**
+        **If intent is `list_by_category`, `list_by_ingredient`, `list_by_price_under`, or `list_by_specific_type`:**
         - The facts will contain a list named `matching_items`.
         - If `matching_items` is empty, say "Sorry, I couldn't find any items that match your request."
-        - If `matching_items` is not empty, list the items in a natural sentence.
-            - Category Example: "In Appetizers, we have Paneer Tikka Skewers and Crispy Chilli Baby Corn."
-            - Ingredient Example: "The dishes with mushroom are Mushroom & Truffle Oil Pizza and Forest Risotto."
-            - Price Example: "Items under ₹300 include the Classic Cold Coffee and Paneer Tikka Skewers."
+        - If `matching_items` is not empty, list ONLY the items that match the specific request.
+        - For `list_by_specific_type` (like "ice creams"), be VERY specific and only list items that actually contain that type.
+            - Example: "We have the following ice creams: Panna Cotta, Mousse (Dark Chocolate), Brownie Sundae, Cheesecake (New York Style), Ice Cream Scoop Trio."
+            - Do NOT include other desserts that are not ice creams.
         - After listing, you can optionally add a follow-up question like "Would you like to know more about any of these?"
+
+        **If no exact matches found but similar items exist:**
+        - Say "I couldn't find exactly what you're looking for, but here are some similar items: [list similar items]"
+        - This applies to all query types (ask_price, ask_about_dish, list_by_specific_type, etc.)
+        - Use the `similar_items` list from facts to suggest alternatives
 
         **If intent is `clear_cart`:**
         - If `"cart_cleared": true`, simply say "Okay, I've cleared your cart."
