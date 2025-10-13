@@ -76,8 +76,9 @@ class HeaderWidget extends StatelessWidget {
       child: SizedBox(
         height: 60,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // Left side - Logo and Brand Name (Unchanged)
+            // Left side - Logo and Brand Name (Logo now opens ByteBot)
             Align(
               alignment: Alignment.centerLeft,
               child: Row(
@@ -101,7 +102,16 @@ class HeaderWidget extends StatelessWidget {
                         ),
                       ),
                     ),
+                  // Make the logo clickable to invoke the voice assistant overlay
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _showVoiceOverlay(context),
+                      child:
                   const _LogoVideo(width: 62, height: 60, scale: 1.6),
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'ByteEat',
@@ -118,6 +128,7 @@ class HeaderWidget extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // (hint bubble moved below the header)
                 ],
               ),
             ),
@@ -127,16 +138,17 @@ class HeaderWidget extends StatelessWidget {
               child: _DesktopNav(active: active),
             ),
 
-            // Right side - Action Buttons (Unchanged)
+            // Right side - Action Buttons (ByteBot icon removed)
             Align(
               alignment: Alignment.centerRight,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Cart Button
-                  Consumer<CartProvider>(
-                    builder: (context, cart, child) {
-                      return Container(
+                  // Cart Button (hidden on Home page)
+                  if (active != HeaderActive.home)
+                    Consumer<CartProvider>(
+                      builder: (context, cart, child) {
+                        return Container(
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           color: themeProvider.isDarkMode
@@ -247,33 +259,7 @@ class HeaderWidget extends StatelessWidget {
                       );
                     },
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Theme.of(context).primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                    child: IconButton(
-                      onPressed: () => _showVoiceOverlay(context),
-                      icon: Icon(
-                        Icons.android,
-                        color: Theme.of(context).primaryColor,
-                        size: 20,
-                      ),
-                      tooltip: 'Talk to ByteBot',
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Removed ByteBot icon (functionality moved to logo)
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
@@ -353,10 +339,211 @@ class HeaderWidget extends StatelessWidget {
                 ],
               ),
             ),
+            // Assistant hint bubble positioned under the logo on Home page
+            if (active == HeaderActive.home)
+              const Positioned(
+                left: 20,
+                top: 72,
+                child: _AssistantHintBubble(),
+              ),
+
+            // Removed transparent overlay so the default back button works everywhere
           ],
         ),
       ),
     );
+  }
+}
+
+// A small animated hint bubble placed under the logo on the Home page
+class _AssistantHintBubble extends StatefulWidget {
+  const _AssistantHintBubble();
+
+  @override
+  State<_AssistantHintBubble> createState() => _AssistantHintBubbleState();
+}
+
+class _AssistantHintBubbleState extends State<_AssistantHintBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    )..forward();
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slide = Tween<Offset>(begin: const Offset(0, -0.2), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.95, end: 1.0)
+              .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack)),
+          child: Material(
+            color: Colors.transparent,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Main speech bubble drawn with a custom painter to mimic the reference border
+                CustomPaint(
+                  painter: _SpeechBubblePainter(
+                    fillColor: isDark ? Colors.black : Colors.white,
+                    strokeColor: Colors.black87,
+                    radius: 16,
+                    strokeWidth: 2.5,
+                  ),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.android,
+                          size: 16,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            "Hey there! Click the ByteEat logo to chat with ByteBot.",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Small notch elevated from the bubble's border (no base line)
+                Positioned(
+                  left: 18,
+                  top: -1,
+                  child: Transform.rotate(
+                    angle: 0.0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black : Colors.white,
+                        border: Border(
+                          left: BorderSide(color: Colors.black87, width: 2),
+                          top: BorderSide(color: Colors.black87, width: 2),
+                          right: BorderSide(color: Colors.transparent, width: 0),
+                          bottom: BorderSide(color: Colors.transparent, width: 0),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Paints a small upward-pointing triangle with border to attach to the bubble
+class _BubbleArrowPainter extends CustomPainter {
+  final Color fillColor;
+  final Color borderColor;
+  _BubbleArrowPainter({required this.fillColor, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Path path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+
+    final Paint stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = borderColor;
+    final Paint fill = Paint()
+      ..style = PaintingStyle.fill
+      ..color = fillColor;
+
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BubbleArrowPainter oldDelegate) {
+    return oldDelegate.fillColor != fillColor ||
+        oldDelegate.borderColor != borderColor;
+  }
+}
+
+// Custom painter to render the speech bubble outline similar to the reference
+class _SpeechBubblePainter extends CustomPainter {
+  final Color fillColor;
+  final Color strokeColor;
+  final double radius;
+  final double strokeWidth;
+
+  _SpeechBubblePainter({
+    required this.fillColor,
+    required this.strokeColor,
+    this.radius = 16,
+    this.strokeWidth = 2.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final RRect rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+
+    final Paint fill = Paint()..color = fillColor;
+    final Paint stroke = Paint()
+      ..color = strokeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawRRect(rrect, fill);
+
+    final Path path = Path()..addRRect(rrect);
+    canvas.drawPath(path, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpeechBubblePainter oldDelegate) {
+    return oldDelegate.fillColor != fillColor ||
+        oldDelegate.strokeColor != strokeColor ||
+        oldDelegate.radius != radius ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }
 
