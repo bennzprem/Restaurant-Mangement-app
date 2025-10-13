@@ -78,7 +78,8 @@ class _NavbarWidgetState extends State<NavbarWidget> {
               flex: 6,
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 700), // Limit width within white area
+                  constraints: const BoxConstraints(
+                      maxWidth: 700), // Limit width within white area
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
@@ -91,10 +92,12 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                       end: Alignment.centerRight,
                     ),
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(0),      // Left top sharp
-                      bottomLeft: Radius.circular(50),  // Left bottom round (smaller)
-                      topRight: Radius.circular(50),    // Right top round (smaller)
-                      bottomRight: Radius.circular(0),  // Right bottom sharp
+                      topLeft: Radius.circular(0), // Left top sharp
+                      bottomLeft:
+                          Radius.circular(50), // Left bottom round (smaller)
+                      topRight:
+                          Radius.circular(50), // Right top round (smaller)
+                      bottomRight: Radius.circular(0), // Right bottom sharp
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -104,7 +107,8 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6), // Smaller padding
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 6), // Smaller padding
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(_navItems.length, (index) {
@@ -119,20 +123,26 @@ class _NavbarWidgetState extends State<NavbarWidget> {
                           splashColor: Colors.transparent,
                           highlightColor: Colors.transparent,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Smaller padding
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10), // Smaller padding
                             decoration: BoxDecoration(
-                              color: (isActive || isHover) 
+                              color: (isActive || isHover)
                                   ? Colors.white.withOpacity(0.2)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16), // Smaller radius
+                              borderRadius:
+                                  BorderRadius.circular(16), // Smaller radius
                             ),
                             child: Text(
                               _navItems[index],
                               style: TextStyle(
                                 fontSize: 20, // Smaller font
-                                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                                color: Theme.of(context).brightness == Brightness.dark 
-                                    ? Colors.white 
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white
                                     : Colors.black,
                                 letterSpacing: 1.0, // Smaller letter spacing
                               ),
@@ -156,3 +166,4 @@ class _NavbarWidgetState extends State<NavbarWidget> {
     );
   }
 }
+//hhhhhhh
