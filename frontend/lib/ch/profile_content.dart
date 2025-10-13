@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../auth_provider.dart';
 import '../api_service.dart';
@@ -24,6 +25,13 @@ class _ProfileContentState extends State<ProfileContent> {
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
+  late TextEditingController _nickNameController;
+
+  // Dropdown values
+  String? _selectedGender;
+  String? _selectedCountry;
+  String? _selectedLanguage;
+  String? _selectedTimeZone;
 
   // Controllers for Password Information
   final _newPasswordController = TextEditingController();
@@ -44,6 +52,27 @@ class _ProfileContentState extends State<ProfileContent> {
             ? user!.name.split(' ').last
             : '');
     _emailController = TextEditingController(text: user?.email ?? '');
+    _nickNameController =
+        TextEditingController(text: user?.name.split(' ').first ?? '');
+
+    // Load saved profile data
+    _loadSavedProfileData();
+  }
+
+  Future<void> _loadSavedProfileData() async {
+    try {
+      // For now, we'll initialize with empty values
+      // In a real implementation, you'd fetch this from the backend
+      // The values will be loaded when the user data is refreshed
+      setState(() {
+        _selectedGender = null;
+        _selectedCountry = null;
+        _selectedLanguage = null;
+        _selectedTimeZone = null;
+      });
+    } catch (e) {
+      print('Error loading saved profile data: $e');
+    }
   }
 
   @override
@@ -51,12 +80,45 @@ class _ProfileContentState extends State<ProfileContent> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _nickNameController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
   // --- LOGIC METHODS ---
+
+  Future<void> _saveAdditionalProfileInfo(String userId) async {
+    try {
+      // Prepare the profile data
+      Map<String, dynamic> profileData = {};
+
+      if (_nickNameController.text.isNotEmpty) {
+        profileData['nickname'] = _nickNameController.text;
+      }
+      if (_selectedGender != null) {
+        profileData['gender'] = _selectedGender;
+      }
+      if (_selectedCountry != null) {
+        profileData['country'] = _selectedCountry;
+      }
+      if (_selectedLanguage != null) {
+        profileData['language'] = _selectedLanguage;
+      }
+      if (_selectedTimeZone != null) {
+        profileData['timezone'] = _selectedTimeZone;
+      }
+
+      // Only make API call if there's data to save
+      if (profileData.isNotEmpty) {
+        await ApiService().updateUserProfileInfo(userId, profileData);
+        print('✅ Profile info saved to database successfully');
+      }
+    } catch (e) {
+      print('❌ Error saving additional profile info: $e');
+      rethrow; // Re-throw to show error to user
+    }
+  }
 
   Future<void> _saveAllChanges() async {
     setState(() => _isLoading = true);
@@ -73,6 +135,9 @@ class _ProfileContentState extends State<ProfileContent> {
         await ApiService().updateProfile(user.id, newName);
         profileUpdated = true;
       }
+
+      // --- 1.5. Save Additional Profile Information ---
+      await _saveAdditionalProfileInfo(user.id);
 
       // --- 2. Save Password (if entered) ---
       if (_newPasswordController.text.isNotEmpty) {
@@ -146,229 +211,341 @@ class _ProfileContentState extends State<ProfileContent> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        bool isWide = constraints.maxWidth > 1000;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: isWide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        children: [
-                          _buildGeneralInfoCard(),
-                          const SizedBox(height: 24),
-                          _buildPasswordInfoCard(),
-                          const SizedBox(height: 24),
-                          const AddressManagementWidget(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      flex: 1,
-                      child: _buildAvatarCard(),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    _buildAvatarCard(),
-                    const SizedBox(height: 24),
-                    _buildGeneralInfoCard(),
-                    const SizedBox(height: 24),
-                    _buildPasswordInfoCard(),
-                    const SizedBox(height: 24),
-                    const AddressManagementWidget(),
-                  ],
-                ),
-        );
-      },
-    );
-  }
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final userName = user?.name ?? 'User';
+    final userEmail = user?.email ?? 'No email provided';
+    final avatarUrl = user?.avatarUrl;
 
-  Widget _buildAvatarCard() {
-    final user = context.watch<AuthProvider>().user;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: user?.avatarUrl != null
-                  ? NetworkImage(user!.avatarUrl!)
-                  : const AssetImage('assets/default_avatar.png')
-                      as ImageProvider,
-            ),
-
-            const SizedBox(height: 16),
-            Text(user?.name ?? 'User Name',
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(user?.email ?? '',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-            const SizedBox(height: 16),
-            // The main Edit/Save button now lives here
-            ElevatedButton(
-              onPressed: () {
-                if (_isEditing) {
-                  _saveAllChanges();
-                } else {
-                  setState(() => _isEditing = true);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: _isEditing
-                      ? Colors.green
-                      : Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(120, 40)),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : Text(_isEditing ? 'Save Changes' : 'Edit Profile'),
-            ),
-            const SizedBox(height: 8),
-            // Change avatar is always available
-            if (!_isEditing)
-              TextButton(
-                onPressed: _pickAndUploadImage,
-                child: const Text('Change Avatar'),
-              ),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileCard(userName, userEmail, avatarUrl),
+          const SizedBox(height: 30),
+          _buildFormSection(),
+          const SizedBox(height: 30),
+          _buildEmailAddressSection(userEmail),
+          const SizedBox(height: 30),
+          const AddressManagementWidget(),
+        ],
       ),
     );
   }
 
-  Widget _buildGeneralInfoCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('General Information',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Divider(height: 32),
-            Row(
+  Widget _buildProfileCard(
+      String userName, String userEmail, String? avatarUrl) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE0F7FA),
+            Color(0xFFFFF9C4),
+            Color(0xFFFFE0B2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 2,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: const Color(0xFF8BC34A),
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _pickAndUploadImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF8BC34A),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                    child: _buildTextField(
-                        label: 'First Name',
-                        controller: _firstNameController,
-                        isEditing: _isEditing)),
-                const SizedBox(width: 24),
-                Expanded(
-                    child: _buildTextField(
-                        label: 'Last Name',
-                        controller: _lastNameController,
-                        isEditing: _isEditing)),
+                Text(
+                  userName,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF33691E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  userEmail,
+                  style: GoogleFonts.inter(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
-            _buildTextField(
-              label: 'Email',
-              controller: _emailController,
-              readOnly: true,
-              isEditing: _isEditing,
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_isEditing) {
+                _saveAllChanges();
+              } else {
+                setState(() => _isEditing = true);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
             ),
-            const SizedBox(height: 24),
-            _buildDropdownField(
-                label: 'Gender',
-                items: ['Male', 'Female', 'Prefer not to say'],
-                value: 'Male',
-                isEditing: _isEditing),
-          ],
-        ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    _isEditing ? 'Save Changes' : 'Edit',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPasswordInfoCard() {
-    // This card is ONLY visible when in edit mode
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      child: _isEditing
-          ? Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              elevation: 2,
-              margin: const EdgeInsets.only(top: 0),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Password Information',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Divider(height: 32),
-                    _buildTextField(
-                        label: 'New Password',
-                        controller: _newPasswordController,
-                        isEditing: _isEditing,
-                        isPassword: true),
-                    const SizedBox(height: 24),
-                    _buildTextField(
-                        label: 'Confirm New Password',
-                        controller: _confirmPasswordController,
-                        isEditing: _isEditing,
-                        isPassword: true),
-                    const SizedBox(height: 8),
-                    Text(
-                      '* Leave blank to keep your current password.',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : const SizedBox.shrink(), // If not editing, this card is hidden
+  Widget _buildFormSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: _buildTextField("Full Name", _firstNameController)),
+              const SizedBox(width: 20),
+              Expanded(
+                  child: _buildTextField("Nick Name", _nickNameController)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildDropdownField(
+                      "Gender", ["Male", "Female", "Other"], _selectedGender,
+                      (value) {
+                setState(() => _selectedGender = value);
+              })),
+              const SizedBox(width: 20),
+              Expanded(
+                  child: _buildDropdownField(
+                      "Country",
+                      [
+                        "USA",
+                        "Canada",
+                        "UK",
+                        "India",
+                        "Australia",
+                        "Germany",
+                        "France",
+                        "Japan"
+                      ],
+                      _selectedCountry, (value) {
+                setState(() => _selectedCountry = value);
+              })),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildDropdownField(
+                      "Language",
+                      [
+                        "English",
+                        "Spanish",
+                        "French",
+                        "German",
+                        "Italian",
+                        "Portuguese",
+                        "Chinese",
+                        "Japanese"
+                      ],
+                      _selectedLanguage, (value) {
+                setState(() => _selectedLanguage = value);
+              })),
+              const SizedBox(width: 20),
+              Expanded(
+                  child: _buildDropdownField(
+                      "Time Zone",
+                      ["EST", "PST", "CST", "MST", "GMT", "IST", "JST", "AEST"],
+                      _selectedTimeZone, (value) {
+                setState(() => _selectedTimeZone = value);
+              })),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  // --- FORM FIELD HELPERS ---
+  Widget _buildEmailAddressSection(String userEmail) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "My email Address",
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFE3F2FD),
+                ),
+                child: const Icon(Icons.mail_outline, color: Color(0xFF4A90E2)),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userEmail,
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "1 month ago",
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.add, color: Color(0xFF4A90E2)),
+            label: Text(
+              "Add Email Address",
+              style: GoogleFonts.inter(color: Color(0xFF4A90E2)),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF4A90E2)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
-  Widget _buildTextField(
-      {required String label,
-      required TextEditingController controller,
-      bool readOnly = false,
-      bool isPassword = false,
-      required bool isEditing}) {
+  Widget _buildTextField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, color: Colors.black54)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
         const SizedBox(height: 8),
-        TextFormField(
+        TextField(
           controller: controller,
-          readOnly: readOnly || !isEditing,
-          obscureText: isPassword,
+          readOnly: !_isEditing,
           decoration: InputDecoration(
+            hintText: "Your $label",
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
             filled: true,
-            fillColor: readOnly || !isEditing ? Colors.grey[100] : Colors.white,
+            fillColor: _isEditing ? const Color(0xFFF7F8FC) : Colors.grey[100],
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
@@ -376,36 +553,38 @@ class _ProfileContentState extends State<ProfileContent> {
     );
   }
 
-  Widget _buildDropdownField(
-      {required String label,
-      required String value,
-      required List<String> items,
-      required bool isEditing}) {
+  Widget _buildDropdownField(String label, List<String> items,
+      String? selectedValue, Function(String?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, color: Colors.black54)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
-          items: items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
-          onChanged: isEditing ? (newValue) {} : null,
+          value: selectedValue,
           decoration: InputDecoration(
+            hintText: "Select $label",
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
             filled: true,
-            fillColor: !isEditing ? Colors.grey[100] : Colors.white,
+            fillColor: _isEditing ? const Color(0xFFF7F8FC) : Colors.grey[100],
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
             ),
           ),
+          items: items.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: GoogleFonts.inter()),
+            );
+          }).toList(),
+          onChanged: _isEditing ? onChanged : null,
         ),
       ],
     );

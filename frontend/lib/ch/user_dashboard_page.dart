@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant_app/models.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../api_service.dart';
 import '../auth_provider.dart';
 
@@ -13,8 +14,6 @@ import 'order_history_content.dart';
 import 'reservations_content.dart';
 import 'recommendation_card.dart';
 
-import 'widgets/enhanced_chat_bot_widget.dart';
-
 class UserDashboardPage extends StatefulWidget {
   const UserDashboardPage({super.key});
 
@@ -22,27 +21,38 @@ class UserDashboardPage extends StatefulWidget {
   State<UserDashboardPage> createState() => _UserDashboardPageState();
 }
 
-class _UserDashboardPageState extends State<UserDashboardPage> {
+class _UserDashboardPageState extends State<UserDashboardPage>
+    with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late Future<Map<String, dynamic>> _dashboardDataFuture;
-
-  final List<Map<String, dynamic>> _tabs = [
-    {'title': 'Dashboard', 'icon': Icons.dashboard_rounded},
-    {'title': 'My Profile', 'icon': Icons.person_rounded},
-    {'title': 'Order History', 'icon': Icons.history_rounded},
-    {'title': 'My Reservations', 'icon': Icons.calendar_today_rounded},
-
-    // New tabs added here
-    {'title': 'Settings', 'icon': Icons.settings_rounded},
-    {'title': 'Preferences', 'icon': Icons.tune_rounded},
-    {'title': 'Billing', 'icon': Icons.credit_card_rounded},
-    {'title': 'Help Center', 'icon': Icons.help_outline_rounded},
-  ];
+  bool _isSidebarExpanded = false;
+  late AnimationController _sidebarAnimationController;
+  late Animation<double> _sidebarWidthAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+
+    // Initialize sidebar animation
+    _sidebarAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _sidebarWidthAnimation = Tween<double>(
+      begin: 80.0,
+      end: 200.0,
+    ).animate(CurvedAnimation(
+      parent: _sidebarAnimationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _sidebarAnimationController.dispose();
+    super.dispose();
   }
 
   void _loadDashboardData() {
@@ -74,42 +84,229 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool isWideScreen = MediaQuery.of(context).size.width > 800;
-
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(_tabs[_selectedIndex]['title']),
-        leading: isWideScreen
-            ? null
-            : Builder(
-                builder: (context) => IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () => Scaffold.of(context).openDrawer())),
-      ),
-      drawer: isWideScreen ? null : Drawer(child: _buildSidebar(context)),
+      backgroundColor: const Color(0xFFF1F8E9), // Light green background
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Permanent sidebar for wide screens
-          if (isWideScreen) _buildSidebar(context),
-          // Main content area takes remaining space
+          // Side Navigation
+          _buildSideNav(),
+          // Main Content
           Expanded(
-            child: Stack(
-              children: [
-                // Make content fill the available space
-                Positioned.fill(child: _buildContent()),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: EnhancedChatBotWidget(),
-                  ),
-                ),
-              ],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 30),
+                  _buildContent(),
+                ],
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSideNav() {
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isSidebarExpanded = true);
+        _sidebarAnimationController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isSidebarExpanded = false);
+        _sidebarAnimationController.reverse();
+      },
+      child: AnimatedBuilder(
+        animation: _sidebarWidthAnimation,
+        builder: (context, child) {
+          return Container(
+            width: _sidebarWidthAnimation.value,
+            padding: const EdgeInsets.symmetric(vertical: 30),
+            color: Colors.white,
+            child: Column(
+              children: [
+                _buildNavItem(
+                  icon: Icons.dashboard_rounded,
+                  label: 'Dashboard',
+                  index: 0,
+                ),
+                const SizedBox(height: 20),
+                _buildNavItem(
+                  icon: Icons.access_time_rounded,
+                  label: 'Order History',
+                  index: 2,
+                ),
+                const SizedBox(height: 20),
+                _buildNavItem(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Profile',
+                  index: 1,
+                ),
+                const SizedBox(height: 20),
+                _buildNavItem(
+                  icon: Icons.mail_outline_rounded,
+                  label: 'Messages',
+                  index: 3,
+                ),
+                const SizedBox(height: 20),
+                _buildNavItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  index: 4,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final isSelected = _selectedIndex == index;
+    final iconColor =
+        isSelected ? const Color(0xFF33691E) : const Color(0xFF8F9DA9);
+
+    return AnimatedBuilder(
+      animation: _sidebarWidthAnimation,
+      builder: (context, child) {
+        final isExpanded = _sidebarWidthAnimation.value > 100;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _selectedIndex = index),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected ? const Color(0xFFE8F5E8) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      color: iconColor,
+                      size: 24,
+                    ),
+                    if (isExpanded) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            color: iconColor,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.user;
+        final userName = user?.name ?? 'User';
+        final avatarUrl = user?.avatarUrl;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Welcome, $userName",
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF33691E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateTime.now().toString().split(' ')[0], // Current date
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF8F9DA9),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 10,
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Search",
+                        style: GoogleFonts.inter(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Icon(Icons.notifications_none_outlined,
+                    color: Colors.grey),
+                const SizedBox(width: 16),
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF8BC34A),
+                  backgroundImage:
+                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl == null
+                      ? Text(
+                          userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -128,176 +325,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     }
   }
 
-  Widget _buildSidebar(BuildContext context) {
-    return Container(
-      width: 280,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Consumer<AuthProvider>(
-              builder: (context, auth, child) {
-                final user = auth.user;
-                final initials = (user?.name.isNotEmpty ?? false)
-                    ? user!.name
-                        .trim()
-                        .split(" ")
-                        .map((n) => n.isNotEmpty ? n[0] : "")
-                        .take(2)
-                        .join()
-                        .toUpperCase()
-                    : "U";
-
-                return Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundImage: user?.avatarUrl != null
-                          ? NetworkImage(
-                              "${user!.avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}")
-                          : null,
-                      child: user?.avatarUrl == null
-                          ? Text(
-                              initials,
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.name ?? 'User',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            user?.role ?? 'user',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const Divider(height: 32),
-          // Group 1: Core App Sections
-          _buildTabItem(context,
-              title: _tabs[0]['title'],
-              icon: _tabs[0]['icon'],
-              isSelected: _selectedIndex == 0, onTap: () {
-            setState(() => _selectedIndex = 0);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[1]['title'],
-              icon: _tabs[1]['icon'],
-              isSelected: _selectedIndex == 1, onTap: () {
-            setState(() => _selectedIndex = 1);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[2]['title'],
-              icon: _tabs[2]['icon'],
-              isSelected: _selectedIndex == 2, onTap: () {
-            setState(() => _selectedIndex = 2);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[3]['title'],
-              icon: _tabs[3]['icon'],
-              isSelected: _selectedIndex == 3, onTap: () {
-            setState(() => _selectedIndex = 3);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          const SizedBox(height: 16), // A larger gap to separate sections
-          // Group 2: Account and App Settings
-          _buildTabItem(context,
-              title: _tabs[4]['title'],
-              icon: _tabs[4]['icon'],
-              isSelected: _selectedIndex == 4, onTap: () {
-            setState(() => _selectedIndex = 4);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[5]['title'],
-              icon: _tabs[5]['icon'],
-              isSelected: _selectedIndex == 5, onTap: () {
-            setState(() => _selectedIndex = 5);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[6]['title'],
-              icon: _tabs[6]['icon'],
-              isSelected: _selectedIndex == 6, onTap: () {
-            setState(() => _selectedIndex = 6);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          _buildTabItem(context,
-              title: _tabs[7]['title'],
-              icon: _tabs[7]['icon'],
-              isSelected: _selectedIndex == 7, onTap: () {
-            setState(() => _selectedIndex = 7);
-            if (Scaffold.of(context).isDrawerOpen) Navigator.of(context).pop();
-          }),
-          const Spacer(), // Pushes the logout button to the bottom
-          const Divider(height: 32),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () async {
-              await context.read<AuthProvider>().signOut();
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/', (route) => false);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabItem(BuildContext context,
-      {required String title,
-      required IconData icon,
-      required bool isSelected,
-      required VoidCallback onTap}) {
-    return Material(
-      color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.grey[600]),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildDashboardView() {
     return FutureBuilder<Map<String, dynamic>>(
       future: _dashboardDataFuture,
@@ -310,151 +337,193 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
         }
 
         // --- FIX: Explicitly convert the lists to the correct type ---
-        final List<Order> orders = List<Order>.from(snapshot.data!['orders']);
         final List<Reservation> reservations =
             List<Reservation>.from(snapshot.data!['reservations']);
 
-        final activeOrders = orders
-            .where((o) => o.status == 'Preparing' || o.status == 'Confirmed')
-            .toList();
         final upcomingReservations = reservations
             .where((r) => r.reservationTime.isAfter(DateTime.now()))
             .toList();
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            int crossAxisCount = constraints.maxWidth > 1200 ? 3 : 2;
-            if (constraints.maxWidth < 850) crossAxisCount = 1;
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDashboardHeader(
-                    activeOrderCount: activeOrders.length,
-                    upcomingReservationCount: upcomingReservations.length,
-                  ),
-                  const SizedBox(height: 24),
-                  GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 24,
-                    mainAxisSpacing: 24,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 2.5,
-                    children: [
-                      _buildQuickActionsCard(),
-                      _buildRecentReservationsCard(upcomingReservations),
-                      const RecommendationCard(),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildQuickActionsCard(),
+            const SizedBox(height: 30),
+            _buildRecentReservationsCard(upcomingReservations),
+            const SizedBox(height: 30),
+            const RecommendationCard(),
+          ],
         );
       },
     );
   }
 
-  Widget _buildDashboardHeader(
-      {required int activeOrderCount, required int upcomingReservationCount}) {
-    final authProvider = context.watch<AuthProvider>();
-    final userName = authProvider.user?.name.split(' ')[0] ?? 'User';
-    final hour = DateTime.now().hour;
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Good Morning';
-    } else if (hour < 17) {
-      greeting = 'Good Afternoon';
-    } else {
-      greeting = 'Good Evening';
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$greeting, $userName!',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'You have $activeOrderCount active orders and $upcomingReservationCount upcoming reservations.',
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
-
   Widget _buildRecentReservationsCard(List<Reservation> reservations) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Recent Reservations',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 8),
-            Expanded(
-              child: reservations.isEmpty
-                  ? const Center(child: Text('No upcoming reservations.'))
-                  : ListView.builder(
-                      itemCount:
-                          reservations.length > 2 ? 2 : reservations.length,
-                      itemBuilder: (context, index) {
-                        final reservation = reservations[index];
-                        return ListTile(
-                          leading: const Icon(Icons.calendar_month),
-                          title: Text(
-                              'Table ${reservation.table.tableNumber} for ${reservation.partySize}'),
-                          subtitle: Text(DateFormat.yMMMd()
-                              .add_jm()
-                              .format(reservation.reservationTime)),
-                          dense: true,
-                        );
-                      }),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Reservations',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF33691E),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          reservations.isEmpty
+              ? Center(
+                  child: Text(
+                    'No upcoming reservations.',
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: reservations.take(2).map((reservation) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F8E9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFDCEDC8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month,
+                              color: Color(0xFF8BC34A),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Table ${reservation.table.tableNumber} for ${reservation.partySize}',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF33691E),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat.yMMMd()
+                                      .add_jm()
+                                      .format(reservation.reservationTime),
+                                  style: GoogleFonts.inter(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ],
       ),
     );
   }
 
   Widget _buildQuickActionsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Quick Actions',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/menu'),
-                  icon: const Icon(Icons.menu_book),
-                  label: const Text('Order Food'),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/dine-in'),
-                  icon: const Icon(Icons.table_restaurant),
-                  label: const Text('Reserve Table'),
-                ),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Actions',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF33691E),
             ),
-            const Spacer(),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/menu'),
+                  icon: const Icon(Icons.menu_book, color: Colors.white),
+                  label: Text(
+                    'Order Food',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8BC34A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/dine-in'),
+                  icon: const Icon(Icons.table_restaurant, color: Colors.white),
+                  label: Text(
+                    'Reserve Table',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8BC34A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

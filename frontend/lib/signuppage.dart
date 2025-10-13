@@ -117,26 +117,9 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   }
 
   void _checkAuthState() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      final userProfile = await Supabase.instance.client
-          .from('users')
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (userProfile == null && user.email != null) {
-        await Supabase.instance.client.from('users').insert({
-          'id': user.id,
-          'email': user.email,
-          'name': user.userMetadata?['full_name'] ?? 'New User',
-        });
-      }
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/');
-      }
-    }
+    // Remove automatic redirect to prevent signup page from closing immediately
+    // Users should be able to access signup page even if they have some auth state
+    // Only redirect after successful signup or explicit login
   }
 
   @override
