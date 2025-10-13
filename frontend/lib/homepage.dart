@@ -5,7 +5,6 @@ import 'dart:async';
 import 'auth_provider.dart'; // keep your auth provider import
 import 'menu_screen_with_location.dart';
 import 'dine_in_page.dart';
-import 'takeaway_page.dart';
 import 'api_service.dart';
 import 'models.dart';
 
@@ -100,9 +99,12 @@ class _HomePageState extends State<HomePage> {
         );
         break;
       case 'Takeaway':
+        // Open the menu directly in Takeaway mode
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => TakeawayPage()),
+          MaterialPageRoute(
+              builder: (context) =>
+                  const MenuScreenWithLocation(mode: OrderMode.takeaway)),
         );
         break;
     }

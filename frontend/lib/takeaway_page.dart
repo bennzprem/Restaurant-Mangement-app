@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'menu_screen.dart';
+import 'models.dart';
 
 void main() => runApp(RestaurantTemplateApp());
 
@@ -125,7 +127,15 @@ class TakeawayPage extends StatelessWidget {
                       SizedBox(height: 28),
                       // Find for more button
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          // Open menu in Takeaway mode; the header cart button carries the mode
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const MenuScreen(mode: OrderMode.takeaway),
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
                           shape: StadiumBorder(),

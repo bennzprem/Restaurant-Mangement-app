@@ -1,5 +1,0 @@
-{
-    "framework": "flutter",
-    "buildCommand": "flutter build web --release --dart-define=API_URL=https://byte-ast.onrender.com",
-    "outputDirectory": "build/web"
-  }

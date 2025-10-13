@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth_provider.dart';
+import '../models.dart';
 import '../ch/user_dashboard_page.dart';
 import '../cart_provider.dart';
 import '../cart_screen.dart';
@@ -25,12 +26,14 @@ class HeaderWidget extends StatelessWidget {
   final HeaderActive active;
   final bool showBack;
   final VoidCallback? onBack;
+  final OrderMode orderMode;
 
   const HeaderWidget({
     super.key,
     this.active = HeaderActive.none,
     this.showBack = false,
     this.onBack,
+    this.orderMode = OrderMode.delivery,
   });
 
   void _showVoiceOverlay(BuildContext context) {
@@ -109,7 +112,7 @@ class HeaderWidget extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       onTap: () => _showVoiceOverlay(context),
                       child:
-                  const _LogoVideo(width: 62, height: 60, scale: 1.6),
+                          const _LogoVideo(width: 62, height: 60, scale: 1.6),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -149,71 +152,72 @@ class HeaderWidget extends StatelessWidget {
                     Consumer<CartProvider>(
                       builder: (context, cart, child) {
                         return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 2,
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const CartScreen(),
-                                  ),
-                                );
-                              },
-                              icon: Icon(
-                                Icons.shopping_cart_outlined,
-                                color: Theme.of(context).primaryColor,
-                                size: 20,
-                              ),
-                              tooltip: 'Cart',
-                              style: IconButton.styleFrom(
-                                padding: const EdgeInsets.all(8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: themeProvider.isDarkMode
+                                ? Colors.grey.shade800
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor,
+                              width: 2,
                             ),
-                            // Cart item count badge
-                            if (cart.items.isNotEmpty)
-                              Positioned(
-                                right: 6,
-                                top: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: Text(
-                                    '${cart.items.length}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                          ),
+                          child: Stack(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          CartScreen(mode: orderMode),
                                     ),
-                                    textAlign: TextAlign.center,
+                                  );
+                                },
+                                icon: Icon(
+                                  Icons.shopping_cart_outlined,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 20,
+                                ),
+                                tooltip: 'Cart',
+                                style: IconButton.styleFrom(
+                                  padding: const EdgeInsets.all(8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                              // Cart item count badge
+                              if (cart.items.isNotEmpty)
+                                Positioned(
+                                  right: 6,
+                                  top: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      '${cart.items.length}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   // Location Button (only for logged-in users)
                   Consumer<AuthProvider>(
                     builder: (context, auth, child) {
@@ -313,7 +317,7 @@ class HeaderWidget extends StatelessWidget {
 
                       return Container(
                         decoration: BoxDecoration(
-                          color: isOnSignupPage 
+                          color: isOnSignupPage
                               ? Theme.of(context).primaryColor.withOpacity(0.2)
                               : (themeProvider.isDarkMode
                                   ? Colors.grey.shade800
@@ -397,8 +401,8 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
       child: SlideTransition(
         position: _slide,
         child: ScaleTransition(
-          scale: Tween<double>(begin: 0.95, end: 1.0)
-              .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack)),
+          scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+              CurvedAnimation(parent: _controller, curve: Curves.easeOutBack)),
           child: Material(
             color: Colors.transparent,
             child: Stack(
@@ -452,8 +456,10 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                         border: Border(
                           left: BorderSide(color: Colors.black87, width: 2),
                           top: BorderSide(color: Colors.black87, width: 2),
-                          right: BorderSide(color: Colors.transparent, width: 0),
-                          bottom: BorderSide(color: Colors.transparent, width: 0),
+                          right:
+                              BorderSide(color: Colors.transparent, width: 0),
+                          bottom:
+                              BorderSide(color: Colors.transparent, width: 0),
                         ),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(2),
