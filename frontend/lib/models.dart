@@ -1,5 +1,4 @@
 // lib/models.dart
-import 'package:restaurant_app/models.dart' as app_models;
 
 class MenuItem {
   final int id;
@@ -277,7 +276,7 @@ class Reservation {
   final String status;
   final String specialOccasion;
   final bool addOnsRequested;
-  final app_models.Table table; // The nested table object
+  final Table table; // The nested table object
 
   Reservation({
     required this.id,
@@ -297,7 +296,7 @@ class Reservation {
       status: json['status'],
       specialOccasion: json['special_occasion'] ?? 'None',
       addOnsRequested: json['add_ons_requested'] ?? false,
-      table: app_models.Table.fromJson(
+      table: Table.fromJson(
         json['tables'],
       ), // Supabase uses the table name as the key
     );

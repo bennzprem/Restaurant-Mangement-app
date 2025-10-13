@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart'; // or file_picker
-import 'package:restaurant_app/models.dart' as app_models;
+// Removed incorrect package import; using local models.dart
 
 import 'user_models.dart';
 
@@ -445,7 +445,7 @@ class ApiService {
   }
 
   // Add this new method inside your ApiService class
-  Future<List<app_models.Table>> fetchAvailableTables({
+  Future<List<Table>> fetchAvailableTables({
     required String date,
     required String time,
     required int partySize,
@@ -470,8 +470,7 @@ class ApiService {
 
         // We map over the dynamic list, create a Table object for each item,
         // and then call .toList() to convert the result into a List<app_models.Table>
-        final tables =
-            data.map((json) => app_models.Table.fromJson(json)).toList();
+        final tables = data.map((json) => Table.fromJson(json)).toList();
         print('✅ Successfully created ${tables.length} Table objects');
         return tables;
       } else {
