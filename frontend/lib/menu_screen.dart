@@ -10,6 +10,9 @@ import 'favorites_provider.dart';
 import 'models.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
+import 'cart_screen.dart';
+import 'takeaway_checkout_page.dart';
+import 'models.dart';
 
 import 'auth_provider.dart';
 
@@ -17,12 +20,14 @@ class MenuScreen extends StatefulWidget {
   final String? tableSessionId;
   final String? initialCategory;
   final int? initialItemId;
+  final OrderMode mode;
 
   const MenuScreen({
     super.key,
     this.tableSessionId,
     this.initialCategory,
     this.initialItemId,
+    this.mode = OrderMode.delivery,
   });
 
   @override
@@ -250,6 +255,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             child: HeaderWidget(
               active: HeaderActive.menu,
               showBack: true,
+              orderMode: widget.mode,
               onBack: () {
                 if (Navigator.of(context).canPop()) {
                   Navigator.of(context).pop();
@@ -868,7 +874,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       ? MouseRegion(
                                           cursor: SystemMouseCursors.click,
                                           child: ElevatedButton(
-                                            onPressed: () => cart.addItem(item),
+                                            onPressed: () {
+                                              if (widget.mode ==
+                                                  OrderMode.takeaway) {
+                                                _showTakeawayItemDetail(
+                                                    context, item);
+                                              } else {
+                                                cart.addItem(item);
+                                              }
+                                            },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Theme.of(context)
                                                   .primaryColor,
@@ -1397,7 +1411,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   List<Widget> _buildTagChips(MenuItem item) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     List<Widget> chips = [];
-    
+
     Widget buildChip(String label, Color color, IconData icon) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1432,8 +1446,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           buildChip('Bestseller', Colors.orange, Icons.local_fire_department));
     }
     if (item.isChefSpecial) {
-      chips.add(buildChip(
-          'Chef Special', Colors.purple, Icons.star));
+      chips.add(buildChip('Chef Special', Colors.purple, Icons.star));
     }
     if (item.isSeasonal) {
       chips.add(buildChip('Seasonal', Colors.green, Icons.eco));
@@ -1451,7 +1464,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
           child: Container(
             width: MediaQuery.of(context).size.width * 0.95,
             constraints: BoxConstraints(
@@ -1462,7 +1476,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.3),
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -1499,7 +1515,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
-                                    color: Theme.of(context).custom.primaryLight,
+                                    color:
+                                        Theme.of(context).custom.primaryLight,
                                     alignment: Alignment.center,
                                     child: Icon(
                                       Icons.restaurant,
@@ -1523,20 +1540,24 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
                                     height: 1.3,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 // Price badge
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).primaryColor,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.2),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
@@ -1553,7 +1574,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 ),
                                 const SizedBox(height: 12),
                                 // Tags
-                                if (item.isBestseller || item.isChefSpecial || item.isSeasonal)
+                                if (item.isBestseller ||
+                                    item.isChefSpecial ||
+                                    item.isSeasonal)
                                   Wrap(
                                     spacing: 6,
                                     runSpacing: 4,
@@ -1577,9 +1600,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                     ),
                                     _buildQuickDetail(
                                       Icons.circle,
-                                      item.isVegetarian ? 'Vegetarian' : 'Non-Vegetarian',
+                                      item.isVegetarian
+                                          ? 'Vegetarian'
+                                          : 'Non-Vegetarian',
                                       isDark,
-                                      color: item.isVegetarian ? Colors.green : Colors.red,
+                                      color: item.isVegetarian
+                                          ? Colors.green
+                                          : Colors.red,
                                     ),
                                   ],
                                 ),
@@ -1594,10 +1621,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
@@ -1632,10 +1663,14 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
@@ -1664,7 +1699,8 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                               builder: (context, cart, child) {
                                 if (!item.isAvailable) {
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade200,
                                       borderRadius: BorderRadius.circular(12),
@@ -1687,18 +1723,23 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                           _showAddToCartOptions(item);
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Theme.of(context).primaryColor,
+                                          backgroundColor:
+                                              Theme.of(context).primaryColor,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
-                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 14),
                                           elevation: 2,
                                         ),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.shopping_cart_outlined, size: 18),
+                                            Icon(Icons.shopping_cart_outlined,
+                                                size: 18),
                                             const SizedBox(width: 8),
                                             const Text(
                                               'Add to Cart',
@@ -1717,17 +1758,22 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                           const SizedBox(width: 12),
                           Consumer<FavoritesProvider>(
                             builder: (context, favoritesProvider, child) {
-                              final isFavorited = favoritesProvider.isFavorite(item.id);
+                              final isFavorited =
+                                  favoritesProvider.isFavorite(item.id);
                               return Container(
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: isFavorited 
-                                      ? Colors.red.withOpacity(0.1) 
-                                      : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
+                                  color: isFavorited
+                                      ? Colors.red.withOpacity(0.1)
+                                      : (isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade100),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: isFavorited ? Colors.red : Colors.grey.shade300,
+                                    color: isFavorited
+                                        ? Colors.red
+                                        : Colors.grey.shade300,
                                     width: 1,
                                   ),
                                 ),
@@ -1736,7 +1782,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: () {
-                                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                      final authProvider =
+                                          Provider.of<AuthProvider>(context,
+                                              listen: false);
                                       if (authProvider.isLoggedIn) {
                                         favoritesProvider.toggleFavorite(item);
                                       } else {
@@ -1744,8 +1792,12 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       }
                                     },
                                     child: Icon(
-                                      isFavorited ? Icons.favorite : Icons.favorite_border,
-                                      color: isFavorited ? Colors.red : Colors.grey.shade600,
+                                      isFavorited
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isFavorited
+                                          ? Colors.red
+                                          : Colors.grey.shade600,
                                       size: 20,
                                     ),
                                   ),
@@ -1769,7 +1821,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       color: isDark ? Colors.grey.shade800 : Colors.white,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade300,
                         width: 1,
                       ),
                       boxShadow: [
@@ -1799,14 +1853,17 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuickDetail(IconData icon, String text, bool isDark, {Color? color}) {
+  Widget _buildQuickDetail(IconData icon, String text, bool isDark,
+      {Color? color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.grey.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -2358,10 +2415,23 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                 flex: 2,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    Provider.of<CartProvider>(context,
-                                            listen: false)
-                                        .addItem(item);
-                                    Navigator.of(context).pop();
+                                    if (widget.mode == OrderMode.takeaway) {
+                                      Provider.of<CartProvider>(context,
+                                              listen: false)
+                                          .addItem(item);
+                                      Navigator.of(context).pop();
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => TakeawayCheckoutPage(
+                                              itemJustAdded: item),
+                                        ),
+                                      );
+                                    } else {
+                                      Provider.of<CartProvider>(context,
+                                              listen: false)
+                                          .addItem(item);
+                                      Navigator.of(context).pop();
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
@@ -2373,8 +2443,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Add Item to cart',
+                                  child: Text(
+                                    widget.mode == OrderMode.takeaway
+                                        ? 'Add to Takeaway'
+                                        : 'Add Item to cart',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
@@ -2539,8 +2611,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                   ),
-                  child: const Text(
-                    'Add to Cart',
+                  child: Text(
+                    widget.mode == OrderMode.takeaway
+                        ? 'Add to Takeaway'
+                        : 'Add to Cart',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -2588,6 +2662,104 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       _scrollLeftListToIndex(_selectedCategoryIndex);
     }
   }
+
+  // Takeaway-specific item detail modal
+  void _showTakeawayItemDetail(BuildContext rootContext, MenuItem item) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: theme.primaryColor),
+                      ),
+                      child: const Text(
+                        'Takeaway',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.description,
+                  style: TextStyle(color: onSurface.withOpacity(0.7)),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      '₹${item.price.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Provider.of<CartProvider>(context, listen: false)
+                            .addItem(item);
+                        Navigator.of(context).pop();
+                        // Use rootContext to navigate after the dialog closes
+                        Future.microtask(() {
+                          Navigator.of(rootContext).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TakeawayCheckoutPage(itemJustAdded: item),
+                            ),
+                          );
+                        });
+                      },
+                      icon: const Icon(Icons.shopping_bag_outlined),
+                      label: const Text('Add to Takeaway'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Removed now that Add routes directly to checkout for Takeaway
 
   void _scrollToCategory(int index) {
     // Prevent the scroll listener from firing while we animate

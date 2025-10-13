@@ -15,17 +15,19 @@ import 'widgets/header_widget.dart';
 import 'widgets/checkout_step.dart';
 import 'widgets/address_selection_dialog.dart';
 import 'widgets/order_summary_card.dart';
-import 'widgets/order_tracking_button.dart';
-import 'widgets/order_status_modal.dart';
+// Removed unused imports for order tracking UI helpers
 import 'services/order_tracking_service.dart';
 import 'models.dart';
 import 'order_location_picker.dart';
 import 'dart:convert';
+import 'takeaway_confirmation_page.dart';
 
 // 2. Added the main StatefulWidget class definition
 class CartScreen extends StatefulWidget {
   final String? tableSessionId;
-  const CartScreen({super.key, this.tableSessionId});
+  final OrderMode mode;
+  const CartScreen(
+      {super.key, this.tableSessionId, this.mode = OrderMode.delivery});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -38,8 +40,11 @@ class _CartScreenState extends State<CartScreen> {
   bool _isPrefetching = false;
   String? _contactNumber;
   AddressDetails? _savedAddress;
+  // Takeaway pickup fields
+  final TextEditingController _pickupNameController = TextEditingController();
+  final TextEditingController _pickupPhoneController = TextEditingController();
+  DateTime? _pickupTime; // null => ASAP
   final OrderTrackingService _orderTrackingService = OrderTrackingService();
-  bool _isTrackingInitialized = false;
 
   // Helper method to calculate total amount including fees
   double _getTotalAmountWithFees(CartProvider cart) {
@@ -66,280 +71,13 @@ class _CartScreenState extends State<CartScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       if (authProvider.isLoggedIn && authProvider.user != null) {
         await _orderTrackingService.startTracking(authProvider.user!.id);
-        setState(() {
-          _isTrackingInitialized = true;
-        });
       }
     });
   }
 
-  void _showOrderTrackingModal() {
-    final activeOrders = _orderTrackingService.activeOrders;
-    if (activeOrders.isEmpty) return;
+  // Removed unused modal; tracking UI will be added later
 
-    // Show the first active order (you can modify this to show a list)
-    final order = activeOrders.first;
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        elevation: 10,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.grey[50]!,
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header with icon
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.delivery_dining,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Order Status',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            'Order #${order.id}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Status indicator
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(order.status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _getStatusColor(order.status).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _getStatusIcon(order.status),
-                      color: _getStatusColor(order.status),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      order.status,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _getStatusColor(order.status),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Order details
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _buildDetailRow(
-                      Icons.attach_money,
-                      'Total Amount',
-                      '₹${order.totalAmount.toStringAsFixed(0)}',
-                      Colors.green,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.location_on,
-                      'Delivery Address',
-                      order.deliveryAddress,
-                      Colors.blue,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Close',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // You can add more actions here like calling restaurant
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Track Order',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Helper method to get status color
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'preparing':
-        return Colors.orange;
-      case 'ready for pickup':
-        return Colors.blue;
-      case 'out for delivery':
-        return Colors.purple;
-      case 'delivered':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // Helper method to get status icon
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'preparing':
-        return Icons.restaurant;
-      case 'ready for pickup':
-        return Icons.store;
-      case 'out for delivery':
-        return Icons.delivery_dining;
-      case 'delivered':
-        return Icons.check_circle;
-      default:
-        return Icons.info;
-    }
-  }
-
-  // Helper method to build detail rows
-  Widget _buildDetailRow(
-      IconData icon, String label, String value, Color color) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Status helpers removed (unused after refactor)
 
   Future<void> _loadSavedAddress() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -380,6 +118,8 @@ class _CartScreenState extends State<CartScreen> {
     if (!kIsWeb) {
       _razorpay?.clear();
     }
+    _pickupNameController.dispose();
+    _pickupPhoneController.dispose();
     super.dispose();
   }
 
@@ -407,7 +147,6 @@ class _CartScreenState extends State<CartScreen> {
 
   void _openCheckout() {
     // providers
-    final cart = Provider.of<CartProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (auth.user == null) {
@@ -415,11 +154,23 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
-    if (_savedAddress == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add a delivery address first.')),
-      );
-      return;
+    // For delivery, require address. For takeaway, require pickup details
+    if (widget.mode == OrderMode.delivery) {
+      if (_savedAddress == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please add a delivery address first.')),
+        );
+        return;
+      }
+    } else if (widget.mode == OrderMode.takeaway) {
+      if ((_pickupNameController.text).trim().isEmpty ||
+          (_pickupPhoneController.text).trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Enter pickup name and phone for Takeaway.')),
+        );
+        return;
+      }
     }
 
     if (_prefetchedOrderId == null) {
@@ -480,7 +231,6 @@ class _CartScreenState extends State<CartScreen> {
 
   void _proceedToPayment() {
     // providers
-    final cart = Provider.of<CartProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (auth.user == null) {
@@ -635,19 +385,25 @@ class _CartScreenState extends State<CartScreen> {
     final locationProvider =
         Provider.of<DeliveryLocationProvider>(context, listen: false);
 
-    // Use delivery location if available, otherwise fall back to saved address
+    // Build address/pickup description based on mode
     String addressString;
     Map<String, double>? coordinates;
 
-    if (locationProvider.isLocationSet &&
-        locationProvider.selectedLocation != null) {
-      addressString = locationProvider.fullAddress;
-      // Get coordinates from the location provider
-      coordinates = await locationProvider.getCurrentLocationCoordinates();
-    } else if (_savedAddress != null) {
-      addressString = _savedAddress.toString();
+    if (widget.mode == OrderMode.takeaway) {
+      final pickupWhen =
+          _pickupTime != null ? _pickupTime!.toIso8601String() : 'ASAP';
+      addressString = 'TAKEAWAY | Name: ${_pickupNameController.text.trim()} | '
+          'Phone: ${_pickupPhoneController.text.trim()} | Time: $pickupWhen';
     } else {
-      addressString = 'No address provided';
+      if (locationProvider.isLocationSet &&
+          locationProvider.selectedLocation != null) {
+        addressString = locationProvider.fullAddress;
+        coordinates = await locationProvider.getCurrentLocationCoordinates();
+      } else if (_savedAddress != null) {
+        addressString = _savedAddress.toString();
+      } else {
+        addressString = 'No address provided';
+      }
     }
 
     // Use the providers directly
@@ -669,8 +425,27 @@ class _CartScreenState extends State<CartScreen> {
     cart.clearCart();
 
     if (mounted) {
-      Navigator.of(context).pop();
-      _showOrderCompletionDialog();
+      if (widget.mode == OrderMode.takeaway) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TakeawayConfirmationPage(
+              orderId: null, // backend can return id; plugged later
+              pickupName: _pickupNameController.text.trim().isEmpty
+                  ? null
+                  : _pickupNameController.text.trim(),
+              pickupPhone: _pickupPhoneController.text.trim().isEmpty
+                  ? null
+                  : _pickupPhoneController.text.trim(),
+              pickupTimeDisplay: _pickupTime == null
+                  ? 'ASAP'
+                  : _pickupTime!.toLocal().toString(),
+            ),
+          ),
+        );
+      } else {
+        Navigator.of(context).pop();
+        _showOrderCompletionDialog();
+      }
     }
   }
 
@@ -819,28 +594,178 @@ class _CartScreenState extends State<CartScreen> {
               ? _buildLoggedInUserStep(auth, isDark)
               : _buildAccountStep(isDark),
         ),
-        CheckoutStep(
-          icon: Icons.location_on,
-          title: 'Add a delivery address',
-          subtitle: auth.isLoggedIn
-              ? (_savedAddress != null
-                  ? 'Address added successfully'
-                  : 'You seem to be in the new location')
-              : 'Please log in first to add delivery address',
-          isActive: auth.isLoggedIn,
-          isCompleted: _savedAddress != null,
-          content: auth.isLoggedIn ? _buildDeliveryAddressStep(isDark) : null,
-        ),
+        if (widget.mode == OrderMode.delivery)
+          CheckoutStep(
+            icon: Icons.location_on,
+            title: 'Add a delivery address',
+            subtitle: auth.isLoggedIn
+                ? (_savedAddress != null
+                    ? 'Address added successfully'
+                    : 'You seem to be in the new location')
+                : 'Please log in first to add delivery address',
+            isActive: auth.isLoggedIn,
+            isCompleted: _savedAddress != null,
+            content: auth.isLoggedIn ? _buildDeliveryAddressStep(isDark) : null,
+          )
+        else
+          CheckoutStep(
+            icon: Icons.store_mall_directory,
+            title: 'Pickup details',
+            subtitle: 'Provide name, phone and pickup time',
+            isActive: auth.isLoggedIn,
+            isCompleted: _pickupNameController.text.trim().isNotEmpty &&
+                _pickupPhoneController.text.trim().isNotEmpty,
+            content: auth.isLoggedIn ? _buildPickupStep(isDark) : null,
+          ),
         CheckoutStep(
           icon: Icons.credit_card,
           title: 'Payment',
-          subtitle: _savedAddress != null
+          subtitle: widget.mode == OrderMode.takeaway
               ? 'Ready to process payment'
-              : 'Please add delivery address first',
-          isActive: _savedAddress != null,
-          content: _savedAddress != null ? _buildPaymentStep(isDark) : null,
+              : (_savedAddress != null
+                  ? 'Ready to process payment'
+                  : 'Please add delivery address first'),
+          isActive:
+              widget.mode == OrderMode.takeaway ? true : _savedAddress != null,
+          content: (widget.mode == OrderMode.takeaway || _savedAddress != null)
+              ? _buildPaymentStep(isDark)
+              : null,
         ),
       ],
+    );
+  }
+
+  Widget _buildPickupStep(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFF4CAF50),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _pickupNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Pickup name',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.phone, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _pickupPhoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact phone',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child:
+                    const Icon(Icons.schedule, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _pickupTime == null
+                            ? 'Pickup time: ASAP'
+                            : 'Pickup time: ${_pickupTime!.toLocal()}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () async {
+                        final now =
+                            DateTime.now().add(const Duration(minutes: 20));
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: now,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 7)),
+                        );
+                        if (picked != null && context.mounted) {
+                          final timeOfDay = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(now),
+                          );
+                          if (timeOfDay != null) {
+                            setState(() {
+                              _pickupTime = DateTime(
+                                picked.year,
+                                picked.month,
+                                picked.day,
+                                timeOfDay.hour,
+                                timeOfDay.minute,
+                              );
+                            });
+                          }
+                        }
+                      },
+                      child: const Text('Schedule'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _pickupTime = null);
+                      },
+                      child: const Text('ASAP'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

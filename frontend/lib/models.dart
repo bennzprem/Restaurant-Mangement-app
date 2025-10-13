@@ -1,5 +1,12 @@
 // lib/models.dart
 
+// High-level ordering modes used across the app
+enum OrderMode {
+  delivery,
+  dineIn,
+  takeaway,
+}
+
 class MenuItem {
   final int id;
   final String name;
@@ -90,6 +97,12 @@ class Order {
   final DateTime createdAt;
   final String deliveryAddress;
   final String? userId;
+  final String? pickupCode; // 4-digit code for takeaway orders
+
+  bool get isTakeaway {
+    // We encode takeaway in address string as 'TAKEAWAY | ...'
+    return deliveryAddress.toUpperCase().startsWith('TAKEAWAY');
+  }
 
   Order({
     required this.id,
@@ -98,17 +111,28 @@ class Order {
     required this.createdAt,
     required this.deliveryAddress,
     this.userId,
+    this.pickupCode,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    final deliveryAddress =
+        json['delivery_address'] ?? json['address'] ?? 'No address provided';
+
+    // Extract pickup code from delivery address for takeaway orders
+    String? extractedPickupCode;
+    if (deliveryAddress.toUpperCase().startsWith('TAKEAWAY')) {
+      final codeMatch = RegExp(r'Code:\s*(\d{4})').firstMatch(deliveryAddress);
+      extractedPickupCode = codeMatch?.group(1);
+    }
+
     return Order(
       id: json['id'],
       totalAmount: (json['total_amount'] as num).toDouble(),
       status: json['status'] ?? 'Unknown',
       createdAt: DateTime.parse(json['created_at']),
-      deliveryAddress:
-          json['delivery_address'] ?? json['address'] ?? 'No address provided',
+      deliveryAddress: deliveryAddress,
       userId: json['user_id'],
+      pickupCode: json['pickup_code'] ?? extractedPickupCode,
     );
   }
 }

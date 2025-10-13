@@ -527,16 +527,42 @@ def place_order():
         if not all([cart_items, total_amount, user_id, delivery_address]):
             return jsonify({"error": "Missing required order data including address"}), 400
 
+        # Extract pickup code from delivery address for takeaway orders
+        pickup_code = None
+        if delivery_address and delivery_address.upper().startswith('TAKEAWAY'):
+            import re
+            code_match = re.search(r'Code:\s*(\d{4})', delivery_address)
+            if code_match:
+                pickup_code = code_match.group(1)
+
         order_payload = {
             "total_amount": total_amount,
             "status": "Preparing",
             "user_id": user_id,
-            "delivery_address": delivery_address # <-- Save the address to the database
+            "delivery_address": delivery_address, # <-- Save the address to the database
         }
+        
+        # Only add pickup_code if it exists (for takeaway orders)
+        if pickup_code:
+            order_payload["pickup_code"] = pickup_code
+            
+        print(f"Order payload: {order_payload}")  # Debug log
+        print(f"Supabase URL: {SUPABASE_URL}")  # Debug log
+        print(f"Headers: {headers}")  # Debug log
+        
         order_response = requests.post(f"{SUPABASE_URL}/rest/v1/orders", json=order_payload, headers=headers)
+        
+        print(f"Order response status: {order_response.status_code}")  # Debug log
+        print(f"Order response text: {order_response.text}")  # Debug log
+        
+        if order_response.status_code != 201:
+            print(f"Order creation failed: {order_response.status_code} - {order_response.text}")
+            return jsonify({"error": f"Failed to create order: {order_response.text}"}), 500
+            
         order_response.raise_for_status()
         new_order = order_response.json()[0]
         order_id = new_order['id']
+        print(f"Order created successfully with ID: {order_id}")  # Debug log
 
         
         order_items_payload = [
@@ -549,12 +575,21 @@ def place_order():
         ]
         
         
+        print(f"Order items payload: {order_items_payload}")  # Debug log
+        
         items_response = requests.post(f"{SUPABASE_URL}/rest/v1/order_items", json=order_items_payload, headers=headers)
+        
+        if items_response.status_code != 201:
+            print(f"Order items creation failed: {items_response.status_code} - {items_response.text}")
+            return jsonify({"error": f"Failed to create order items: {items_response.text}"}), 500
+            
         items_response.raise_for_status()
 
         return jsonify({"message": "Order placed successfully!", "order_id": order_id}), 201
     except Exception as e:
         print(f"An error occurred in place_order: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
     
 @app.route('/users/<string:user_id>/orders', methods=['GET'])

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'menu_screen.dart';
+import 'models.dart';
 
 class MenuScreenWithLocation extends StatefulWidget {
   final String? tableSessionId;
   final String? initialCategory;
   final int? initialItemId;
+  final OrderMode mode;
 
   const MenuScreenWithLocation({
     super.key,
     this.tableSessionId,
     this.initialCategory,
     this.initialItemId,
+    this.mode = OrderMode.delivery,
   });
 
   @override
@@ -24,6 +27,7 @@ class _MenuScreenWithLocationState extends State<MenuScreenWithLocation> {
       tableSessionId: widget.tableSessionId,
       initialCategory: widget.initialCategory,
       initialItemId: widget.initialItemId,
+      mode: widget.mode,
     );
   }
 }

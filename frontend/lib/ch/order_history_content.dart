@@ -373,12 +373,35 @@ class _OrderHistoryContentState extends State<OrderHistoryContent> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    "Restaurant Order",
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                  Row(
+                    children: [
+                      if (order.isTakeaway)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF2E7D32)),
+                          ),
+                          child: Text(
+                            'Takeaway',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF2E7D32),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        order.isTakeaway ? "Pickup Order" : "Restaurant Order",
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -432,6 +455,53 @@ class _OrderHistoryContentState extends State<OrderHistoryContent> {
               ),
             ],
           ),
+          // Show pickup code for takeaway orders
+          if (order.isTakeaway &&
+              order.pickupCode != null &&
+              order.pickupCode!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2E7D32)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.qr_code_2,
+                    color: Color(0xFF2E7D32),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Pickup Code",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        order.pickupCode!,
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2E7D32),
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
