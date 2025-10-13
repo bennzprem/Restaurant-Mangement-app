@@ -2047,6 +2047,9 @@ def handle_voice_command():
                 is_logged_in = True
             except Exception: is_logged_in = False
         
+        
+        
+        
 
         # Step 3: AI Pass 1 - Get user's intent and entities
         intent_result = voice_assistant_service.get_intent_and_entities(user_text, menu_list, category_list, conversation_context or {})
