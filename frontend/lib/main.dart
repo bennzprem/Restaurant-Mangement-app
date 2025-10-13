@@ -1,43 +1,3 @@
-/*// In lib/main.dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'cart_provider.dart';
-import 'favorites_provider.dart'; // Import the new provider
-import 'menu_screen.dart';
-import 'about_page.dart';
-import 'contact_page.dart';
-import 'theme.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Wrap with MultiProvider
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => CartProvider()),
-        ChangeNotifierProvider(
-          create: (context) => FavoritesProvider(),
-        ), // Add this
-      ],
-      child: MaterialApp(
-        title: 'Restaurant',
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          primaryColor: const Color(0xFF2E7D32),
-          useMaterial3: true,
-        ),
-        home: const MenuScreen(),
-        debugShowCheckedModeBanner: false,
-      ),
-    );
-  }
-}*/
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -82,6 +42,7 @@ import 'pages/explore/fitness_categories_page.dart';
 import 'pages/explore/subscription_combo_page.dart';
 import 'book_table_page.dart';
 import 'order_from_table_page.dart';
+import 'widgets/header_widget.dart'; // for GlobalLoadingOverlay
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -120,53 +81,55 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Restaurant App',
-            debugShowCheckedModeBanner: false,
-            theme: themeProvider.currentTheme,
-            initialRoute: '/',
-            routes: {
-              // CHANGED: '/' now points to AuthWrapper which handles redirects
-              '/': (context) => const HomePage(),
-              '/login': (context) => const LoginPage(),
-              '/signup': (context) => const SignUpPage(),
-              '/profile': (context) => const UserDashboardPage(),
-              '/forget_password_page': (context) => const ForgotPasswordPage(),
-              '/phone_login': (context) => const PhoneLoginPage(),
-              '/phone_signup': (context) => const PhoneSignUpPage(),
-              '/edit_profile': (context) => const EditProfilePage(),
-              '/change_password': (context) => const ChangePasswordPage(),
-              '/order_history': (context) => const OrderHistoryPage(),
-              '/dine-in': (context) => const DineInPage(),
-              '/takeaway': (context) => TakeawayPage(),
-              '/booking-history': (context) => const BookingHistoryPage(),
-              '/menu': (context) {
-                final args = ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-                return MenuScreenWithLocation(
-                    initialCategory: args?['initialCategory'] as String?);
+          return GlobalLoadingOverlay(
+            child: MaterialApp(
+              title: 'Restaurant App',
+              debugShowCheckedModeBanner: false,
+              theme: themeProvider.currentTheme,
+              initialRoute: '/',
+              routes: {
+                // CHANGED: '/' now points to AuthWrapper which handles redirects
+                '/': (context) => const HomePage(),
+                '/login': (context) => const LoginPage(),
+                '/signup': (context) => const SignUpPage(),
+                '/profile': (context) => const UserDashboardPage(),
+                '/forget_password_page': (context) => const ForgotPasswordPage(),
+                '/phone_login': (context) => const PhoneLoginPage(),
+                '/phone_signup': (context) => const PhoneSignUpPage(),
+                '/edit_profile': (context) => const EditProfilePage(),
+                '/change_password': (context) => const ChangePasswordPage(),
+                '/order_history': (context) => const OrderHistoryPage(),
+                '/dine-in': (context) => const DineInPage(),
+                '/takeaway': (context) => TakeawayPage(),
+                '/booking-history': (context) => const BookingHistoryPage(),
+                '/menu': (context) {
+                  final args = ModalRoute.of(context)?.settings.arguments
+                      as Map<String, dynamic>?;
+                  return MenuScreenWithLocation(
+                      initialCategory: args?['initialCategory'] as String?);
+                },
+                '/about': (context) => AboutPage(),
+                '/contact': (context) => const ContactPage(),
+                '/explore-menu': (context) => const ExploreMenuPage(),
+                '/admin_dashboard': (context) => const AdminDashboardPage(),
+                '/manager_dashboard': (context) => const ManagerDashboardPage(),
+                '/employee_dashboard': (context) => const EmployeeDashboardPage(),
+                '/waiter_dashboard': (context) => const WaiterDashboardPage(),
+                '/debug_user_role': (context) => const DebugUserRole(),
+                '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
+                '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
+                '/cart': (context) => const CartScreen(),
+                '/favorites': (context) => const FavoritesScreen(),
+                // Explore section detail pages
+                '/explore/special-diet': (context) => const AllDayPicksPage(),
+                '/explore/fitness': (context) => const FitnessCategoriesPage(),
+                '/explore/subscription-combo': (context) =>
+                    const SubscriptionComboPage(),
+                // Table booking and ordering pages
+                '/reserve-table': (context) => const BookTablePage(),
+                '/order-from-table': (context) => const OrderFromTablePage(),
               },
-              '/about': (context) => AboutPage(),
-              '/contact': (context) => const ContactPage(),
-              '/explore-menu': (context) => const ExploreMenuPage(),
-              '/admin_dashboard': (context) => const AdminDashboardPage(),
-              '/manager_dashboard': (context) => const ManagerDashboardPage(),
-              '/employee_dashboard': (context) => const EmployeeDashboardPage(),
-              '/waiter_dashboard': (context) => const WaiterDashboardPage(),
-              '/debug_user_role': (context) => const DebugUserRole(),
-              '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
-              '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
-              '/cart': (context) => const CartScreen(),
-              '/favorites': (context) => const FavoritesScreen(),
-              // Explore section detail pages
-              '/explore/special-diet': (context) => const AllDayPicksPage(),
-              '/explore/fitness': (context) => const FitnessCategoriesPage(),
-              '/explore/subscription-combo': (context) =>
-                  const SubscriptionComboPage(),
-              // Table booking and ordering pages
-              '/reserve-table': (context) => const BookTablePage(),
-              '/order-from-table': (context) => const OrderFromTablePage(),
-            },
+            ),
           );
         },
       ),

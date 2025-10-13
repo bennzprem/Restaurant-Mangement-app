@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
 import 'dart:async';
 
 import 'auth_provider.dart'; // keep your auth provider import
@@ -1193,23 +1194,6 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                               padding: const EdgeInsets.symmetric(
                                   vertical: 24, horizontal: 16),
                               decoration: BoxDecoration(
-                                // Background image for all three cards with subtle overlay
-                                image: DecorationImage(
-                                  image: const AssetImage(
-                                      'assets/images/homepage.jpg'),
-                                  // Fill the card without obvious cropping; keep centered
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                  // Subtle, theme-aware opacity so the image is visible but muted
-                                  colorFilter: ColorFilter.mode(
-                                    (isDark
-                                        ? Colors.white.withOpacity(0.12)
-                                        : Colors.black.withOpacity(0.12)),
-                                    isDark
-                                        ? BlendMode.lighten
-                                        : BlendMode.darken,
-                                  ),
-                                ),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
                                   color: index == _selectedIndex
@@ -1226,51 +1210,89 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                   )
                                 ],
                               ),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                              child: Stack(
+                                fit: StackFit.expand,
                                 children: [
-                                  AnimatedScale(
-                                    scale: index == _selectedIndex ? 1.1 : 0.9,
-                                    duration: const Duration(milliseconds: 800),
-                                    child: AnimatedRotation(
-                                      turns:
-                                          index == _selectedIndex ? 0.0 : 0.05,
-                                      duration:
-                                          const Duration(milliseconds: 1000),
-                                      child: Icon(card['icon'],
-                                          size: 48, color: theme.primaryColor),
+                                  // Blurred background image per card
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Image.asset(
+                                      (() {
+                                        final title =
+                                            (card['title'] as String).toLowerCase();
+                                        if (title.contains('delivery')) {
+                                          return 'assets/images/delivery.jpg';
+                                        } else if (title.contains('dine-in') ||
+                                            title.contains('dine')) {
+                                          return 'assets/images/dine-in.jpg';
+                                        } else {
+                                          return 'assets/images/takeaway.jpg';
+                                        }
+                                      })(),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                  AnimatedScale(
-                                    scale: index == _selectedIndex ? 1.0 : 0.9,
-                                    duration: const Duration(milliseconds: 800),
-                                    child: Text(
-                                      card['title'],
-                                      style: theme.textTheme.displayLarge
-                                          ?.copyWith(
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Nunito',
-                                      ),
+                                  // Soft overlay for readability
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Container(
+                                      color: (isDark
+                                              ? Colors.black.withOpacity(0.28)
+                                              : Colors.white.withOpacity(0.28)),
                                     ),
                                   ),
+
+                                  // Foreground content (unchanged)
                                   Column(
-                                    children: (card['buttons']
-                                            as List<Map<String, dynamic>>)
-                                        .map((buttonData) {
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 8.0),
-                                        child: _AnimatedButton(
-                                          onPressed: buttonData['action']
-                                              as VoidCallback,
-                                          text: buttonData['text'],
-                                          isDark: isDark,
-                                          theme: theme,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      AnimatedScale(
+                                        scale: index == _selectedIndex ? 1.1 : 0.9,
+                                        duration:
+                                            const Duration(milliseconds: 800),
+                                        child: AnimatedRotation(
+                                          turns: index == _selectedIndex
+                                              ? 0.0
+                                              : 0.05,
+                                          duration: const Duration(
+                                              milliseconds: 1000),
+                                          child: Icon(card['icon'],
+                                              size: 48,
+                                              color: theme.primaryColor),
                                         ),
-                                      );
-                                    }).toList(),
+                                      ),
+                                      AnimatedScale(
+                                        scale: index == _selectedIndex ? 1.0 : 0.9,
+                                        duration:
+                                            const Duration(milliseconds: 800),
+                                        child: Text(
+                                          card['title'],
+                                          style: theme.textTheme.displayLarge?.copyWith(
+                                            fontSize: 30,
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Nunito',
+                                          ),
+                                        ),
+                                      ),
+                                      Column(
+                                        children: (card['buttons']
+                                                as List<Map<String, dynamic>>)
+                                            .map((buttonData) {
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 8.0),
+                                            child: _AnimatedButton(
+                                              onPressed: buttonData['action']
+                                                  as VoidCallback,
+                                              text: buttonData['text'],
+                                              isDark: isDark,
+                                              theme: theme,
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

@@ -1,5 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lottie/lottie.dart';
 import '../auth_provider.dart';
 import '../models.dart';
 import '../ch/user_dashboard_page.dart';
@@ -105,30 +108,49 @@ class HeaderWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-                  // Make the logo clickable to invoke the voice assistant overlay
+                  // Make the logo and brand text clickable to invoke the voice assistant overlay
+                  // Logo: opens ByteBot (overlay an InkWell above the video to ensure clicks work on web)
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _showVoiceOverlay(context),
-                      child:
+                    child: SizedBox(
+                      width: 62,
+                      height: 60,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
                           const _LogoVideo(width: 62, height: 60, scale: 1.6),
+                          Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              onTap: () => _showVoiceOverlay(context),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    'ByteEat',
-                    style: TextStyle(
-                      fontFamily: 'StoryScript',
-                      fontSize:
-                          MediaQuery.of(context).size.width < 700 ? 20 : 30,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      color: theme.textTheme.displayLarge?.color,
-                      fontVariations: const [
-                        FontVariation('ital', 0),
-                        FontVariation('wght', 700),
-                      ],
+                  // Brand text: navigates home
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/'),
+                      child: Text(
+                        'ByteEat',
+                        style: TextStyle(
+                          fontFamily: 'StoryScript',
+                          fontSize:
+                              MediaQuery.of(context).size.width < 700 ? 20 : 30,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          color: theme.textTheme.displayLarge?.color,
+                          fontVariations: const [
+                            FontVariation('ital', 0),
+                            FontVariation('wght', 700),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   // (hint bubble moved below the header)
@@ -169,8 +191,7 @@ class HeaderWidget extends StatelessWidget {
                                 onPressed: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          CartScreen(mode: orderMode),
+                                      builder: (context) => const CartScreen(),
                                     ),
                                   );
                                 },
@@ -372,6 +393,7 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  bool _dismissed = false;
 
   @override
   void initState() {
@@ -393,6 +415,7 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
 
   @override
   Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -412,29 +435,58 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                 CustomPaint(
                   painter: _SpeechBubblePainter(
                     fillColor: isDark ? Colors.black : Colors.white,
-                    strokeColor: Colors.black87,
-                    radius: 16,
-                    strokeWidth: 2.5,
+                    strokeColor: Theme.of(context).primaryColor,
+                    radius: 6,
+                    strokeWidth: 1.6,
+                    notchRadius: 8, // taller notch for a sharper tip
+                    notchOffsetX: 22,
                   ),
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 260),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Stack(
                       children: [
-                        Icon(
-                          Icons.android,
-                          size: 16,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            "Hey there! Click the ByteEat logo to chat with ByteBot.",
-                            style: theme.textTheme.bodySmall?.copyWith(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.android,
+                              size: 16,
                               color: isDark ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w600,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                "Hey there! Click the ByteEat logo to chat with ByteBot.",
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 18),
+                          ],
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => setState(() => _dismissed = true),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -443,31 +495,7 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                   ),
                 ),
                 // Small notch elevated from the bubble's border (no base line)
-                Positioned(
-                  left: 18,
-                  top: -1,
-                  child: Transform.rotate(
-                    angle: 0.0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.black : Colors.white,
-                        border: Border(
-                          left: BorderSide(color: Colors.black87, width: 2),
-                          top: BorderSide(color: Colors.black87, width: 2),
-                          right:
-                              BorderSide(color: Colors.transparent, width: 0),
-                          bottom:
-                              BorderSide(color: Colors.transparent, width: 0),
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // Notch is now drawn as part of the speech bubble path itself
               ],
             ),
           ),
@@ -516,20 +544,22 @@ class _SpeechBubblePainter extends CustomPainter {
   final Color strokeColor;
   final double radius;
   final double strokeWidth;
+  final double notchRadius; // small rounded notch size
+  final double notchOffsetX; // x offset from left edge
 
   _SpeechBubblePainter({
     required this.fillColor,
     required this.strokeColor,
     this.radius = 16,
     this.strokeWidth = 2.5,
+    this.notchRadius = 0,
+    this.notchOffsetX = 24,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final RRect rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
+    final Rect rect = Offset.zero & size;
+    final RRect rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
     final Paint fill = Paint()..color = fillColor;
     final Paint stroke = Paint()
@@ -538,10 +568,75 @@ class _SpeechBubblePainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeJoin = StrokeJoin.round;
 
-    canvas.drawRRect(rrect, fill);
+    // Build path with top notch protruding from the border
+    final Path bubblePath = Path();
+    final double left = rect.left;
+    final double right = rect.right;
+    final double top = rect.top;
+    final double bottom = rect.bottom;
+    final double r = radius;
 
-    final Path path = Path()..addRRect(rrect);
-    canvas.drawPath(path, stroke);
+    // Start from top-left corner
+    bubblePath.moveTo(left + r, top);
+
+    // Top edge until notch start
+    final double notchCenterX =
+        (left + notchOffsetX).clamp(left + r + 6, right - r - 6);
+    // Make the notch sharper by keeping it narrower than its height
+    final double notchHalfWidth = notchRadius * 0.5;
+    final double notchStartX = notchCenterX - notchHalfWidth;
+    final double notchEndX = notchCenterX + notchHalfWidth;
+
+    bubblePath.lineTo(notchStartX, top);
+    if (notchRadius > 0) {
+      // Draw small upward arc (notch) protruding above the top edge
+      bubblePath.quadraticBezierTo(
+        notchCenterX,
+        top - notchRadius, // elevate
+        notchEndX,
+        top,
+      );
+    }
+    bubblePath.lineTo(right - r, top);
+
+    // Top-right corner
+    bubblePath.arcToPoint(
+      Offset(right, top + r),
+      radius: Radius.circular(r),
+    );
+
+    // Right edge
+    bubblePath.lineTo(right, bottom - r);
+
+    // Bottom-right corner
+    bubblePath.arcToPoint(
+      Offset(right - r, bottom),
+      radius: Radius.circular(r),
+    );
+
+    // Bottom edge
+    bubblePath.lineTo(left + r, bottom);
+
+    // Bottom-left corner
+    bubblePath.arcToPoint(
+      Offset(left, bottom - r),
+      radius: Radius.circular(r),
+    );
+
+    // Left edge
+    bubblePath.lineTo(left, top + r);
+
+    // Top-left corner
+    bubblePath.arcToPoint(
+      Offset(left + r, top),
+      radius: Radius.circular(r),
+    );
+
+    bubblePath.close();
+
+    // Paint fill and stroke
+    canvas.drawPath(bubblePath, fill);
+    canvas.drawPath(bubblePath, stroke);
   }
 
   @override
@@ -938,6 +1033,76 @@ class _LogoVideoState extends State<_LogoVideo> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class GlobalLoadingOverlay extends StatefulWidget {
+  final Widget child;
+  const GlobalLoadingOverlay({super.key, required this.child});
+
+  @override
+  State<GlobalLoadingOverlay> createState() => _GlobalLoadingOverlayState();
+}
+
+class _GlobalLoadingOverlayState extends State<GlobalLoadingOverlay>
+    with RouteAware {
+  bool _isLoading = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ModalRoute<dynamic>? route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      RouteObserver<ModalRoute<void>>().subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    RouteObserver<ModalRoute<void>>().unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPush() {
+    setState(() => _isLoading = true);
+    _hideSoon();
+  }
+
+  @override
+  void didPopNext() {
+    setState(() => _isLoading = true);
+    _hideSoon();
+  }
+
+  Future<void> _hideSoon() async {
+    // Hide shortly after the new page is built
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topLeft,
+      children: [
+        widget.child,
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.08),
+              child: Center(
+                child: Lottie.network(
+                  'https://lottie.host/055193e9-9222-4e91-9cf4-d31c575d1b07/rCCyLAvHHK.lottie',
+                  width: 160,
+                  height: 160,
+                  repeat: true,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
