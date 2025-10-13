@@ -98,11 +98,11 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         print('Speech recognition done, stopping listening');
         _stopListening();
       }
-      // Auto-stop listening after 12 seconds for faster response
+      // Auto-stop listening after 30 seconds to give user enough time
       if (status == 'listening' && _currentState == VoiceState.listening) {
-        Future.delayed(const Duration(seconds: 12), () {
+        Future.delayed(const Duration(seconds: 30), () {
           if (_currentState == VoiceState.listening) {
-            print('Auto-stopping listening after 12 seconds for faster response');
+            print('Auto-stopping listening after 30 seconds');
             _stopListening();
           }
         });
@@ -129,8 +129,15 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
     // Ensure the speech engine is initialized (in case user taps immediately)
     try {
-      await _speechToText.initialize();
-    } catch (_) {}
+      final available = await _speechToText.initialize();
+      if (!available) {
+        print('Speech recognition not available');
+        return;
+      }
+    } catch (e) {
+      print('Error initializing speech recognition: $e');
+      return;
+    }
     
     // Stop any existing animation
     _listeningController.stop();
@@ -149,7 +156,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     _listeningController.reset();
     _listeningController.repeat(reverse: true);
     
-    print('Animation started, beginning speech recognition for 20 seconds'); // Debug log
+    print('Animation started, beginning speech recognition for 30 seconds'); // Debug log
     
     // Start active listening
     _startActiveListening();
@@ -158,19 +165,34 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
   void _startActiveListening() async {
     print('_startActiveListening() called'); // Debug log
     
-    // Start speech recognition with longer listening time for complete sentences
-    await _speechToText.listen(
-      onResult: _onSpeechResult,
-      listenFor: const Duration(seconds: 20), // Increased to 20 seconds for complete sentences
-      pauseFor: const Duration(seconds: 2), // Reduced to 2 seconds for faster response
-      partialResults: true,
-      localeId: 'en_US',
-      cancelOnError: false, // Don't cancel on minor errors
-    );
+    try {
+      // Start speech recognition with longer listening time for complete sentences
+      await _speechToText.listen(
+        onResult: _onSpeechResult,
+        listenFor: const Duration(seconds: 30), // Increased to 30 seconds for complete sentences
+        pauseFor: const Duration(seconds: 3), // Increased to 3 seconds for better response
+        partialResults: true,
+        localeId: 'en_US',
+        cancelOnError: false, // Don't cancel on minor errors
+      );
+      print('Speech recognition started successfully');
+    } catch (e) {
+      print('Error starting speech recognition: $e');
+      // If speech recognition fails, reset to idle state
+      setState(() {
+        _currentState = VoiceState.idle;
+        _showListeningAnimation = false;
+      });
+    }
   }
 
   void _stopListening() async {
-    await _speechToText.stop();
+    try {
+      await _speechToText.stop();
+    } catch (e) {
+      print('Error stopping speech recognition: $e');
+    }
+    
     // Stop the listening animation
     _listeningController.stop();
     setState(() {
@@ -191,6 +213,16 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
       _lastWords = result.recognizedWords;
       _currentSpeechText = result.recognizedWords; // Show current speech
     });
+    
+    // If we have a final result with words, stop listening after a short delay
+    if (result.finalResult && result.recognizedWords.isNotEmpty) {
+      print('Final result received, stopping listening in 1 second');
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_currentState == VoiceState.listening) {
+          _stopListening();
+        }
+      });
+    }
   }
 
   Future<void> _sendCommandToBackend() async {
@@ -214,7 +246,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
           'text': _lastWords,
           'context': _conversationContext, // Send the memory to the backend
         }),
-      ).timeout(const Duration(seconds: 10)); // Add 10 second timeout for faster response
+      ).timeout(const Duration(seconds: 15)); // Add 15 second timeout for better response
       
       print('Backend response status: ${response.statusCode}');
 
