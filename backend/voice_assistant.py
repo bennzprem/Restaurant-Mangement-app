@@ -45,15 +45,21 @@ class VoiceAssistant:
         4.  **Prioritize Intent:** Your primary goal is to determine the intent. A simple greeting like "hi" has an intent of "unknown".
 
         **Possible Intents:**
-        - `place_order`: User wants to add an item to their cart.
+        - `place_order`: User wants to add an item to their cart (e.g., "add pizza", "order chicken", "I want to buy...").
         - `clear_cart`: User wants to empty their cart.
-        - `ask_about_dish`: User asks for details about a specific dish (e.g., "what is in the...").
+        - `ask_about_dish`: User asks for details about a specific dish (e.g., "what is in the...", "do you have...", "is there...", "tell me about...").
         - `ask_price`: User asks for the price of a specific dish.
         - `list_by_category`: User asks for all items in a category (e.g., "what's in appetizers?").
         - `list_by_ingredient`: User asks for dishes containing a specific ingredient (e.g., "show me something with mushroom").
         - `list_by_price_under`: User asks for items below a certain price (e.g., "what's under 200?").
         - `list_by_specific_type`: User asks for specific types like "ice creams", "desserts", "beverages", "pizzas" (e.g., "what ice creams do you have?").
         - `unknown`: The intent is unclear or is a simple greeting.
+
+        **CRITICAL INTENT DISTINCTION:**
+        - Use `ask_about_dish` for questions like "do you have...", "is there...", "tell me about...", "what is...", "do you serve...", "is [item] available"
+        - Use `place_order` ONLY when user explicitly wants to add/order/buy something (e.g., "add to cart", "order", "buy", "I want to order...", "add [item] to my order")
+        
+        **IMPORTANT:** Questions about availability or asking for information should NEVER be classified as `place_order`.
 
         **Available Menu Items:** {menu_for_prompt}
         **Available Categories:** {categories_for_prompt}
@@ -84,6 +90,27 @@ class VoiceAssistant:
 
         User Command: "tell me about the paneer tikka"
         Output: {{"intent": "ask_about_dish", "entity_name": "Paneer Tikka Skewers"}}
+
+        User Command: "do you have pizza"
+        Output: {{"intent": "ask_about_dish", "entity_name": "pizza"}}
+
+        User Command: "do you serve chicken biryani"
+        Output: {{"intent": "ask_about_dish", "entity_name": "chicken biryani"}}
+
+        User Command: "is there any pasta available"
+        Output: {{"intent": "ask_about_dish", "entity_name": "pasta"}}
+
+        User Command: "do you have cold coffee"
+        Output: {{"intent": "ask_about_dish", "entity_name": "cold coffee"}}
+
+        User Command: "add pizza to my order"
+        Output: {{"intent": "place_order", "entity_name": "pizza"}}
+
+        User Command: "I want to order chicken biryani"
+        Output: {{"intent": "place_order", "entity_name": "chicken biryani"}}
+
+        User Command: "buy me a cold coffee"
+        Output: {{"intent": "place_order", "entity_name": "cold coffee"}}
         """
         try:
             # Simple regex to find numbers for the price intent

@@ -455,7 +455,7 @@ class _HomePageState extends State<HomePage> {
             top: 0,
             left: 0,
             right: 0,
-            child: const HeaderWidget(),
+            child: const HeaderWidget(active: HeaderActive.home),
           ),
 
           // Order tracking button

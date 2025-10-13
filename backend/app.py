@@ -2051,6 +2051,11 @@ def handle_voice_command():
         intent_result = voice_assistant_service.get_intent_and_entities(user_text, menu_list, category_list, conversation_context)
         intent = intent_result.get("intent")
         
+        # Debug logging
+        print(f"DEBUG: User text: '{user_text}'")
+        print(f"DEBUG: Detected intent: '{intent}'")
+        print(f"DEBUG: Intent result: {intent_result}")
+        
         # Step 4: Python Logic - Perform actions based on intent
         context_for_ai = {"is_logged_in": is_logged_in}
         updated_cart_items = []
@@ -2185,6 +2190,10 @@ def handle_voice_command():
             final_message = final_ai_response.get("confirmation_message", "I'm not sure how to answer that.")
         
         new_context = final_ai_response.get("new_context", {})
+        
+        # Debug logging for action
+        print(f"DEBUG: Action required: '{action_required}'")
+        print(f"DEBUG: Final message: '{final_message}'")
 
         return jsonify({ "message": final_message, "action": action_required, "updated_cart": updated_cart_items, "new_context": new_context }), 200
 

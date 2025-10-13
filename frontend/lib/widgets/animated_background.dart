@@ -14,17 +14,28 @@ class _AnimatedVeggieBackgroundState extends State<AnimatedVeggieBackground>
   
   // Same color as your original file
   final Color _veggieColor = const Color(0xFF7FBF7F);
+  
+  // Random seed that changes on each rebuild/transition
+  int _randomSeed = DateTime.now().millisecondsSinceEpoch;
 
   @override
   void initState() {
     super.initState();
-    // Reduced from 40 to 25 controllers
     _controllers = List.generate(25, (index) {
       return _VeggiePainterController(
         vsync: this,
-        delay: Duration(milliseconds: index * 150), // Slightly longer delay
+        delay: Duration(milliseconds: index * 150),
         duration: Duration(seconds: 5 + (index % 3)),
       );
+    });
+  }
+
+  @override
+  void didUpdateWidget(AnimatedVeggieBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Generate new random seed on widget update
+    setState(() {
+      _randomSeed = DateTime.now().millisecondsSinceEpoch;
     });
   }
 
@@ -52,6 +63,7 @@ class _AnimatedVeggieBackgroundState extends State<AnimatedVeggieBackground>
         painter: _VeggieBackgroundPainter(
           animations: animations,
           veggieColor: adaptedColor,
+          randomSeed: _randomSeed, // Pass the dynamic seed
         ),
         child: Container(),
       ),
@@ -78,82 +90,81 @@ class _VeggieItem {
 class _VeggieBackgroundPainter extends CustomPainter {
   final List<Animation<double>> animations;
   final Color veggieColor;
+  final int randomSeed; // Dynamic seed for random positioning
 
   _VeggieBackgroundPainter({
     required this.animations,
     required this.veggieColor,
+    required this.randomSeed,
   }) : super(repaint: Listenable.merge(animations));
 
-  // Reduced and optimized food icons list
+  // Food icons list
   final List<IconData> _foodIcons = [
-    Icons.restaurant_outlined,        // Outlined version
-    Icons.local_pizza_outlined,      // Pizza outline
-    Icons.lunch_dining_outlined,     // Lunch box outline
-    Icons.dinner_dining_outlined,    // Dinner plate outline
-    Icons.coffee_outlined,           // Coffee outline
-    Icons.local_cafe_outlined,       // Cafe outline
-    Icons.cake_outlined,             // Cake outline
-    Icons.fastfood_outlined,         // Fast food outline
-    Icons.ramen_dining_outlined,     // Ramen outline
-    Icons.rice_bowl_outlined,        // Rice bowl outline
-    Icons.icecream_outlined,         // Ice cream outline
-    Icons.emoji_food_beverage_outlined, // Food & beverage outline
+    Icons.restaurant_outlined,
+    Icons.local_pizza_outlined,
+    Icons.lunch_dining_outlined,
+    Icons.dinner_dining_outlined,
+    Icons.coffee_outlined,
+    Icons.local_cafe_outlined,
+    Icons.cake_outlined,
+    Icons.fastfood_outlined,
+    Icons.ramen_dining_outlined,
+    Icons.rice_bowl_outlined,
+    Icons.icecream_outlined,
+    Icons.emoji_food_beverage_outlined,
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final List<_VeggieItem> veggieItems = [];
     
-    // Reduced grid density - fewer items per row/column
-    const int itemsPerRow = 8;  // Reduced from 12
-    const int itemsPerCol = 6;  // Reduced from 10
-    final double cellWidth = size.width / itemsPerRow;
-    final double cellHeight = size.height / itemsPerCol;
-
-    // Generate fewer items with more spacing
-    for (int row = -1; row <= itemsPerCol; row++) {
-      for (int col = -1; col <= itemsPerRow; col++) {
-        int seed = row * itemsPerRow + col;
-        final math.Random random = math.Random(seed);
-        
-        // Skip some items randomly to reduce density further
-        if (random.nextDouble() < 0.3) continue; // Skip 30% of potential positions
-        
-        // Larger random offset for more irregular positioning
-        double xOffset = random.nextDouble() * cellWidth * 0.8 - cellWidth * 0.4;
-        double yOffset = random.nextDouble() * cellHeight * 0.8 - cellHeight * 0.4;
-        
-        double x = col * cellWidth + cellWidth / 2 + xOffset;
-        double y = row * cellHeight + cellHeight / 2 + yOffset;
-        
-        // More varied irregular sizes (20-45px range)
-        double itemSize = 20 + random.nextDouble() * 25;
-        
-        // Random rotation
-        double rotation = random.nextDouble() * math.pi / 3 - math.pi / 6;
-        
-        // Select food icon type
-        int iconType = random.nextInt(_foodIcons.length);
-        
-        veggieItems.add(_VeggieItem(
-          position: Offset(x, y),
-          size: itemSize,
-          type: iconType,
-          rotation: rotation,
-          icon: _foodIcons[iconType],
-        ));
-      }
+    // Use the dynamic seed for completely random positioning
+    final math.Random masterRandom = math.Random(randomSeed);
+    
+    // Generate completely random positions instead of grid-based
+    const int totalIcons = 30; // Fixed number of icons
+    
+    for (int i = 0; i < totalIcons; i++) {
+      // Completely random position across the entire canvas
+      double x = masterRandom.nextDouble() * size.width;
+      double y = masterRandom.nextDouble() * size.height;
+      
+      // Ensure icons don't go too close to edges
+      x = math.max(30, math.min(size.width - 30, x));
+      y = math.max(30, math.min(size.height - 30, y));
+      
+      // Random irregular sizes
+      double itemSize = 18 + masterRandom.nextDouble() * 28; // 18-46px range
+      
+      // Random rotation
+      double rotation = masterRandom.nextDouble() * math.pi / 2 - math.pi / 4;
+      
+      // Random icon selection
+      int iconType = masterRandom.nextInt(_foodIcons.length);
+      
+      veggieItems.add(_VeggieItem(
+        position: Offset(x, y),
+        size: itemSize,
+        type: iconType,
+        rotation: rotation,
+        icon: _foodIcons[iconType],
+      ));
     }
 
-    // Draw all food icons with thin outline style
-    for (var item in veggieItems) {
-      final int animationIndex = item.position.dx.toInt() % animations.length;
+    // Sort items by size so smaller icons don't get hidden behind larger ones
+    veggieItems.sort((a, b) => b.size.compareTo(a.size));
+
+    // Draw all food icons with animation
+    for (int i = 0; i < veggieItems.length; i++) {
+      final item = veggieItems[i];
+      final int animationIndex = i % animations.length;
       final animation = animations[animationIndex];
 
-      // Same floating animation
+      // Floating animation with different patterns for variety
+      final double animPhase = (i % 4) * math.pi / 2; // Different phase for each icon
       final Offset animatedOffset = Offset(
-        math.sin(animation.value * math.pi * 2) * 2,
-        math.cos(animation.value * math.pi * 2) * 2,
+        math.sin(animation.value * math.pi * 2 + animPhase) * 2.5,
+        math.cos(animation.value * math.pi * 2 + animPhase) * 2.5,
       );
 
       final Offset finalPosition = item.position + animatedOffset;
@@ -161,16 +172,18 @@ class _VeggieBackgroundPainter extends CustomPainter {
       // Draw thin outline icon
       _drawThinOutlineIcon(canvas, item.icon, finalPosition, item.size, item.rotation);
 
-      // Reduced decorative dots (less frequent)
-      final math.Random dotRandom = math.Random(item.position.dx.toInt() + item.position.dy.toInt());
-      if (dotRandom.nextDouble() > 0.85) { // More selective dots
+      // Occasional decorative dots with random placement
+      if (masterRandom.nextDouble() > 0.85) {
         final Paint dotPaint = Paint()
           ..color = veggieColor.withOpacity(0.7)
           ..style = PaintingStyle.fill;
 
         canvas.drawCircle(
-          finalPosition + Offset(item.size * 0.7, -item.size * 0.4),
-          1.0, // Smaller dots
+          finalPosition + Offset(
+            (masterRandom.nextDouble() - 0.5) * item.size,
+            (masterRandom.nextDouble() - 0.5) * item.size,
+          ),
+          0.8 + masterRandom.nextDouble() * 0.4,
           dotPaint,
         );
       }
@@ -182,7 +195,7 @@ class _VeggieBackgroundPainter extends CustomPainter {
     canvas.translate(position.dx, position.dy);
     canvas.rotate(rotation);
 
-    // Create text painter with thin weight for outlined appearance
+    // Thin outlined appearance
     final textPainter = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(icon.codePoint),
@@ -191,7 +204,7 @@ class _VeggieBackgroundPainter extends CustomPainter {
           package: icon.fontPackage,
           fontSize: size,
           color: veggieColor,
-          fontWeight: FontWeight.w300, // Thin weight
+          fontWeight: FontWeight.w300,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -199,7 +212,6 @@ class _VeggieBackgroundPainter extends CustomPainter {
 
     textPainter.layout();
     
-    // Center the icon
     final offset = Offset(
       -textPainter.width / 2,
       -textPainter.height / 2,
@@ -210,10 +222,13 @@ class _VeggieBackgroundPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_VeggieBackgroundPainter oldDelegate) => true;
+  bool shouldRepaint(_VeggieBackgroundPainter oldDelegate) {
+    // Repaint when the random seed changes (new positions)
+    return oldDelegate.randomSeed != randomSeed;
+  }
 }
 
-// Same controller as before
+// Enhanced controller with position regeneration capability
 class _VeggiePainterController {
   final AnimationController _controller;
   late final Animation<double> animation;
@@ -239,5 +254,37 @@ class _VeggiePainterController {
   void dispose() {
     _disposed = true;
     _controller.dispose();
+  }
+}
+
+// Optional: Add this method to your parent widget to trigger position changes
+class RandomVeggieBackground extends StatefulWidget {
+  final Widget child;
+  
+  const RandomVeggieBackground({
+    super.key,
+    required this.child,
+  });
+
+  @override
+  State<RandomVeggieBackground> createState() => _RandomVeggieBackgroundState();
+}
+
+class _RandomVeggieBackgroundState extends State<RandomVeggieBackground> {
+  final GlobalKey<_AnimatedVeggieBackgroundState> _backgroundKey = GlobalKey();
+
+  void regeneratePositions() {
+    // Force regeneration of positions
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        AnimatedVeggieBackground(key: _backgroundKey),
+        widget.child,
+      ],
+    );
   }
 }
