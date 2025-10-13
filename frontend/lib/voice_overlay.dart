@@ -207,6 +207,19 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     });
   }
 
+  Future<void> _waitForSpeechToComplete() async {
+    // Calculate estimated speech duration based on message length
+    // Average speaking rate is about 150 words per minute (2.5 words per second)
+    int wordCount = _aiResponse.split(' ').length;
+    int estimatedDurationMs = (wordCount / 2.5 * 1000).round();
+    
+    // Add buffer time for natural speech pauses
+    int totalWaitTime = estimatedDurationMs + 1000; // Add 1 second buffer
+    
+    print('Waiting for speech to complete: ${totalWaitTime}ms for ${wordCount} words');
+    await Future.delayed(Duration(milliseconds: totalWaitTime));
+  }
+
   void _onSpeechResult(SpeechRecognitionResult result) {
     print('Speech result: "${result.recognizedWords}" (final: ${result.finalResult})'); // Debug log
     setState(() {
@@ -286,10 +299,39 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
         // --- THIS IS THE FIX FOR REDIRECTION ---
         if (action == 'NAVIGATE_TO_LOGIN') {
-          await Future.delayed(const Duration(milliseconds: 2500));
+          // Wait for speech to complete before navigating
+          await _waitForSpeechToComplete();
           if (mounted) {
             Navigator.of(context).pop(); // Close the overlay
             Navigator.of(context).pushNamed('/login'); // Navigate to login page
+          }
+        } else if (action == 'NAVIGATE_TO_MENU') {
+          // Wait for speech to complete before navigating
+          await _waitForSpeechToComplete();
+          if (mounted) {
+            Navigator.of(context).pop(); // Close the overlay
+            Navigator.of(context).pushNamed('/menu'); // Navigate to menu page
+          }
+        } else if (action == 'NAVIGATE_TO_ORDER_HISTORY') {
+          // Wait for speech to complete before navigating
+          await _waitForSpeechToComplete();
+          if (mounted) {
+            Navigator.of(context).pop(); // Close the overlay
+            Navigator.of(context).pushNamed('/order-history'); // Navigate to order history page
+          }
+        } else if (action == 'NAVIGATE_TO_RESERVE_TABLE') {
+          // Wait for speech to complete before navigating
+          await _waitForSpeechToComplete();
+          if (mounted) {
+            Navigator.of(context).pop(); // Close the overlay
+            Navigator.of(context).pushNamed('/reserve-table'); // Navigate to reserve table page
+          }
+        } else if (action == 'NAVIGATE_TO_RESERVATION_HISTORY') {
+          // Wait for speech to complete before navigating
+          await _waitForSpeechToComplete();
+          if (mounted) {
+            Navigator.of(context).pop(); // Close the overlay
+            Navigator.of(context).pushNamed('/reservation-history'); // Navigate to reservation history page
           }
         }
 

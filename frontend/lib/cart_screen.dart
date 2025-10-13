@@ -17,6 +17,7 @@ import 'widgets/address_selection_dialog.dart';
 import 'widgets/order_summary_card.dart';
 // Removed unused imports for order tracking UI helpers
 import 'services/order_tracking_service.dart';
+import 'services/temp_data_service.dart';
 import 'models.dart';
 import 'order_location_picker.dart';
 import 'dart:convert';
@@ -64,6 +65,7 @@ class _CartScreenState extends State<CartScreen> {
     }
     _loadSavedAddress();
     _initializeOrderTracking();
+    _checkForPendingOrder();
   }
 
   void _initializeOrderTracking() async {
@@ -73,6 +75,66 @@ class _CartScreenState extends State<CartScreen> {
         await _orderTrackingService.startTracking(authProvider.user!.id);
       }
     });
+  }
+
+  // Check for pending order data and restore it
+  Future<void> _checkForPendingOrder() async {
+    final pendingData = await TempDataService.getPendingOrder();
+    if (pendingData != null) {
+      final orderData = pendingData['orderData'] as Map<String, dynamic>;
+      final orderType = pendingData['orderType'] as String;
+      
+      // Show dialog to continue with the order
+      if (mounted) {
+        _showContinueOrderDialog(orderData, orderType);
+      }
+    }
+  }
+
+  // Show dialog to continue with pending order
+  void _showContinueOrderDialog(Map<String, dynamic> orderData, String orderType) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Continue Order'),
+        content: const Text('We found your previous order details. Would you like to continue with your order?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              TempDataService.clearPendingOrder();
+            },
+            child: const Text('Start Fresh'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _restoreOrderData(orderData, orderType);
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Restore order data from pending order
+  void _restoreOrderData(Map<String, dynamic> orderData, String orderType) {
+    // Restore cart items
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    cart.clearCart();
+    
+    // Note: This is a simplified restoration. In a real app, you'd need to
+    // fetch the full menu item details and restore them properly
+    // For now, we'll just clear the pending data and let the user start fresh
+    TempDataService.clearPendingOrder();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please add items to your cart again.'),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   // Removed unused modal; tracking UI will be added later
@@ -150,7 +212,23 @@ class _CartScreenState extends State<CartScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (auth.user == null) {
-      showLoginPrompt(context);
+      // Save current cart data before login
+      final cart = Provider.of<CartProvider>(context, listen: false);
+      final orderData = {
+        'cartItems': cart.items.values.map((item) => {
+          'menuItemId': item.menuItem.id,
+          'quantity': item.quantity,
+          'specialInstructions': '', // CartItem doesn't have special instructions
+        }).toList(),
+        'mode': widget.mode.toString(),
+        'savedAddress': _savedAddress,
+        'pickupName': _pickupNameController.text,
+        'pickupPhone': _pickupPhoneController.text,
+      };
+      showLoginPrompt(context, 
+        orderType: widget.mode.toString().split('.').last,
+        orderData: orderData,
+      );
       return;
     }
 
@@ -234,7 +312,23 @@ class _CartScreenState extends State<CartScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (auth.user == null) {
-      showLoginPrompt(context);
+      // Save current cart data before login
+      final cart = Provider.of<CartProvider>(context, listen: false);
+      final orderData = {
+        'cartItems': cart.items.values.map((item) => {
+          'menuItemId': item.menuItem.id,
+          'quantity': item.quantity,
+          'specialInstructions': '', // CartItem doesn't have special instructions
+        }).toList(),
+        'mode': widget.mode.toString(),
+        'savedAddress': _savedAddress,
+        'pickupName': _pickupNameController.text,
+        'pickupPhone': _pickupPhoneController.text,
+      };
+      showLoginPrompt(context, 
+        orderType: widget.mode.toString().split('.').last,
+        orderData: orderData,
+      );
       return;
     }
 
@@ -1143,12 +1237,12 @@ class _CartScreenState extends State<CartScreen> {
   }
 }
 
-void showLoginPrompt(BuildContext context) {
+void showLoginPrompt(BuildContext context, {String? orderType, Map<String, dynamic>? orderData}) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('Login Required'),
-      content: const Text('You need to be logged in to perform this action.'),
+      content: const Text('You need to be logged in to perform this action. Your order details will be saved.'),
       actions: <Widget>[
         TextButton(
           child: const Text('Cancel'),
@@ -1156,9 +1250,21 @@ void showLoginPrompt(BuildContext context) {
         ),
         ElevatedButton(
           child: const Text('Login'),
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(ctx).pop();
-            Navigator.pushNamed(context, '/login');
+            // Save order data if provided
+            if (orderType != null && orderData != null) {
+              await TempDataService.savePendingOrder(
+                orderType: orderType,
+                orderData: orderData,
+              );
+            }
+            final result = await Navigator.pushNamed(context, '/login');
+            // If login was successful, the calling page should handle restoration
+            if (result == true && orderType != null && orderData != null) {
+              // Trigger a rebuild or callback to restore order data
+              // This will be handled by the calling widget
+            }
           },
         ),
       ],

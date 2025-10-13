@@ -36,12 +36,8 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
 
       if (mounted) {
         if (response.statusCode == 200) {
-          // Navigate to the homepage on successful login
-          // Use pushAndRemoveUntil to clear the navigation stack
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/homepage',
-            (Route<dynamic> route) => false,
-          );
+          // Return success result to the calling page
+          Navigator.pop(context, true);
         } else {
           final data = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(

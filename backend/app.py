@@ -2046,9 +2046,10 @@ def handle_voice_command():
                 user_id = user_response.user.id
                 is_logged_in = True
             except Exception: is_logged_in = False
+        
 
         # Step 3: AI Pass 1 - Get user's intent and entities
-        intent_result = voice_assistant_service.get_intent_and_entities(user_text, menu_list, category_list, conversation_context)
+        intent_result = voice_assistant_service.get_intent_and_entities(user_text, menu_list, category_list, conversation_context or {})
         intent = intent_result.get("intent")
         
         # Debug logging
@@ -2106,6 +2107,376 @@ def handle_voice_command():
                 
                 context_for_ai['matching_items'] = matching_items
                 context_for_ai['specific_type'] = specific_type
+
+        # --- NEW LOGIC FOR ENHANCED QUERIES ---
+        elif intent == "show_menu":
+            # Show all menu items organized by category
+            menu_by_category = {}
+            for item in menu_list:
+                category = item.get('category_name', 'Other')
+                if category not in menu_by_category:
+                    menu_by_category[category] = []
+                menu_by_category[category].append(item['name'])
+            context_for_ai['menu_by_category'] = menu_by_category
+            context_for_ai['total_items'] = len(menu_list)
+
+        elif intent == "show_specials":
+            # Show seasonal, chef special, and new items
+            special_items = []
+            for item in menu_list:
+                if item.get('is_seasonal') or item.get('is_chef_special') or item.get('is_new'):
+                    special_items.append(item['name'])
+            context_for_ai['special_items'] = special_items
+            context_for_ai['has_specials'] = len(special_items) > 0
+
+        elif intent == "show_popular":
+            # Show bestsellers and popular items
+            popular_items = []
+            for item in menu_list:
+                if item.get('is_bestseller') or item.get('is_popular'):
+                    popular_items.append(item['name'])
+            context_for_ai['popular_items'] = popular_items
+            context_for_ai['has_popular'] = len(popular_items) > 0
+
+        elif intent == "show_dietary_options":
+            dietary_type = intent_result.get("dietary_type", "").lower()
+            dietary_items = []
+            for item in menu_list:
+                if dietary_type == "vegan" and item.get('is_vegan'):
+                    dietary_items.append(item['name'])
+                elif dietary_type == "vegetarian" and item.get('is_vegetarian'):
+                    dietary_items.append(item['name'])
+                elif dietary_type == "gluten-free" and item.get('is_gluten_free'):
+                    dietary_items.append(item['name'])
+            context_for_ai['dietary_items'] = dietary_items
+            context_for_ai['dietary_type'] = dietary_type
+            context_for_ai['has_dietary_options'] = len(dietary_items) > 0
+
+        elif intent == "show_drinks":
+            # Show beverages and drinks
+            drink_items = []
+            for item in menu_list:
+                category = item.get('category_name', '').lower()
+                if 'beverage' in category or 'drink' in category or 'coffee' in category or 'tea' in category:
+                    drink_items.append(item['name'])
+            context_for_ai['drink_items'] = drink_items
+            context_for_ai['has_drinks'] = len(drink_items) > 0
+
+        elif intent == "show_healthy_options":
+            # Show healthy, organic, and nutritional options
+            healthy_items = []
+            for item in menu_list:
+                if item.get('is_organic') or item.get('is_healthy') or 'salad' in item['name'].lower():
+                    healthy_items.append(item['name'])
+            context_for_ai['healthy_items'] = healthy_items
+            context_for_ai['has_healthy_options'] = len(healthy_items) > 0
+
+        elif intent == "ask_ingredients":
+            entity_name = intent_result.get("entity_name")
+            if entity_name:
+                dish_details = find_best_menu_match(menu_list, entity_name)
+                if dish_details:
+                    context_for_ai['ingredients_info'] = dish_details.get('description', '')
+                    context_for_ai['item_name'] = dish_details['name']
+
+        elif intent == "ask_spice_level":
+            entity_name = intent_result.get("entity_name")
+            if entity_name:
+                dish_details = find_best_menu_match(menu_list, entity_name)
+                if dish_details:
+                    # Analyze description for spice indicators
+                    description = dish_details.get('description', '').lower()
+                    spice_level = "mild"
+                    if any(word in description for word in ['spicy', 'hot', 'chili', 'pepper']):
+                        spice_level = "spicy"
+                    elif any(word in description for word in ['very spicy', 'extra hot', 'fiery']):
+                        spice_level = "very spicy"
+                    context_for_ai['spice_level'] = spice_level
+                    context_for_ai['item_name'] = dish_details['name']
+
+        elif intent == "ask_customization":
+            context_for_ai['customization_available'] = True
+
+        elif intent == "ask_combos":
+            # Look for combo or meal deal items
+            combo_items = []
+            for item in menu_list:
+                if 'combo' in item['name'].lower() or 'meal' in item['name'].lower() or 'deal' in item['name'].lower():
+                    combo_items.append(item['name'])
+            context_for_ai['combo_items'] = combo_items
+            context_for_ai['has_combos'] = len(combo_items) > 0
+
+        elif intent == "ask_pricing_info":
+            # Provide general pricing information
+            prices = [item.get('price', 0) for item in menu_list if item.get('price')]
+            if prices:
+                min_price = min(prices)
+                max_price = max(prices)
+                avg_price = sum(prices) / len(prices)
+                context_for_ai['price_range'] = f"₹{min_price:.0f} - ₹{max_price:.0f}"
+                context_for_ai['average_price'] = f"₹{avg_price:.0f}"
+
+            # Special handling for discount questions
+            if any(word in user_text.lower() for word in ['discount', 'offer', 'promotion', 'deal']):
+                context_for_ai['discount_question'] = True
+
+        # --- NEW LOGIC FOR ORDERING INTENT ---
+        elif intent == "want_to_order":
+            # User wants to order food but hasn't specified what
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'want_to_order'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_MENU"
+                context_for_ai['is_logged_in'] = True
+
+        # --- NEW LOGIC FOR ORDER PROCESS QUESTIONS ---
+        elif intent == "ask_takeaway":
+            # User asking about takeaway process
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_takeaway'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_MENU"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_online_ordering":
+            # User asking about online ordering process
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_online_ordering'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_MENU"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_order_tracking":
+            # User asking about order tracking
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_order_tracking'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_ORDER_HISTORY"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_order_cancellation":
+            # User asking about order cancellation
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_order_cancellation'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_ORDER_HISTORY"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_order_status":
+            # User asking about order status
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_order_status'  # Store intent for post-login continuation
+            else:
+                action_required = "NAVIGATE_TO_ORDER_HISTORY"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_delivery_info":
+            # User asking about delivery information
+            context_for_ai['delivery_available'] = True
+            context_for_ai['delivery_radius'] = "5km"
+            context_for_ai['min_order_amount'] = "₹200"
+            context_for_ai['delivery_fee'] = "₹30"
+            context_for_ai['delivery_time'] = "30-45 minutes"
+
+        elif intent == "ask_table_booking":
+            # User asking about table booking process
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'ask_table_booking'  # Store intent for post-login continuation
+            else:
+                # No navigation - handle entirely through voice
+                context_for_ai['is_logged_in'] = True
+                context_for_ai['booking_flow_step'] = "ask_guests"
+            context_for_ai['table_booking_available'] = True
+            context_for_ai['max_guests'] = 10
+            context_for_ai['booking_steps'] = ["Select guests", "Choose date", "Select time", "Confirm"]
+
+        elif intent == "book_table":
+            # User wants to make a table reservation
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'book_table'  # Store intent for post-login continuation
+            else:
+                # No navigation - handle entirely through voice
+                context_for_ai['is_logged_in'] = True
+                context_for_ai['reservation_flow'] = True
+                context_for_ai['booking_flow_step'] = "ask_guests"
+
+        elif intent == "ask_group_reservations":
+            # User asking about group reservations
+            context_for_ai['group_reservations_available'] = True
+            context_for_ai['max_group_size'] = 20
+            context_for_ai['recommended_advance_notice'] = "24 hours"
+
+        elif intent == "ask_walk_ins":
+            # User asking about walk-ins
+            context_for_ai['walk_ins_welcome'] = True
+            context_for_ai['peak_hours'] = "7-9 PM"
+            context_for_ai['recommendation'] = "Make reservation for guaranteed table"
+
+        elif intent == "modify_reservation":
+            # User wants to modify existing reservation
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+                context_for_ai['previous_intent'] = 'modify_reservation'
+            else:
+                action_required = "NAVIGATE_TO_RESERVATION_HISTORY"
+                context_for_ai['is_logged_in'] = True
+
+        elif intent == "ask_booking_fees":
+            # User asking about booking fees
+            context_for_ai['booking_fee'] = "Free"
+            context_for_ai['cancellation_policy'] = "2 hours advance notice"
+
+        elif intent == "continue_booking_flow":
+            # User said "yes" to continue booking flow
+            booking_step = conversation_context.get('booking_flow_step', 'initial_offer') if conversation_context else 'initial_offer'
+            context_for_ai['booking_flow_step'] = booking_step
+            context_for_ai['is_logged_in'] = is_logged_in
+            if not is_logged_in:
+                action_required = "NAVIGATE_TO_LOGIN"
+                context_for_ai['login_required'] = True
+            
+            # If user is confirming booking, trigger the booking creation
+            if booking_step == "confirm_booking" and is_logged_in:
+                # This will be handled by the confirm_booking intent logic
+                intent = "confirm_booking"  # Override intent to trigger booking creation
+                # Set the context for booking creation
+                context_for_ai['booking_flow_step'] = "confirm_booking"
+                context_for_ai['guest_count'] = conversation_context.get('guest_count', 2) if conversation_context else 2
+                context_for_ai['date'] = conversation_context.get('date', 'tomorrow') if conversation_context else 'tomorrow'
+                context_for_ai['time'] = conversation_context.get('time', '8:00 PM') if conversation_context else '8:00 PM'
+
+        elif intent == "booking_guests":
+            # User specified number of guests
+            guest_count = intent_result.get("guest_count", 2)
+            context_for_ai['booking_flow_step'] = "ask_date"
+            context_for_ai['guest_count'] = guest_count
+            context_for_ai['is_logged_in'] = is_logged_in
+
+        elif intent == "booking_date":
+            # User specified date
+            date = intent_result.get("date", "tomorrow")
+            guest_count = conversation_context.get('guest_count', 2) if conversation_context else 2
+            context_for_ai['booking_flow_step'] = "ask_meal_period"
+            context_for_ai['guest_count'] = guest_count
+            context_for_ai['date'] = date
+            context_for_ai['is_logged_in'] = is_logged_in
+
+        elif intent == "booking_meal_period":
+            # User specified meal period
+            meal_period = intent_result.get("meal_period", "Dinner")
+            guest_count = conversation_context.get('guest_count', 2) if conversation_context else 2
+            date = conversation_context.get('date', "tomorrow") if conversation_context else "tomorrow"
+            context_for_ai['booking_flow_step'] = "ask_time"
+            context_for_ai['guest_count'] = guest_count
+            context_for_ai['date'] = date
+            context_for_ai['meal_period'] = meal_period
+            context_for_ai['is_logged_in'] = is_logged_in
+
+        elif intent == "booking_time":
+            # User specified time - ready for special occasion
+            time = intent_result.get("time", "8:00 PM")
+            guest_count = conversation_context.get('guest_count', 2) if conversation_context else 2
+            date = conversation_context.get('date', "tomorrow") if conversation_context else "tomorrow"
+            meal_period = conversation_context.get('meal_period', "Dinner") if conversation_context else "Dinner"
+            context_for_ai['booking_flow_step'] = "ask_special_occasion"
+            context_for_ai['guest_count'] = guest_count
+            context_for_ai['date'] = date
+            context_for_ai['meal_period'] = meal_period
+            context_for_ai['time'] = time
+            context_for_ai['is_logged_in'] = is_logged_in
+
+        elif intent == "booking_special_occasion":
+            # User specified special occasion - ready for confirmation
+            special_occasion = intent_result.get("special_occasion", "None")
+            guest_count = conversation_context.get('guest_count', 2) if conversation_context else 2
+            date = conversation_context.get('date', "tomorrow") if conversation_context else "tomorrow"
+            meal_period = conversation_context.get('meal_period', "Dinner") if conversation_context else "Dinner"
+            time = conversation_context.get('time', "8:00 PM") if conversation_context else "8:00 PM"
+            context_for_ai['booking_flow_step'] = "confirm_booking"
+            context_for_ai['guest_count'] = guest_count
+            context_for_ai['date'] = date
+            context_for_ai['meal_period'] = meal_period
+            context_for_ai['time'] = time
+            context_for_ai['special_occasion'] = special_occasion
+            context_for_ai['is_logged_in'] = is_logged_in
+
+        elif intent == "confirm_booking":
+            # User confirmed the booking - create reservation in database
+            if is_logged_in:
+                time = conversation_context.get('time', "8:00 PM") if conversation_context else "8:00 PM"
+                guest_count = conversation_context.get('guest_count', 2) if conversation_context else 2
+                date = conversation_context.get('date', "tomorrow") if conversation_context else "tomorrow"
+                
+                # Convert date and time to proper format
+                from datetime import datetime, timedelta
+                if date == "today":
+                    booking_date = datetime.now().date()
+                elif date == "tomorrow":
+                    booking_date = (datetime.now() + timedelta(days=1)).date()
+                else:
+                    # Try to parse specific date
+                    try:
+                        booking_date = datetime.strptime(date, "%Y-%m-%d").date()
+                    except:
+                        booking_date = (datetime.now() + timedelta(days=1)).date()
+                
+                # Convert time to 24-hour format
+                try:
+                    time_obj = datetime.strptime(time.replace("PM", " PM").replace("AM", " AM"), "%I:%M %p")
+                    booking_time = time_obj.strftime("%H:%M")
+                except:
+                    booking_time = "20:00"  # Default to 8 PM
+                
+                # Create reservation in database
+                try:
+                    special_occasion = conversation_context.get('special_occasion', 'None') if conversation_context else 'None'
+                    special_requests = f"Booked via ByteBot voice assistant. Special occasion: {special_occasion}"
+                    
+                    reservation_data = {
+                        'user_id': user_id,
+                        'party_size': guest_count,
+                        'reservation_date': booking_date.isoformat(),
+                        'reservation_time': booking_time,
+                        'status': 'confirmed',
+                        'special_requests': special_requests
+                    }
+                    
+                    result = supabase.table('reservations').insert(reservation_data).execute()
+                    context_for_ai['booking_success'] = True
+                    context_for_ai['reservation_id'] = result.data[0]['id'] if result.data else None
+                    context_for_ai['booking_flow_step'] = "completed"
+                except Exception as e:
+                    print(f"Error creating reservation: {e}")
+                    context_for_ai['booking_error'] = str(e)
+                    context_for_ai['booking_flow_step'] = "error"
+            else:
+                context_for_ai['login_required'] = True
+                context_for_ai['booking_flow_step'] = "login_required"
+
+        elif intent == "post_login_continuation":
+            # User has logged in and wants to continue with their previous request
+            # Get the previous intent from conversation context
+            previous_intent = conversation_context.get('previous_intent') if conversation_context else None
+            context_for_ai['previous_intent'] = previous_intent
+            context_for_ai['is_logged_in'] = True
+            # No specific action required - just provide guidance based on previous intent
 
         # --- EXISTING LOGIC FOR OTHER ACTIONS ---
         elif intent == "clear_cart":
@@ -2180,12 +2551,88 @@ def handle_voice_command():
                     context_for_ai['error'] = f"Could not find an item named '{entity_name}'."
         
         # Step 5: AI Pass 2 - Formulate the final response based on verified facts
-        final_ai_response = voice_assistant_service.formulate_response(user_text, intent, context_for_ai)
+        try:
+            print(f"DEBUG: Calling formulate_response with intent: {intent}")
+            # Merge conversation context with context_for_ai
+            merged_context = {**(conversation_context or {}), **context_for_ai}
+            final_ai_response = voice_assistant_service.formulate_response(user_text, intent, merged_context)
+            print(f"DEBUG: AI response received: {final_ai_response}")
+        except Exception as e:
+            print(f"ERROR: Failed to get AI response: {e}")
+            final_ai_response = {"confirmation_message": "I'm having trouble processing that request. Please try again.", "new_context": {}}
         
         # Better error handling for AI responses
-        if "error" in final_ai_response:
-            print(f"AI response error: {final_ai_response['error']}")
-            final_message = "I'm having trouble processing that request. Please try again."
+        if not final_ai_response or "error" in final_ai_response:
+            print(f"AI response error: {final_ai_response.get('error', 'No response received')}")
+            # Provide fallback responses based on intent
+            if intent == "want_to_order":
+                if not is_logged_in:
+                    final_message = "Great! I'd love to help you order food. First, please log in or sign up to start ordering."
+                else:
+                    final_message = "Perfect! You're all set to order. You can browse our menu, ask me about specific dishes, or tell me what you'd like to order."
+            elif intent == "ask_takeaway":
+                final_message = "Yes, you can definitely place an order for takeaway! Here's how: 1) Log in to your account, 2) Browse our menu and add items to your cart, 3) Select 'Takeaway' as your order type, 4) Choose your pickup time, 5) Complete payment, and 6) Come to our restaurant at the scheduled time. Would you like me to help you start ordering?"
+            elif intent == "ask_online_ordering":
+                final_message = "Absolutely! Here's how to order online: 1) Log in to your ByteEat account, 2) Browse our menu or ask me about specific dishes, 3) Add items to your cart, 4) Choose delivery or takeaway, 5) Enter your address (for delivery) or pickup time, 6) Review your order and complete payment, 7) Track your order status. Would you like me to help you get started?"
+            elif intent == "ask_order_tracking":
+                if not is_logged_in:
+                    final_message = "To track your orders, you'll need to log in first. Once logged in, you can view your order history and track current orders in real-time."
+                else:
+                    final_message = "Yes, you can track your order! Here's how: 1) Go to your order history in the app, 2) Find your current order, 3) You'll see real-time updates: 'Order Placed' → 'Preparing' → 'Ready for Pickup/Delivery' → 'Completed'. You can also ask me 'What's my order status?' anytime!"
+            elif intent == "ask_order_cancellation":
+                if not is_logged_in:
+                    final_message = "To cancel an order, you'll need to log in first. Once logged in, you can manage your orders from your order history."
+                else:
+                    final_message = "Yes, you can cancel your order! Here's how: 1) Go to your order history, 2) Find the order you want to cancel, 3) Click 'Cancel Order' if it's still being prepared, 4) Orders that are already being prepared or ready cannot be cancelled. For immediate assistance, you can also call our restaurant directly."
+            elif intent == "ask_order_status":
+                if not is_logged_in:
+                    final_message = "To check your order status, please log in first. Then I can help you track your orders!"
+                else:
+                    final_message = "I can help you check your order status! You can: 1) Check your order history in the app, 2) Ask me 'What's my order status?' and I'll look it up, 3) Look for status updates: 'Order Placed' → 'Preparing' → 'Ready' → 'Completed'. What would you like to know about your order?"
+            elif intent == "ask_delivery_info":
+                final_message = "Yes, we offer delivery! Here's what you need to know: 1) We deliver within a 5km radius, 2) Minimum order amount is ₹200, 3) Delivery fee is ₹30, 4) Estimated delivery time is 30-45 minutes, 5) You can track your delivery in real-time. For takeaway, there's no minimum order and no delivery fee. Would you like to place an order?"
+            elif intent == "ask_table_booking":
+                final_message = "Yes, you can book a table! We offer table reservations for dine-in. Here's how: 1) Log in to your account, 2) Go to the 'Reserve Table' section, 3) Select the number of guests (1-10), 4) Choose your preferred date, 5) Select your preferred time slot, 6) Confirm your reservation. Would you like me to help you book a table?"
+            elif intent == "book_table":
+                if not is_logged_in:
+                    final_message = "I'd love to help you book a table! First, please log in to your account, then I'll guide you through the reservation process step by step."
+                else:
+                    final_message = "Perfect! Let's book your table. I'll guide you through each step: 1) How many guests? (1-10), 2) What date would you like? (Today, Tomorrow, or specific date), 3) What time would you prefer? (Lunch: 12-3 PM, Dinner: 6-10 PM). Let's start - how many guests will be joining you?"
+            elif intent == "ask_group_reservations":
+                final_message = "Yes, we take group reservations! For parties of 6 or more, we recommend making a reservation in advance. For very large groups (10+ people), please call us directly at least 24 hours in advance. We can accommodate groups up to 20 people. Would you like to make a group reservation?"
+            elif intent == "ask_walk_ins":
+                final_message = "Yes, we welcome walk-ins! However, we recommend making a reservation to guarantee your table, especially during peak hours (7-9 PM) and weekends. Walk-ins are subject to availability. Would you like to make a reservation to secure your table?"
+            elif intent == "modify_reservation":
+                if not is_logged_in:
+                    final_message = "To modify your reservation, please log in first. Then I can help you make changes to your booking."
+                else:
+                    final_message = "I can help you modify your reservation! Go to your reservation history in the app, find your booking, and click 'Modify'. You can change the date, time, or number of guests. For immediate changes, you can also call us directly. What would you like to change?"
+            elif intent == "ask_booking_fees":
+                final_message = "No, we don't charge any fees for table bookings! Reservations are completely free. We only ask that you arrive on time for your reservation. If you need to cancel, please let us know at least 2 hours in advance. Would you like to make a reservation?"
+            elif intent == "post_login_continuation":
+                previous_intent = context_for_ai.get('previous_intent')
+                if previous_intent == "want_to_order":
+                    final_message = "Perfect! Now that you're logged in, let's get you started with ordering. You can browse our menu, ask me about specific dishes, or tell me what you'd like to order. What would you like to try today?"
+                elif previous_intent == "ask_takeaway":
+                    final_message = "Great! Now that you're logged in, here's how to place a takeaway order: 1) Browse our menu and add items to your cart, 2) Select 'Takeaway' as your order type, 3) Choose your pickup time, 4) Complete payment, and 5) Come to our restaurant at the scheduled time. Would you like me to help you start ordering?"
+                elif previous_intent == "ask_online_ordering":
+                    final_message = "Excellent! Now that you're logged in, here's how to order online: 1) Browse our menu or ask me about specific dishes, 2) Add items to your cart, 3) Choose delivery or takeaway, 4) Enter your address (for delivery) or pickup time, 5) Review your order and complete payment, 6) Track your order status. What would you like to order?"
+                elif previous_intent == "ask_order_tracking":
+                    final_message = "Perfect! Now that you're logged in, you can track your orders! Go to your order history in the app to see real-time updates: 'Order Placed' → 'Preparing' → 'Ready for Pickup/Delivery' → 'Completed'. You can also ask me 'What's my order status?' anytime!"
+                elif previous_intent == "ask_order_cancellation":
+                    final_message = "Great! Now that you're logged in, you can manage your orders. Go to your order history to cancel orders that are still being prepared. Orders already being prepared or ready cannot be cancelled. What would you like to do?"
+                else:
+                    final_message = "Welcome back! You're now logged in and ready to order. How can I help you today?"
+            elif intent == "ask_pricing_info" and any(word in user_text.lower() for word in ['discount', 'offer', 'promotion', 'deal']):
+                final_message = "I'd be happy to help with discount information! We don't have current discount details in our system, but please ask our staff about any ongoing promotions, student discounts, or loyalty programs when you visit."
+            elif intent == "ask_price":
+                final_message = "I'm sorry, I couldn't find that item in our menu. Please try asking about a specific dish by name."
+            elif intent == "ask_about_dish":
+                final_message = "I'm sorry, I couldn't find information about that dish. Please try asking about a specific item from our menu."
+            elif intent == "show_menu":
+                final_message = "I'm having trouble loading our menu right now. Please try again in a moment or check our website."
+            else:
+                final_message = "I'm having trouble processing that request. Please try again."
         else:
             final_message = final_ai_response.get("confirmation_message", "I'm not sure how to answer that.")
         
