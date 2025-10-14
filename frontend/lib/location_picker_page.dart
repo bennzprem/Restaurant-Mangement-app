@@ -38,7 +38,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }
@@ -57,7 +57,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       Position position = await Geolocator.getCurrentPosition();
       _updateMapLocation(latlng.LatLng(position.latitude, position.longitude));
     } catch (e) {
-      print("Error getting current position: $e");
+
     }
   }
 
@@ -81,7 +81,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         }
       }
     } catch (e) {
-      print("Error searching: $e");
+
     }
   }
 
@@ -119,7 +119,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
             area = 'Current Location';
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = 'Current Location';
         }
 
@@ -158,7 +158,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         });
       }
     } catch (e) {
-      print("Geocoding error: $e");
+
       // Fallback on error
       _addressDetails = AddressDetails(
         houseNo: '',
@@ -316,7 +316,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       Position position = await Geolocator.getCurrentPosition();
       _updateMapLocation(latlng.LatLng(position.latitude, position.longitude));
     } catch (e) {
-      print("Error getting current position: $e");
+
     }
   }
 
@@ -341,7 +341,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         }
       }
     } catch (e) {
-      print("Error searching: $e");
+
     }
   }
 
@@ -373,7 +373,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
         });
       }
     } catch (e) {
-      print("Geocoding error: $e");
+
     }
   }
 

@@ -40,7 +40,7 @@ class TempDataService {
           await clearPendingReservation();
         }
       } catch (e) {
-        print('Error parsing reservation data: $e');
+
         await clearPendingReservation();
       }
     }
@@ -83,7 +83,7 @@ class TempDataService {
           await clearPendingOrder();
         }
       } catch (e) {
-        print('Error parsing order data: $e');
+
         await clearPendingOrder();
       }
     }
@@ -126,7 +126,7 @@ class TempDataService {
           await clearPendingTableOrder();
         }
       } catch (e) {
-        print('Error parsing table order data: $e');
+
         await clearPendingTableOrder();
       }
     }

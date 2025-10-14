@@ -355,4 +355,3 @@ class _GalleryTile extends StatelessWidget {
   }
 }
 
-

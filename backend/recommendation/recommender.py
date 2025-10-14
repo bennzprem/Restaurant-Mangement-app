@@ -13,12 +13,10 @@ SUPABASE_URL = "https://hjvxiamgvcmwjejsmvho.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqdnhpYW1ndmNtd2planNtdmhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYwOTU5NywiZXhwIjoyMDY5MTg1NTk3fQ.fwLqVAXZH00BSn-496hJH4LWdMGveQzELch2dgC_PM8"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
 def fetch_menu_items():
     """Fetch all menu items from Supabase"""
     response = supabase.table("menu_items").select("*").execute()
     return response.data if response.data else []
-
 
 def fetch_order_history(user_id: str):
     """Fetch past order history items for a given user"""
@@ -32,7 +30,6 @@ def fetch_order_history(user_id: str):
     # Then get all menu_item_ids from order_items for those orders
     order_items_response = supabase.table("order_items").select("menu_item_id").in_("order_id", order_ids).execute()
     return [row["menu_item_id"] for row in order_items_response.data] if order_items_response.data else []
-
 
 def recommend_items(user_id: str, top_n=3):
     """Generate recommendations for a user - always returns exactly 3 items"""

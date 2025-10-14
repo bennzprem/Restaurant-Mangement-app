@@ -120,7 +120,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
         _scrollToBottom();
       }
     } catch (e) {
-      print('Error loading chat history: $e');
+
     }
   }
 
@@ -184,7 +184,7 @@ class _EnhancedChatBotWidgetState extends State<EnhancedChatBotWidget>
         );
       }
     } catch (e) {
-      print('Error saving message to database: $e');
+
     }
   }
 

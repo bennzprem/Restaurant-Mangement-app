@@ -21,7 +21,7 @@ class ChatService {
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Error saving chat message: $e');
+
       rethrow;
     }
   }
@@ -49,7 +49,7 @@ class ChatService {
               .limit(limit));
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching chat history: $e');
+
       return [];
     }
   }
@@ -75,7 +75,7 @@ class ChatService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching chat sessions: $e');
+
       return [];
     }
   }

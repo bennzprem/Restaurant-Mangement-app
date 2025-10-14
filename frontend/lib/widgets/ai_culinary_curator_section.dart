@@ -269,7 +269,6 @@ class _AiCulinaryCuratorSectionState extends State<AiCulinaryCuratorSection> {
   }
 }
 
-
 // --- NO CHANGES NEEDED FOR THE WIDGET BELOW ---
 // The existing _AnimatedFoodCard is perfect.
 

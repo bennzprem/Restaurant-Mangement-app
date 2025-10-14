@@ -77,7 +77,6 @@ def get_embedding(text):
 
     return None
 
-
 def _trim_text(t: str, max_chars: int = 512) -> str:
     t = t or ""
     return t[:max_chars]
@@ -135,7 +134,6 @@ def precompute_menu_embeddings():
     """Precompute menu embeddings and upload to Pinecone"""
     # Fetch menu from Supabase
     menu_items = fetch_menu_items()
-    print(f"Fetched {len(menu_items)} menu items from Supabase")
 
     # Function to generate embedding (Groq or OpenAI)
     def get_embedding(text):
@@ -162,9 +160,8 @@ def precompute_menu_embeddings():
 
     items_to_embed = [it for it in menu_items if str(it["id"]) not in existing]
     if not items_to_embed:
-        print("All items already embedded. Nothing to do.")
+
         return
-    print(f"Embedding {len(items_to_embed)} new/updated items (skipping {len(menu_items)-len(items_to_embed)} already present)")
 
     # Prepare Pinecone upsert data (include tags if present)
     pinecone_data = []
@@ -173,7 +170,6 @@ def precompute_menu_embeddings():
 
     for item, vector in zip(items_to_embed, vectors):
         if vector is None:
-            print(f"Skipping embedding for item {item.get('id')} due to embedding failure")
             continue
         meta = {
             "id": item["id"],
@@ -190,7 +186,7 @@ def precompute_menu_embeddings():
         pinecone_data.append({"id": str(item["id"]), "values": vector, "metadata": meta})
 
     if not pinecone_data:
-        print("No embeddings were created. Check GROQ_API_KEY connectivity and try again.")
+
         return
 
     # Upsert to Pinecone in manageable chunks
@@ -200,9 +196,10 @@ def precompute_menu_embeddings():
             batch = pinecone_data[start:start+100]
             index.upsert(vectors=batch)
             uploaded += len(batch)
-        print(f"Uploaded {uploaded} menu embeddings to Pinecone ✅")
+
     except Exception as e:
-        print(f"Pinecone upsert failed: {e}")
+        # Error handling
+        pass
 
 if __name__ == "__main__":
     precompute_menu_embeddings()

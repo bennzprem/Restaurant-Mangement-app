@@ -37,7 +37,7 @@ class FavoritesProvider with ChangeNotifier {
       _favoriteItems = await _apiService.fetchFavorites(_userId);
     } catch (e) {
       _error = "Failed to load favorites. Please try again.";
-      print("Error fetching favorites: $e");
+
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -75,7 +75,7 @@ class FavoritesProvider with ChangeNotifier {
       // After the API call succeeds, fetch the updated list from the server
       await fetchFavorites();
     } catch (e) {
-      print("Error toggling favorite: $e");
+
       // Optionally show an error to the user
     }
   }
@@ -148,7 +148,7 @@ class FavoritesProvider with ChangeNotifier {
       }
       await fetchFavorites();
     } catch (e) {
-      print("Error toggling favorite: $e");
+
     }
   }
 }

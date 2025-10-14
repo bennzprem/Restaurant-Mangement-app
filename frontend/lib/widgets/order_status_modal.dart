@@ -115,7 +115,7 @@ class _OrderStatusModalState extends State<OrderStatusModal>
           )
           .subscribe();
     } catch (e) {
-      print('Error subscribing to realtime updates: $e');
+
     }
   }
 
@@ -145,7 +145,7 @@ class _OrderStatusModalState extends State<OrderStatusModal>
         }
       }
     } catch (e) {
-      print('Error fetching order status: $e');
+
     }
   }
 

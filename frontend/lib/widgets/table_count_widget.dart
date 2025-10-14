@@ -31,15 +31,14 @@ class _TableCountWidgetState extends State<TableCountWidget> {
         _error = null;
       });
 
-      print('🔄 Loading table counts...');
       final counts = await _apiService.getTablesCount();
-      print('✅ Received counts: $counts');
+
       setState(() {
         _tableCounts = counts;
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error loading table counts: $e');
+
       setState(() {
         _error = e.toString();
         _isLoading = false;

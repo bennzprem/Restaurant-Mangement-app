@@ -50,9 +50,6 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
         throw Exception('Please log in to check table availability');
       }
 
-      print(
-          'Checking table availability for: ${widget.date} at ${widget.time}');
-
       final data = await _apiService.checkTableAvailability(
         date: widget.date,
         time: widget.time,
@@ -60,15 +57,12 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
         authToken: token,
       );
 
-      print(
-          'Availability data received: ${data['total_available']} tables available');
-
       setState(() {
         _availabilityData = data;
         _isLoading = false;
       });
     } catch (e) {
-      print('Error checking availability: $e');
+
       setState(() {
         _error = e.toString();
         _isLoading = false;

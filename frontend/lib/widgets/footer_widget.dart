@@ -104,7 +104,6 @@ class FooterWidget extends StatelessWidget {
   }
 }
 
-
 // A new stateful widget to create the looping wave animation
 class _AnimatedWave extends StatefulWidget {
   final Color color;

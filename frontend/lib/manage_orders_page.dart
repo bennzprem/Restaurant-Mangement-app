@@ -105,7 +105,7 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> {
         final items = await _apiService.getOrderItems(order.id);
         orderItems[order.id] = items;
       } catch (e) {
-        print('Error loading items for order ${order.id}: $e');
+
         orderItems[order.id] = [];
       }
     }

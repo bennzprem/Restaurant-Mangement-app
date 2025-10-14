@@ -49,8 +49,6 @@ FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611'
 
 # ----------------------------------------------------
 
-
-
 # --- INITIALIZATION ---
 # app = Flask(__name__)
 # CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -60,7 +58,6 @@ CORS(app)
 
 # Register recommendation blueprint
 from recommendation.routes import recommendation_bp
-app.register_blueprint(recommendation_bp)
 
 # Define Headers for all Supabase REST API calls
 SUPABASE_HEADERS = {
@@ -77,7 +74,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 byte_bot_service = ByteBot(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
 voice_assistant_service = VoiceAssistant(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS, supabase_client=supabase)
 # Initialize all AI Services
-
 
 # Initialize Twilio client
 twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_SID else None
@@ -107,7 +103,6 @@ def _send_password_reset_email(recipient_email: str, token: str) -> tuple[bool, 
     """
     reset_link = f"{FRONTEND_BASE_URL.rstrip('/')}/reset-password.html?token={token}"
     if not _is_mail_configured():
-        print("Flask-Mail not configured: EMAIL_USER/EMAIL_PASS missing.")
         return False, reset_link
     try:
         msg = Message('Password Reset Request', recipients=[recipient_email])
@@ -118,7 +113,6 @@ def _send_password_reset_email(recipient_email: str, token: str) -> tuple[bool, 
         mail.send(msg)
         return True, reset_link
     except Exception as e:
-        print(f"Mail send failed: {e}")
         return False, reset_link
 # Initialize Razorpay client with your keys
 client = razorpay.Client(auth=("rzp_test_R9IWhVRyO9Ga0k", "QKfOOhOaSDh5kVloa5XCeSL6"))
@@ -129,8 +123,6 @@ headers = {
     "Content-Type": "application/json",
     "Prefer": "return=representation"
 }
-
-
 
 '''# --- HELPER FUNCTIONS ---
 def hash_password(password):
@@ -168,7 +160,6 @@ def create_razorpay_order():
         # Return the order_id created by Razorpay
         return jsonify({"order_id": razorpay_order['id']})
     except Exception as e:
-        print(f"Error creating Razorpay order: {e}")
         return jsonify({"error": str(e)}), 500
 # In app.py, replace the entire signup function
 @app.route('/signup', methods=['POST'])
@@ -200,7 +191,6 @@ def signup():
         return jsonify({'message': 'Signup successful! Please check your email for confirmation.'}), 201
 
     except Exception as e:
-        print(f"Error during signup: {e}")
         return jsonify({'error': str(e)}), 500
 
 # In app.py, replace the entire login function
@@ -235,7 +225,6 @@ def login():
         }), 200
         
     except Exception as e:
-        print(f"Error during login: {str(e)}")
         return jsonify({'error': 'Invalid credentials'}), 401
     
 @app.route('/forgot-password', methods=['POST'])
@@ -268,7 +257,6 @@ def forgot_password():
             response_payload['reset_link'] = reset_link
         return jsonify(response_payload), 200
     except Exception as e:
-        print(f"Error during forgot password: {str(e)}")
         # Still respond generically to avoid leaking details to the client
         return jsonify({'message': 'If an account with that email exists, a reset link has been sent.'}), 200
 
@@ -294,7 +282,6 @@ def reset_password():
         supabase.table('password_reset_tokens').delete().eq('id', token_data['id']).execute()
         return jsonify({'message': 'Password has been reset successfully.'}), 200
     except Exception as e:
-        print(f"Error during password reset: {str(e)}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
 
 @app.route('/verify/start', methods=['POST'])
@@ -308,10 +295,8 @@ def verify_start():
         verification = twilio_client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID).verifications.create(to=phone_number, channel='sms')
         return jsonify({'message': 'Verification code sent successfully.'}), 200
     except TwilioRestException as e:
-        print(f"Twilio error: {e}")
         return jsonify({'error': 'Failed to send verification code. Please check the phone number.'}), 400
     except Exception as e:
-        print(f"Error starting verification: {str(e)}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
 
 @app.route('/verify/check-and-signup', methods=['POST'])
@@ -335,10 +320,8 @@ def verify_check_and_signup():
         if result.data: return jsonify({'message': 'Account created successfully!'}), 201
         else: return jsonify({'error': 'Failed to create user account after verification.'}), 500
     except TwilioRestException as e:
-        print(f"Twilio check error: {e}")
         return jsonify({'error': 'Invalid verification code.'}), 400
     except Exception as e:
-        print(f"Error during verification check: {str(e)}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
 
 @app.route('/login-with-phone', methods=['POST'])
@@ -349,16 +332,46 @@ def login_with_phone():
         phone_number = data.get('phone_number', '').strip()
         password = data.get('password', '').strip()
         if not phone_number or not password: return jsonify({'error': 'Phone number and password are required'}), 400
+        
+        # First, find the user by phone number
         user_result = supabase.table('users').select('*').eq('phone_number', phone_number).execute()
         if not user_result.data: return jsonify({'error': 'Invalid credentials'}), 401
         user = user_result.data[0]
+        
+        # Verify password
         if not verify_password(password, user['password']): return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # If user has an email, try to sign in with Supabase auth
+        if user.get('email'):
+            try:
+                auth_response = supabase.auth.sign_in_with_password({
+                    "email": user['email'],
+                    "password": password
+                })
+                
+                session = auth_response.session
+                if session:
+                    return jsonify({
+                        'message': 'Login successful', 
+                        'user': user,
+                        'access_token': session.access_token,
+                        'refresh_token': session.refresh_token,
+                    }), 200
+            except:
+                # If Supabase auth fails, continue with manual auth
+                pass
+        
+        # Fallback: return user data without Supabase session
+        # This means the user won't have full Supabase auth features
         user_response = {'id': user.get('id'), 'name': user['name'], 'phone_number': user.get('phone_number'), 'email': user.get('email'), 'created_at': user['created_at']}
-        return jsonify({'message': 'Login successful', 'user': user_response}), 200
+        return jsonify({
+            'message': 'Login successful', 
+            'user': user_response,
+            'access_token': 'manual_phone_login',  # Indicates manual phone login
+            'refresh_token': 'manual_phone_login'
+        }), 200
     except Exception as e:
-        print(f"Error during phone login: {str(e)}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
-
 
 # --- MENU & ORDER ROUTES ---
 
@@ -432,35 +445,27 @@ def get_menu():
         ]
         return jsonify(menu_data)
     except Exception as e:
-        print(f"An error occurred in get_menu: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
 
 @app.route('/menu/<int:item_id>', methods=['DELETE'])
 def delete_menu_item(item_id):
     """Deletes a specific menu item by ID."""
     try:
-        print(f"DELETE request received for menu item ID: {item_id}")
         
         # Delete the menu item from Supabase
         api_url = f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}"
-        print(f"Calling Supabase API: {api_url}")
         
         response = requests.delete(api_url, headers=headers)
-        print(f"Supabase response status: {response.status_code}")
-        print(f"Supabase response body: {response.text}")
         
         if response.status_code == 204:  # Success, no content
-            print("Item deleted successfully (204)")
             response = jsonify({"message": "Menu item deleted successfully"})
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 200
         elif response.status_code == 404:
-            print("Item not found (404)")
             response = jsonify({"error": "Menu item not found"})
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 404
         else:
-            print(f"Unexpected status code: {response.status_code}")
             response.raise_for_status()
             # Add return statement for successful response.raise_for_status()
             response = jsonify({"message": "Menu item deleted successfully"})
@@ -468,11 +473,9 @@ def delete_menu_item(item_id):
             return response, 200
             
     except Exception as e:
-        print(f"An error occurred in delete_menu_item: {e}")
         response = jsonify({"error": "An internal server error occurred."})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
-
 
 @app.route('/menu/<int:item_id>/availability', methods=['PATCH'])
 def update_menu_item_availability(item_id):
@@ -508,7 +511,6 @@ def update_menu_item_availability(item_id):
             return response, 200
             
     except Exception as e:
-        print(f"An error occurred in update_menu_item_availability: {e}")
         response = jsonify({"error": "An internal server error occurred."})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -545,26 +547,16 @@ def place_order():
         # Only add pickup_code if it exists (for takeaway orders)
         if pickup_code:
             order_payload["pickup_code"] = pickup_code
-            
-        print(f"Order payload: {order_payload}")  # Debug log
-        print(f"Supabase URL: {SUPABASE_URL}")  # Debug log
-        print(f"Headers: {headers}")  # Debug log
-        
+
         order_response = requests.post(f"{SUPABASE_URL}/rest/v1/orders", json=order_payload, headers=headers)
-        
-        print(f"Order response status: {order_response.status_code}")  # Debug log
-        print(f"Order response text: {order_response.text}")  # Debug log
-        
+
         if order_response.status_code != 201:
-            print(f"Order creation failed: {order_response.status_code} - {order_response.text}")
             return jsonify({"error": f"Failed to create order: {order_response.text}"}), 500
             
         order_response.raise_for_status()
         new_order = order_response.json()[0]
         order_id = new_order['id']
-        print(f"Order created successfully with ID: {order_id}")  # Debug log
 
-        
         order_items_payload = [
             {
                 "order_id": order_id, 
@@ -573,23 +565,17 @@ def place_order():
                 "price_at_order": item['price_at_order'] # Use 'price_at_order' from Flutter and for the column name
             } for item in cart_items
         ]
-        
-        
-        print(f"Order items payload: {order_items_payload}")  # Debug log
-        
+
         items_response = requests.post(f"{SUPABASE_URL}/rest/v1/order_items", json=order_items_payload, headers=headers)
         
         if items_response.status_code != 201:
-            print(f"Order items creation failed: {items_response.status_code} - {items_response.text}")
             return jsonify({"error": f"Failed to create order items: {items_response.text}"}), 500
             
         items_response.raise_for_status()
 
         return jsonify({"message": "Order placed successfully!", "order_id": order_id}), 201
     except Exception as e:
-        print(f"An error occurred in place_order: {e}")
         import traceback
-        print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
     
 @app.route('/users/<string:user_id>/orders', methods=['GET'])
@@ -605,7 +591,6 @@ def get_order_history(user_id):
         orders = response.json()
         return jsonify(orders)
     except Exception as e:
-        print(f"An error occurred in get_order_history: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
     
 @app.route('/order/<int:order_id>', methods=['GET'])
@@ -621,7 +606,6 @@ def get_order_status(order_id):
         else:
             return jsonify({"error": "Order not found"}), 404
     except Exception as e:
-        print(f"An error occurred in get_order_status: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/orders/count', methods=['GET'])
@@ -633,7 +617,6 @@ def get_orders_count():
         data = response.json()
         return jsonify({"count": len(data)}), 200
     except Exception as e:
-        print(f"Error fetching orders count: {e}")
         return jsonify({"error": str(e)}), 500
 
 # --- Kitchen and Delivery Order Feeds ---
@@ -692,15 +675,12 @@ def api_kitchen_orders():
 
         return cors_json_response(result, 200)
     except Exception as e:
-        print(f"Error building kitchen orders feed: {e}")
         return cors_json_response({"error": str(e)}, 500)
-
 
 @app.route('/api/delivery/orders', methods=['GET'])
 def api_delivery_orders():
     """Returns orders that are ready for delivery (status = Ready)."""
     try:
-        print("Fetching ready orders for delivery")
         
         # First, let's check what order statuses exist
         all_orders_res = requests.get(
@@ -709,18 +689,14 @@ def api_delivery_orders():
         )
         if all_orders_res.ok:
             all_orders = all_orders_res.json() or []
-            print(f"Recent order statuses: {[order.get('status') for order in all_orders]}")
         
         orders_res = requests.get(
             f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.Ready&order=created_at.desc",
             headers=SUPABASE_HEADERS,
         )
-        print(f"Ready orders response status: {orders_res.status_code}")
-        print(f"Ready orders response body: {orders_res.text}")
         
         orders_res.raise_for_status()
         orders = orders_res.json() or []
-        print(f"Found {len(orders)} ready orders")
         
         # If no ready orders, let's also check preparing orders for debugging
         if len(orders) == 0:
@@ -730,7 +706,6 @@ def api_delivery_orders():
             )
             if preparing_res.ok:
                 preparing_orders = preparing_res.json() or []
-                print(f"Found {len(preparing_orders)} preparing orders (these need to be marked ready by kitchen)")
 
         result = []
         for order in orders:
@@ -752,14 +727,11 @@ def api_delivery_orders():
                 'total_amount': order.get('total_amount') or order.get('total') or 0,
             })
 
-        print(f"Returning {len(result)} ready orders")
         return cors_json_response(result, 200)
     except Exception as e:
-        print(f"Error building delivery orders feed: {e}")
         import traceback
         traceback.print_exc()
         return cors_json_response({"error": str(e)}, 500)
-
 
 @app.route('/api/delivery/orders/<int:order_id>/accept', methods=['POST'])
 def api_delivery_accept(order_id: int):
@@ -767,15 +739,12 @@ def api_delivery_accept(order_id: int):
     try:
         data = request.get_json(silent=True) or {}
         delivery_user_id = data.get('delivery_user_id')
-        
-        print(f"Accepting order {order_id} for delivery_user_id: {delivery_user_id}")
 
         # First, check if the order exists and get its current status
         check_resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}&select=id,status",
             headers=SUPABASE_HEADERS,
         )
-        print(f"Order check response: {check_resp.status_code} - {check_resp.text}")
         
         if check_resp.status_code != 200:
             return cors_json_response({"error": "Order not found"}, 404)
@@ -785,15 +754,12 @@ def api_delivery_accept(order_id: int):
             return cors_json_response({"error": "Order not found"}, 404)
             
         current_status = order_data[0].get('status')
-        print(f"Current order status: {current_status}")
 
         # Update status
         update = { 'status': 'Out for delivery' }
         if delivery_user_id:
             update['delivery_user_id'] = delivery_user_id
 
-        print(f"Updating order with data: {update}")
-        
         # Try to update with delivery_user_id first
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}",
@@ -803,23 +769,16 @@ def api_delivery_accept(order_id: int):
         
         # If the update fails due to column issues, try without delivery_user_id
         if resp.status_code == 400 and 'delivery_user_id' in update:
-            print("Failed to update with delivery_user_id, trying without it")
-            print(f"Error response: {resp.text}")
             update_without_user = { 'status': 'Out for delivery' }
             resp = requests.patch(
                 f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}",
                 json=update_without_user,
                 headers=SUPABASE_HEADERS,
             )
-            print(f"Fallback update response: {resp.status_code} - {resp.text}")
-        
-        print(f"Supabase response status: {resp.status_code}")
-        print(f"Supabase response body: {resp.text}")
-        
+
         resp.raise_for_status()
         return cors_json_response({"message": "Order accepted for delivery"}, 200)
     except Exception as e:
-        print(f"Error accepting delivery order: {e}")
         import traceback
         traceback.print_exc()
         return cors_json_response({"error": str(e)}, 500)
@@ -833,10 +792,8 @@ def test_delivery_column():
             f"{SUPABASE_URL}/rest/v1/orders?select=id,delivery_user_id&limit=1",
             headers=SUPABASE_HEADERS,
         )
-        print(f"Column test response: {resp.status_code} - {resp.text}")
         return cors_json_response({"status": resp.status_code, "response": resp.text}, 200)
     except Exception as e:
-        print(f"Column test error: {e}")
         return cors_json_response({"error": str(e)}, 500)
 
 @app.route('/api/delivery/accepted-orders', methods=['GET'])
@@ -844,7 +801,6 @@ def api_delivery_accepted_orders():
     """Returns orders that are accepted by a specific delivery person (status = Out for delivery)."""
     try:
         delivery_user_id = request.args.get('delivery_user_id')
-        print(f"Fetching accepted orders for delivery_user_id: {delivery_user_id}")
         
         if not delivery_user_id:
             return cors_json_response({"error": "delivery_user_id is required"}, 400)
@@ -855,12 +811,9 @@ def api_delivery_accepted_orders():
             f"{SUPABASE_URL}/rest/v1/orders?select=*&status=eq.{quote('Out for delivery')}&order=created_at.desc",
             headers=SUPABASE_HEADERS,
         )
-        print(f"Supabase response status: {orders_res.status_code}")
-        print(f"Supabase response body: {orders_res.text}")
         
         orders_res.raise_for_status()
         orders = orders_res.json() or []
-        print(f"Found {len(orders)} accepted orders")
 
         # Orders are already filtered by delivery_user_id in the query
         filtered_orders = orders
@@ -885,10 +838,8 @@ def api_delivery_accepted_orders():
                 'total_amount': order.get('total_amount') or order.get('total') or 0,
             })
 
-        print(f"Returning {len(result)} accepted orders")
         return cors_json_response(result, 200)
     except Exception as e:
-        print(f"Error building accepted orders feed: {e}")
         import traceback
         traceback.print_exc()
         return cors_json_response({"error": str(e)}, 500)
@@ -899,15 +850,12 @@ def api_delivery_delivered(order_id: int):
     try:
         data = request.get_json(silent=True) or {}
         delivery_user_id = data.get('delivery_user_id')
-        
-        print(f"Marking order {order_id} as delivered by delivery_user_id: {delivery_user_id}")
 
         # First, check if the order exists and get its current status
         check_resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}&select=id,status",
             headers=SUPABASE_HEADERS,
         )
-        print(f"Order check response: {check_resp.status_code} - {check_resp.text}")
         
         if check_resp.status_code != 200:
             return cors_json_response({"error": "Order not found"}, 404)
@@ -917,7 +865,6 @@ def api_delivery_delivered(order_id: int):
             return cors_json_response({"error": "Order not found"}, 404)
             
         current_status = order_data[0].get('status')
-        print(f"Current order status: {current_status}")
 
         # Only allow marking as delivered if order is "Out for delivery"
         if current_status != 'Out for delivery':
@@ -926,21 +873,15 @@ def api_delivery_delivered(order_id: int):
         # Update status to "Delivered"
         update = { 'status': 'Delivered' }
 
-        print(f"Updating order with data: {update}")
-        
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/orders?id=eq.{order_id}",
             json=update,
             headers=SUPABASE_HEADERS,
         )
-        
-        print(f"Supabase response status: {resp.status_code}")
-        print(f"Supabase response body: {resp.text}")
-        
+
         resp.raise_for_status()
         return cors_json_response({"message": "Order marked as delivered successfully"}, 200)
     except Exception as e:
-        print(f"Error marking order as delivered: {e}")
         import traceback
         traceback.print_exc()
         return cors_json_response({"error": str(e)}, 500)
@@ -953,7 +894,6 @@ def get_all_orders():
         response.raise_for_status()
         return jsonify(response.json()), 200
     except Exception as e:
-        print(f"Error fetching all orders: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/orders/<int:order_id>/items', methods=['GET'])
@@ -983,7 +923,6 @@ def get_order_items(order_id):
         response_data.headers.add('Access-Control-Allow-Origin', '*')
         return response_data, 200
     except Exception as e:
-        print(f"Error fetching order items: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -1009,7 +948,6 @@ def update_order_status(order_id):
         response_data.headers.add('Access-Control-Allow-Origin', '*')
         return response_data, 200
     except Exception as e:
-        print(f"Error updating order status: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -1024,7 +962,6 @@ def get_favorites(user_id):
         favorite_items = [item['menu_items'] for item in response.json() if item.get('menu_items')]
         return jsonify(favorite_items)
     except Exception as e:
-        print(f"An error occurred in get_favorites: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/favorites', methods=['POST'])
@@ -1039,7 +976,6 @@ def add_favorite():
     except Exception as e:
         if "violates unique constraint" in str(e):
              return jsonify({"message": "Favorite already exists."}), 200
-        print(f"An error occurred in add_favorite: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/favorites', methods=['DELETE'])
@@ -1054,9 +990,7 @@ def remove_favorite():
         response.raise_for_status()
         return jsonify({"message": "Favorite removed successfully."}), 200
     except Exception as e:
-        print(f"An error occurred in remove_favorite: {e}")
         return jsonify({"error": str(e)}), 500
-
 
 # --- Health Check ---
 @app.route('/health', methods=['GET'])
@@ -1082,11 +1016,9 @@ def update_user_profile(user_id):
         response.headers.add('Access-Control-Allow-Origin', '*')  # ADD THIS
         return response, 200
     except Exception as e:
-        print(f"An error occurred in update_user_profile: {e}")
         response = jsonify({"error": str(e)})                      # UPDATE THIS
         response.headers.add('Access-Control-Allow-Origin', '*')  # ADD THIS
         return response, 500
-
 
 @app.route('/users/change-password', methods=['POST'])
 def change_password():
@@ -1105,9 +1037,7 @@ def change_password():
         )
         return jsonify({'message': 'Password updated successfully'}), 200
     except Exception as e:
-        print(f"An error occurred in change_password: {e}")
         return jsonify({"error": str(e)}), 500
-
 
 # In app.py, find your upload function (e.g., upload_avatar or upload_profile_picture)
 
@@ -1149,9 +1079,7 @@ def upload_profile_picture(user_id):
         return jsonify({"message": "Profile picture uploaded successfully", "url": public_url_response}), 200
 
     except Exception as e:
-        print(f"An error occurred in upload_profile_picture: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/users/<string:user_id>/profile', methods=['PUT'])
 def update_user_profile_info(user_id):
@@ -1183,9 +1111,7 @@ def update_user_profile_info(user_id):
             return jsonify({"error": "Failed to update profile"}), 500
             
     except Exception as e:
-        print(f"An error occurred in update_user_profile_info: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
-
 
 # --- ADDRESS MANAGEMENT ROUTES ---
 
@@ -1199,7 +1125,6 @@ def get_user_addresses(user_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 200
     except Exception as e:
-        print(f"Error fetching addresses: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
@@ -1241,7 +1166,6 @@ def save_user_address(user_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 201
     except Exception as e:
-        print(f"Error saving address: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
@@ -1288,7 +1212,6 @@ def update_user_address(user_id, address_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 200
     except Exception as e:
-        print(f"Error updating address: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
@@ -1306,7 +1229,6 @@ def delete_user_address(user_id, address_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 200
     except Exception as e:
-        print(f"Error deleting address: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
@@ -1327,7 +1249,6 @@ def set_default_address(user_id, address_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 200
     except Exception as e:
-        print(f"Error setting default address: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
@@ -1345,11 +1266,9 @@ def get_default_address(user_id):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 200
     except Exception as e:
-        print(f"Error fetching default address: {e}")
         result = jsonify({"error": str(e)})
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result, 500
-
 
 # --- CORS PREFLIGHT HANDLERS (Very Important) ---
 
@@ -1410,7 +1329,6 @@ def cors_json_response(payload, status=200):
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response, status
 
-
 # In your app.py
 
 @app.route('/api/available-tables', methods=['GET'])
@@ -1459,7 +1377,6 @@ def get_available_tables():
         return jsonify(available_tables), 200
 
     except Exception as e:
-        print(f"An error occurred in get_available_tables: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 # In your app.py, find the create_reservation function and update it
@@ -1517,21 +1434,16 @@ def create_reservation():
             "add_ons_requested": add_ons_requested, # <-- Add new field here
             "status": "confirmed"
         }
-        
-        print(f"Creating reservation with data: {new_reservation}")  # Debug log
-        
+
         insert_response = supabase.table('reservations').insert(new_reservation).execute()
         
         if not insert_response.data:
-            print(f"Failed to create reservation: {insert_response}")  # Debug log
             return jsonify({"error": "Failed to create reservation"}), 500
         
-        print(f"Reservation created successfully: {insert_response.data[0]}")  # Debug log
         return jsonify(insert_response.data[0]), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/reservations/simple', methods=['POST'])
 def create_simple_reservation():
@@ -1554,9 +1466,7 @@ def create_simple_reservation():
         time = data.get('time')  # HH:MM format
         party_size = data.get('party_size')
         special_occasion = data.get('special_occasion', 'None')
-        
-        print(f"Creating simple reservation: table={table_number}, date={date}, time={time}, party_size={party_size}")
-        
+
         if not all([table_number, date, time, party_size]):
             return jsonify({"error": "Missing required fields"}), 400
 
@@ -1587,16 +1497,12 @@ def create_simple_reservation():
             "special_occasion": special_occasion,
             "status": "confirmed"
         }
-        
-        print(f"Creating reservation with data: {new_reservation}")
-        
+
         insert_response = supabase.table('reservations').insert(new_reservation).execute()
         
         if not insert_response.data:
-            print(f"Failed to create reservation: {insert_response}")
             return jsonify({"error": "Failed to create reservation"}), 500
         
-        print(f"Simple reservation created successfully: {insert_response.data[0]}")
         return jsonify({
             "success": True,
             "reservation": insert_response.data[0],
@@ -1604,7 +1510,6 @@ def create_simple_reservation():
         }), 201
 
     except Exception as e:
-        print(f"Error creating simple reservation: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/reservations/<reservation_id>/complete', methods=['POST'])
@@ -1620,8 +1525,6 @@ def complete_reservation(reservation_id):
         token = auth_header.split(" ")[1]
         user_response = supabase.auth.get_user(token)
         user_id = user_response.user.id
-
-        print(f"Completing reservation {reservation_id} for user {user_id}")
 
         # Verify the reservation belongs to the authenticated user
         reservation_response = supabase.table('reservations').select('*').eq('id', reservation_id).eq('user_id', user_id).execute()
@@ -1644,7 +1547,6 @@ def complete_reservation(reservation_id):
         if not update_response.data:
             return jsonify({"error": "Failed to update reservation"}), 500
 
-        print(f"Reservation {reservation_id} completed successfully")
         return jsonify({
             "success": True,
             "message": "Reservation completed successfully",
@@ -1652,7 +1554,6 @@ def complete_reservation(reservation_id):
         }), 200
 
     except Exception as e:
-        print(f"Error completing reservation: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/tables/availability', methods=['POST'])
@@ -1668,9 +1569,7 @@ def check_table_availability():
         reservation_date = data.get('date')  # YYYY-MM-DD format
         reservation_time = data.get('time')  # HH:MM format
         party_size = data.get('party_size', 2)
-        
-        print(f"Checking availability for: {reservation_date} at {reservation_time}, party size: {party_size}")
-        
+
         if not all([reservation_date, reservation_time]):
             return jsonify({"error": "Date and time are required"}), 400
         
@@ -1700,9 +1599,7 @@ def check_table_availability():
                     'location_preference': table['location_preference'],
                     'code': table.get('code', f"TBL{table['table_number']:03d}")
                 })
-        
-        print(f"Found {len(available_tables)} available tables")
-        
+
         return jsonify({
             'available_tables': available_tables,
             'total_available': len(available_tables),
@@ -1711,7 +1608,6 @@ def check_table_availability():
         }), 200
         
     except Exception as e:
-        print(f"Error checking table availability: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -1739,7 +1635,6 @@ def get_user_reservations():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/reservations/<uuid:reservation_id>/cancel', methods=['PUT'])
 def cancel_reservation(reservation_id):
     """
@@ -1766,7 +1661,6 @@ def cancel_reservation(reservation_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # In your app.py file
 
@@ -1821,7 +1715,6 @@ def create_menu_item():
             return jsonify({"error": "Failed to create menu item"}), 500
             
     except Exception as e:
-        print(f"Error creating menu item: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -1875,7 +1768,6 @@ def update_menu_item(item_id):
             return jsonify({"error": "Failed to update menu item"}), 500
             
     except Exception as e:
-        print(f"Error updating menu item: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -1894,7 +1786,6 @@ def get_categories():
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 200
     except Exception as e:
-        print(f"Error fetching categories: {e}")
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
@@ -1938,11 +1829,9 @@ def create_category():
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 201
         else:
-            print(f"Supabase response: {response.status_code} - {response.text}")
             return jsonify({"error": "Failed to create category"}), 500
         
     except Exception as e:
-        print(f"Error creating category: {e}")
         import traceback
         traceback.print_exc()
         response = jsonify({"error": f"Failed to create category: {str(e)}"})
@@ -1953,7 +1842,6 @@ def create_category():
 def delete_category(category_id):
     """Deletes a category and all its menu items."""
     try:
-        print(f"DELETE request received for category ID: {category_id}")
         
         # First, delete all menu items in this category
         menu_items_response = requests.get(
@@ -1964,37 +1852,30 @@ def delete_category(category_id):
         menu_items = menu_items_response.json()
         
         if menu_items:
-            print(f"Found {len(menu_items)} menu items to delete")
             # Delete all menu items in this category
             for item in menu_items:
                 item_id = item['id']
-                print(f"Deleting menu item ID: {item_id}")
                 delete_item_response = requests.delete(
                     f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}",
                     headers=headers
                 )
                 if delete_item_response.status_code not in [204, 200]:
-                    print(f"Warning: Failed to delete menu item {item_id}: {delete_item_response.status_code}")
+                    # Log error but continue with category deletion
+                    pass
         
         # Now delete the category
-        print(f"Deleting category ID: {category_id}")
         api_url = f"{SUPABASE_URL}/rest/v1/categories?id=eq.{category_id}"
         response = requests.delete(api_url, headers=headers)
-        
-        print(f"Category delete response: {response.status_code}")
-        print(f"Category delete response body: {response.text}")
-        
+
         # Supabase can return 200 or 204 for successful deletes
         if response.status_code in [200, 204]:
             response = jsonify({"message": "Category and all its items deleted successfully"})
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 200
         else:
-            print(f"Unexpected response from Supabase: {response.status_code} - {response.text}")
             return jsonify({"error": "Failed to delete category"}), 500
             
     except Exception as e:
-        print(f"Error deleting category: {e}")
         import traceback
         traceback.print_exc()
         response = jsonify({"error": f"Failed to delete category: {str(e)}"})
@@ -2010,8 +1891,6 @@ def start_table_session():
         data = request.get_json()
         session_code = data.get('session_code')
 
-        print(f"Received request to start session for code: {session_code}", flush=True)
-
         if not session_code:
             return jsonify({"error": "session_code is required"}), 400
 
@@ -2024,12 +1903,10 @@ def start_table_session():
         # We now check if the response object ITSELF is None OR if its data is empty.
         # This will prevent the 'NoneType' has no attribute 'data' crash.
         if session_response is None or not session_response.data:
-            print(f"Code '{session_code.upper()}' not found or the database query failed.", flush=True)
             return jsonify({"error": "Invalid table code. Please check the code and try again."}), 404
 
         # If we get here, the code was found
         session = session_response.data
-        print(f"Successfully found session for table number: {session['tables']['table_number']}", flush=True)
         
         return jsonify({
             "sessionId": session['id'],
@@ -2038,7 +1915,6 @@ def start_table_session():
         }), 200
 
     except Exception as e:
-        print(f"An error CRASHED the function: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 @app.route('/api/orders/add-items', methods=['POST'])
 def add_items_to_order():
@@ -2092,7 +1968,6 @@ def add_items_to_order():
         return jsonify({"message": "Items added to order successfully", "order_id": order_id}), 200
 
     except Exception as e:
-        print(f"Error in add_items_to_order: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 def get_menu_items():
@@ -2105,7 +1980,6 @@ def get_menu_items():
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print(f"Error fetching menu: {e}")
         return []
 
 def get_full_menu_with_categories():
@@ -2130,9 +2004,7 @@ def get_full_menu_with_categories():
                 
         return all_items, category_names
     except Exception as e:
-        print(f"Error fetching full menu: {e}")
         return [], []
-
 
 # --- Helper: fuzzy match a user-provided dish name to the closest menu item ---
 def _normalize_text(value: str) -> str:
@@ -2223,12 +2095,9 @@ def find_similar_items(menu_list: list, query: str, max_results: int = 5):
     similar_items.sort(key=lambda x: x[1], reverse=True)
     return [item[0] for item in similar_items[:max_results]]
 
-
 @app.route('/')
 def index():
     return "ByteEat AI Backend is running!"
-
-
 
 @app.route('/voice-command', methods=['POST'])
 def handle_voice_command():
@@ -2254,19 +2123,12 @@ def handle_voice_command():
                 user_id = user_response.user.id
                 is_logged_in = True
             except Exception: is_logged_in = False
-        
-        
-        
-        
 
         # Step 3: AI Pass 1 - Get user's intent and entities
         intent_result = voice_assistant_service.get_intent_and_entities(user_text, menu_list, category_list, conversation_context or {})
         intent = intent_result.get("intent")
         
         # Debug logging
-        print(f"DEBUG: User text: '{user_text}'")
-        print(f"DEBUG: Detected intent: '{intent}'")
-        print(f"DEBUG: Intent result: {intent_result}")
         
         # Step 4: Python Logic - Perform actions based on intent
         context_for_ai = {"is_logged_in": is_logged_in}
@@ -2674,7 +2536,6 @@ def handle_voice_command():
                     context_for_ai['reservation_id'] = result.data[0]['id'] if result.data else None
                     context_for_ai['booking_flow_step'] = "completed"
                 except Exception as e:
-                    print(f"Error creating reservation: {e}")
                     context_for_ai['booking_error'] = str(e)
                     context_for_ai['booking_flow_step'] = "error"
             else:
@@ -2763,18 +2624,14 @@ def handle_voice_command():
         
         # Step 5: AI Pass 2 - Formulate the final response based on verified facts
         try:
-            print(f"DEBUG: Calling formulate_response with intent: {intent}")
             # Merge conversation context with context_for_ai
             merged_context = {**(conversation_context or {}), **context_for_ai}
             final_ai_response = voice_assistant_service.formulate_response(user_text, intent, merged_context)
-            print(f"DEBUG: AI response received: {final_ai_response}")
         except Exception as e:
-            print(f"ERROR: Failed to get AI response: {e}")
             final_ai_response = {"confirmation_message": "I'm having trouble processing that request. Please try again.", "new_context": {}}
         
         # Better error handling for AI responses
         if not final_ai_response or "error" in final_ai_response:
-            print(f"AI response error: {final_ai_response.get('error', 'No response received')}")
             # Provide fallback responses based on intent
             if intent == "want_to_order":
                 if not is_logged_in:
@@ -2850,14 +2707,11 @@ def handle_voice_command():
         new_context = final_ai_response.get("new_context", {})
         
         # Debug logging for action
-        print(f"DEBUG: Action required: '{action_required}'")
-        print(f"DEBUG: Final message: '{final_message}'")
 
         return jsonify({ "message": final_message, "action": action_required, "updated_cart": updated_cart_items, "new_context": new_context }), 200
 
     except Exception as e:
         import traceback
-        print("--- A FATAL ERROR OCCURRED ---")
         traceback.print_exc()
         return jsonify({"error": "A major server error occurred. Check the logs."}), 500
 
@@ -2957,7 +2811,6 @@ def create_table():
         return jsonify(result), 201
 
     except Exception as e:
-        print(f"Error creating table: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/tables', methods=['GET'])
@@ -2993,7 +2846,6 @@ def list_tables():
 
         return jsonify(result), 200
     except Exception as e:
-        print(f"Error listing tables: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/tables/<table_id>/toggle', methods=['POST'])
@@ -3061,7 +2913,6 @@ def toggle_table_occupancy(table_id):
         }), 200
         
     except Exception as e:
-        print(f"Error toggling table occupancy: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 # app.py
@@ -3102,7 +2953,6 @@ def get_subscription_plans():
         return jsonify(plans), 200
         
     except Exception as e:
-        print(f"Error fetching subscription plans: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscription-plans/<int:plan_id>', methods=['GET'])
@@ -3125,7 +2975,6 @@ def get_subscription_plan(plan_id):
         return jsonify(plans[0]), 200
         
     except Exception as e:
-        print(f"Error fetching subscription plan: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/users/<string:user_id>/subscription', methods=['GET'])
@@ -3152,7 +3001,6 @@ def get_current_subscription(user_id):
         return jsonify(subscriptions[0]), 200
         
     except Exception as e:
-        print(f"Error fetching current subscription: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/users/<string:user_id>/subscriptions', methods=['GET'])
@@ -3175,7 +3023,6 @@ def get_subscription_history(user_id):
         return jsonify(subscriptions), 200
         
     except Exception as e:
-        print(f"Error fetching subscription history: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscriptions', methods=['POST'])
@@ -3248,9 +3095,7 @@ def create_subscription():
             'razorpay_payment_id': payment_id,
             'razorpay_order_id': payment_order_id
         }
-        
-        print(f"Creating payment record: {payment_data}")  # Debug log
-        
+
         payment_response = requests.post(
             f"{SUPABASE_URL}/rest/v1/subscription_payments",
             json=payment_data,
@@ -3280,7 +3125,6 @@ def create_subscription():
         }), 201
         
     except Exception as e:
-        print(f"Error creating subscription: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscriptions/<int:subscription_id>/cancel', methods=['PATCH'])
@@ -3309,7 +3153,6 @@ def cancel_subscription(subscription_id):
         return jsonify({"message": "Subscription cancelled successfully"}), 200
         
     except Exception as e:
-        print(f"Error cancelling subscription: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscriptions/<int:subscription_id>/credits', methods=['GET'])
@@ -3332,7 +3175,6 @@ def get_credit_history(subscription_id):
         return jsonify(transactions), 200
         
     except Exception as e:
-        print(f"Error fetching credit history: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscriptions/<int:subscription_id>/use-credits', methods=['POST'])
@@ -3404,7 +3246,6 @@ def use_credits(subscription_id):
         }), 200
         
     except Exception as e:
-        print(f"Error using credits: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/subscriptions/<int:subscription_id>/check-credits', methods=['POST'])
@@ -3449,7 +3290,6 @@ def check_credits(subscription_id):
         }), 200
         
     except Exception as e:
-        print(f"Error checking credits: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

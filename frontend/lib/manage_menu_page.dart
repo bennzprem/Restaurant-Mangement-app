@@ -144,11 +144,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
 
   void _toggleItemAvailability(MenuItem item) async {
     try {
-      print('Toggling availability for item: ${item.name} (ID: ${item.id})');
-
       await _apiService.updateMenuItemAvailability(item.id, !item.isAvailable);
-
-      print('Availability updated successfully, refreshing menu items...');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -162,8 +158,6 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
       _loadMenuCategories();
       widget.onMenuUpdated?.call();
     } catch (e) {
-      print('Error updating availability: $e');
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating availability: $e'),
@@ -553,10 +547,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
 
   Future<void> _confirmDeleteItem(MenuItem item) async {
     try {
-      print('Starting delete process for item: ${item.name} (ID: ${item.id})');
-
       await _apiService.deleteMenuItem(item.id);
-      print('API call completed successfully');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -568,10 +559,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
 
       _loadMenuCategories();
       widget.onMenuUpdated?.call();
-      print('Delete process completed successfully');
     } catch (e) {
-      print('Error during delete process: $e');
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to delete item: $e'),
@@ -930,17 +918,12 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
   }
 
   Widget _buildExpandedSections() {
-    print('Building expanded sections...');
-    print('Expanded categories set: $_expandedCategories');
-
     final expandedCategories = _filteredMenuCategories
         .where((c) => _expandedCategories.contains(c.id))
         .toList();
 
-    print('Found ${expandedCategories.length} expanded categories to render');
     for (final cat in expandedCategories) {
-      print(
-          'Rendering expanded section for: ${cat.name} (ID: ${cat.id}) with ${cat.items.length} items');
+      // Render expanded section for category
     }
 
     return Column(

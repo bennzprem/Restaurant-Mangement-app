@@ -3,8 +3,7 @@ from .recommender import recommend_items
 from .hybrid_search import find_craving
 from .menu_embeddings import precompute_menu_embeddings
 
-recommendation_bp = Blueprint("recommendation", __name__)
-
+recommendation_bp = Blueprint('recommendation', __name__)
 @recommendation_bp.route("/recommendations/<string:user_id>", methods=["GET"])
 def get_recommendations(user_id):
     try:
@@ -35,7 +34,6 @@ def api_find_craving():
         return jsonify({"craving": query, "matches": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @recommendation_bp.route("/api/admin/reembed", methods=["POST"])
 def api_reembed():

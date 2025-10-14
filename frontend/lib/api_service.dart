@@ -148,7 +148,6 @@ class ApiService {
             'Failed to fetch order details: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching order details: $e');
       throw Exception('Failed to fetch order details: $e');
     }
   }
@@ -204,7 +203,6 @@ class ApiService {
       }
       throw 'Failed to load orders: ${response.statusCode}';
     } catch (e) {
-      print('Error getting all orders: $e');
       throw 'Failed to load orders.';
     }
   }
@@ -218,7 +216,6 @@ class ApiService {
       }
       return 0;
     } catch (e) {
-      print('Error counting orders: $e');
       return 0;
     }
   }
@@ -235,7 +232,6 @@ class ApiService {
         throw 'Failed to load order items: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error getting order items: $e');
       throw 'Failed to load order items.';
     }
   }
@@ -252,7 +248,6 @@ class ApiService {
         throw 'Failed to update order status: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error updating order status: $e');
       throw 'Failed to update order status.';
     }
   }
@@ -274,7 +269,6 @@ class ApiService {
 
       return allMenuItems;
     } catch (e) {
-      print('Error getting all menu items: $e');
       throw 'Failed to load menu items.';
     }
   }
@@ -295,7 +289,6 @@ class ApiService {
         throw Exception('Failed to load recommendations');
       }
     } catch (e) {
-      print('Error fetching recommendations: $e');
       // Fallback to bestseller items if recommendation fails
       final allMenuItems = await getAllMenuItems();
       final bestsellers = allMenuItems
@@ -416,7 +409,6 @@ class ApiService {
 
       return publicUrl;
     } catch (e) {
-      print('❌ Upload failed: $e');
       return null;
     }
   }
@@ -433,13 +425,10 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        print('✅ Profile info updated successfully');
       } else {
-        print('❌ Failed to update profile info: ${response.body}');
         throw Exception('Failed to update profile info');
       }
     } catch (e) {
-      print('❌ Error updating profile info: $e');
       rethrow;
     }
   }
@@ -452,7 +441,6 @@ class ApiService {
   }) async {
     final url =
         '$baseUrl/api/available-tables?date=$date&time=$time&party_size=$partySize';
-    print('🌐 API Call: $url');
 
     try {
       final response = await http.get(
@@ -460,26 +448,19 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
       );
 
-      print('📡 Response Status: ${response.statusCode}');
-      print('📄 Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         // The json.decode creates a List<dynamic>
         final List<dynamic> data = json.decode(response.body);
-        print('📊 Parsed ${data.length} tables from API');
 
         // We map over the dynamic list, create a Table object for each item,
         // and then call .toList() to convert the result into a List<app_models.Table>
         final tables = data.map((json) => Table.fromJson(json)).toList();
-        print('✅ Successfully created ${tables.length} Table objects');
         return tables;
       } else {
-        print('❌ API Error: ${response.statusCode} - ${response.body}');
         throw Exception(
             'Failed to fetch available tables: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Network/Parse Error: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -530,8 +511,6 @@ class ApiService {
         try {
           return Reservation.fromJson(json);
         } catch (e) {
-          print('Error parsing reservation: $e');
-          print('Reservation data: $json');
           // Return a default reservation to prevent the entire list from failing
           return Reservation(
             id: json['id'] ?? 'unknown',
@@ -562,11 +541,6 @@ class ApiService {
     required String authToken,
   }) async {
     try {
-      print('🔍 Checking table availability...');
-      print('   Date: $date');
-      print('   Time: $time');
-      print('   Party Size: $partySize');
-
       final response = await http.post(
         Uri.parse('$baseUrl/api/tables/availability'),
         headers: {
@@ -582,16 +556,11 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print(
-            '✅ Table availability check successful: ${data['total_available']} tables available');
         return data;
       } else {
-        print(
-            '❌ Table availability check failed: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to check table availability: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error checking table availability: $e');
       throw Exception('Error checking table availability: $e');
     }
   }
@@ -603,10 +572,6 @@ class ApiService {
     required String authToken,
   }) async {
     try {
-      print('🔍 Checking for existing bookings...');
-      print('   Date: $date');
-      print('   Time: $time');
-
       final reservations = await getReservations(authToken);
 
       // Check if any reservation matches the same date and time
@@ -617,20 +582,14 @@ class ApiService {
           final reservationTime =
               DateFormat('HH:mm').format(reservation.reservationTime);
 
-          print(
-              '   Checking reservation: $reservationDate at $reservationTime');
-
           return reservationDate == date && reservationTime == time;
         } catch (e) {
-          print('   Error processing reservation: $e');
           return false; // Skip this reservation if there's an error
         }
       });
 
-      print('✅ Existing booking check result: $hasConflict');
       return hasConflict;
     } catch (e) {
-      print('❌ Error checking existing bookings: $e');
       // If we can't check, assume no conflict to avoid blocking legitimate bookings
       return false;
     }
@@ -675,20 +634,14 @@ class ApiService {
   // Simple table count method
   Future<Map<String, dynamic>> getTablesCount() async {
     try {
-      print('🌐 Making API call to: $baseUrl/api/tables/count');
       final response = await http.get(Uri.parse('$baseUrl/api/tables/count'));
-      print('📡 Response status: ${response.statusCode}');
-      print('📄 Response body: ${response.body}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Parsed data: $data');
         return data;
       } else {
-        print('❌ API Error: ${response.statusCode} - ${response.body}');
         throw 'Failed to load table count: ${response.statusCode}';
       }
     } catch (e) {
-      print('❌ Error getting table count: $e');
       throw 'Failed to load table count.';
     }
   }
@@ -839,87 +792,55 @@ class ApiService {
 
   Future<List<AppUser>> getAllUsers() async {
     try {
-      print('=== DEBUG: Fetching all users ===');
-
       // Get ALL users from the database without any exclusions
       // Try different approaches to bypass RLS policies
-      print('--- Trying different query approaches ---');
 
       // Method 1: Basic select
       var response = await _supabase.from('users').select('*');
-      print('Method 1 result: ${response.length} users');
 
       // Method 2: If first method returns only 1 user, try with different approach
       if (response.length <= 1) {
-        print('--- Trying alternative approach ---');
         try {
           // Try to get users with explicit ordering
           response = await _supabase
               .from('users')
               .select('*')
               .order('created_at', ascending: false);
-          print('Method 2 result: ${response.length} users');
-        } catch (e) {
-          print('Method 2 failed: $e');
-        }
+        } catch (e) {}
       }
 
       // Method 3: If still only 1 user, try selecting specific columns
       if (response.length <= 1) {
-        print('--- Trying specific columns approach ---');
         try {
           response = await _supabase
               .from('users')
               .select('id, name, email, role, created_at');
-          print('Method 3 result: ${response.length} users');
-        } catch (e) {
-          print('Method 3 failed: $e');
-        }
+        } catch (e) {}
       }
-
-      print('Raw response from Supabase: $response');
-      print('Response type: ${response.runtimeType}');
-      print('Response length: ${response.length}');
-
-      print('Response is a List with ${response.length} items');
 
       // Print first few items for debugging
-      for (int i = 0; i < response.length && i < 3; i++) {
-        print('Item $i: ${response[i]}');
-      }
+      for (int i = 0; i < response.length && i < 3; i++) {}
 
       final users = (response as List)
           .map((userData) {
-            print('Processing user data: $userData');
-            print('Available keys: ${(userData as Map).keys.toList()}');
-
             try {
               // Check if required fields exist
               if (userData['id'] == null) {
-                print('WARNING: User missing ID field');
                 return null;
               }
 
               if (userData['name'] == null) {
-                print('WARNING: User missing name field');
                 return null;
               }
 
               if (userData['role'] == null) {
-                print('WARNING: User missing role field, setting to "user"');
                 userData['role'] = 'user';
               }
 
               final user =
                   AppUser.fromJson(Map<String, dynamic>.from(userData));
-              print(
-                  'Successfully created AppUser: ${user.name} (${user.role})');
               return user;
             } catch (parseError) {
-              print('Error parsing user data: $parseError');
-              print('Problematic data: $userData');
-              print('Available fields: ${(userData).keys.toList()}');
-
               // Try to create a minimal user object
               try {
                 final minimalUser = AppUser(
@@ -930,10 +851,8 @@ class ApiService {
                   avatarUrl: userData['avatar_Url']?.toString() ??
                       userData['avatar_url']?.toString(),
                 );
-                print('Created minimal user: ${minimalUser.name}');
                 return minimalUser;
               } catch (minimalError) {
-                print('Failed to create minimal user: $minimalError');
                 return null;
               }
             }
@@ -942,33 +861,20 @@ class ApiService {
           .cast<AppUser>()
           .toList();
 
-      print('=== SUCCESS: Fetched ${users.length} users ===');
-      print('User names: ${users.map((u) => u.name).toList()}');
-      print('User roles: ${users.map((u) => u.role).toList()}');
-
       // Check for any users without roles
       final usersWithoutRole =
           users.where((u) => u.role.isEmpty || u.role == 'null').toList();
       if (usersWithoutRole.isNotEmpty) {
-        print('WARNING: Found ${usersWithoutRole.length} users without roles:');
-        for (final user in usersWithoutRole) {
-          print('  - ${user.name} (ID: ${user.id})');
-        }
+        for (final user in usersWithoutRole) {}
       }
 
       // If we only got 1 user but should have 6, this indicates an RLS issue
       if (users.length == 1) {
-        print('⚠️  WARNING: Only 1 user returned, but database has 6 users!');
-        print(
-            'This suggests Row Level Security (RLS) policies are blocking access.');
-        print('Current user role: ${users.first.role}');
-        print('Current user ID: ${users.first.id}');
+        // RLS policies may be blocking access
       }
 
       return users;
     } catch (e) {
-      print('=== ERROR: Failed to get users ===');
-      print('Error details: $e');
       throw 'Failed to load users: $e';
     }
   }
@@ -976,63 +882,27 @@ class ApiService {
   /// Debug method to check database structure
   Future<void> debugDatabase() async {
     try {
-      print('=== DEBUG DATABASE STRUCTURE ===');
-
       // Check users table with different approaches
-      print('--- Method 1: Basic select ---');
       final usersResponse = await _supabase.from('users').select('*');
-      print('Users table has ${usersResponse.length} records');
 
-      print('--- Method 2: Select specific columns ---');
       final usersResponse2 =
           await _supabase.from('users').select('id, name, email, role');
-      print(
-          'Users table (specific columns) has ${usersResponse2.length} records');
 
-      print('--- Method 3: Count only ---');
       final countResponse = await _supabase.from('users').select('id');
-      print('Count response length: ${countResponse.length}');
 
-      print('--- Method 4: Check RLS ---');
       try {
         // Try to get all users with explicit service role
         final allUsers = await _supabase
             .from('users')
             .select('*')
             .order('created_at', ascending: false);
-        print('All users (ordered): ${allUsers.length} records');
 
-        if (allUsers.isNotEmpty) {
-          print('First user: ${allUsers.first}');
-          print('Last user: ${allUsers.last}');
-        }
-      } catch (e) {
-        print('Error with service role query: $e');
-      }
+        if (allUsers.isNotEmpty) {}
+      } catch (e) {}
 
       if (usersResponse.isNotEmpty) {
-        print('Sample user record: ${usersResponse.first}');
-        print(
-            'Available columns: ${(usersResponse.first as Map).keys.toList()}');
-
         // Check specific column names
         final firstUser = usersResponse.first as Map;
-        print('Column name check:');
-        print('  - id: ${firstUser.containsKey('id')}');
-        print('  - name: ${firstUser.containsKey('name')}');
-        print('  - email: ${firstUser.containsKey('email')}');
-        print('  - role: ${firstUser.containsKey('role')}');
-        print('  - avatar_url: ${firstUser.containsKey('avatar_url')}');
-        print('  - avatar_Url: ${firstUser.containsKey('avatar_Url')}');
-
-        // Show actual values
-        print('Sample values:');
-        print('  - ID: ${firstUser['id']}');
-        print('  - Name: ${firstUser['name']}');
-        print('  - Email: ${firstUser['email']}');
-        print('  - Role: ${firstUser['role']}');
-        print(
-            '  - Avatar URL: ${firstUser['avatar_Url'] ?? firstUser['avatar_url']}');
       }
 
       // Check if there are any users without roles
@@ -1042,13 +912,12 @@ class ApiService {
           .toList();
 
       if (usersWithoutRole.isNotEmpty) {
-        print('WARNING: Found ${usersWithoutRole.length} users without roles:');
         for (final user in usersWithoutRole) {
-          print('  - ${user['name']} (ID: ${user['id']})');
+          // Users without roles found
         }
       }
     } catch (e) {
-      print('Error debugging database: $e');
+      // Error handling
     }
   }
 
@@ -1059,17 +928,12 @@ class ApiService {
     required String role,
   }) async {
     try {
-      print('Creating test user: $name ($email) with role: $role');
-
       final response = await _supabase.from('users').insert({
         'name': name,
         'email': email,
         'role': role,
       }).select();
-
-      print('Test user created successfully: $response');
     } catch (e) {
-      print('Error creating test user: $e');
       throw 'Failed to create test user: $e';
     }
   }
@@ -1079,7 +943,6 @@ class ApiService {
     try {
       await _supabase.from('users').update({'role': newRole}).eq('id', userId);
     } catch (e) {
-      print('Error updating user role: $e');
       throw 'Failed to update role.';
     }
   }
@@ -1087,30 +950,22 @@ class ApiService {
   /// Fixes users without roles by setting them to 'user' role
   Future<void> fixUsersWithoutRoles() async {
     try {
-      print('Fixing users without roles...');
-
       // Find users without roles
       final usersWithoutRole = await _supabase
           .from('users')
           .select('id, name, role')
           .or('role.is.null,role.eq.,role.eq.null');
 
-      print('Found ${usersWithoutRole.length} users without roles');
-
       for (final user in usersWithoutRole) {
         if (user['role'] == null ||
             user['role'] == '' ||
             user['role'] == 'null') {
-          print('Fixing user: ${user['name']} (ID: ${user['id']})');
           await _supabase
               .from('users')
               .update({'role': 'user'}).eq('id', user['id']);
         }
       }
-
-      print('Finished fixing users without roles');
     } catch (e) {
-      print('Error fixing users without roles: $e');
       throw 'Failed to fix users without roles: $e';
     }
   }
@@ -1158,12 +1013,10 @@ class ApiService {
       );
 
       if (response.statusCode == 201) {
-        print('Menu item created successfully through backend');
       } else {
         throw 'Failed to create menu item: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error creating menu item: $e');
       throw 'Failed to create menu item.';
     }
   }
@@ -1198,22 +1051,18 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        print('Menu item updated successfully through backend');
       } else if (response.statusCode == 404) {
         throw 'Menu item not found';
       } else {
         throw 'Failed to update menu item: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error updating menu item: $e');
       throw 'Failed to update menu item.';
     }
   }
 
   Future<void> updateMenuItemAvailability(int id, bool isAvailable) async {
     try {
-      print('Updating menu item availability for ID: $id to: $isAvailable');
-
       // Use the Flask backend to update availability
       final response = await http.patch(
         Uri.parse('$baseUrl/menu/$id/availability'),
@@ -1221,44 +1070,32 @@ class ApiService {
         body: jsonEncode({'is_available': isAvailable}),
       );
 
-      print('Availability update response status: ${response.statusCode}');
-      print('Availability update response body: ${response.body}');
-
       if (response.statusCode == 200) {
-        print('Availability updated successfully through Flask backend');
       } else if (response.statusCode == 404) {
         throw 'Menu item not found';
       } else {
         throw 'Failed to update availability: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error updating menu item availability for ID $id: $e');
       throw 'Failed to update item availability: $e';
     }
   }
 
   Future<void> deleteMenuItem(int id) async {
     try {
-      print('Attempting to delete menu item with ID: $id');
-
       // Use the Flask backend to delete the menu item
       final response = await http.delete(
         Uri.parse('$baseUrl/menu/$id'),
         headers: {'Content-Type': 'application/json'},
       );
 
-      print('Delete response status: ${response.statusCode}');
-      print('Delete response body: ${response.body}');
-
       if (response.statusCode == 200) {
-        print('Delete operation completed successfully through Flask backend');
       } else if (response.statusCode == 404) {
         throw 'Menu item not found';
       } else {
         throw 'Failed to delete menu item: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error deleting menu item with ID $id: $e');
       throw 'Failed to delete menu item: $e';
     }
   }
@@ -1274,7 +1111,6 @@ class ApiService {
         throw 'Failed to load categories: ${response.statusCode}';
       }
     } catch (e) {
-      print('Error getting categories: $e');
       throw 'Failed to load categories.';
     }
   }
@@ -1296,7 +1132,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to create category';
       }
     } catch (e) {
-      print('Error creating category: $e');
       throw 'Failed to create category: $e';
     }
   }
@@ -1313,7 +1148,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to delete category';
       }
     } catch (e) {
-      print('Error deleting category: $e');
       throw 'Failed to delete category: $e';
     }
   }
@@ -1337,7 +1171,6 @@ class ApiService {
         throw Exception('Failed to load saved addresses');
       }
     } catch (e) {
-      print('Error fetching saved addresses: $e');
       throw Exception('Failed to load saved addresses: $e');
     }
   }
@@ -1358,7 +1191,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to save address';
       }
     } catch (e) {
-      print('Error saving address: $e');
       throw Exception('Failed to save address: $e');
     }
   }
@@ -1376,7 +1208,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to update address';
       }
     } catch (e) {
-      print('Error updating address: $e');
       throw Exception('Failed to update address: $e');
     }
   }
@@ -1393,7 +1224,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to delete address';
       }
     } catch (e) {
-      print('Error deleting address: $e');
       throw Exception('Failed to delete address: $e');
     }
   }
@@ -1410,7 +1240,6 @@ class ApiService {
         throw errorData['error'] ?? 'Failed to set default address';
       }
     } catch (e) {
-      print('Error setting default address: $e');
       throw Exception('Failed to set default address: $e');
     }
   }
@@ -1431,7 +1260,6 @@ class ApiService {
         throw Exception('Failed to load default address');
       }
     } catch (e) {
-      print('Error fetching default address: $e');
       return null; // Return null on error to allow fallback
     }
   }
@@ -1446,12 +1274,6 @@ class ApiService {
     required String authToken,
   }) async {
     try {
-      print('🔍 Creating simple reservation...');
-      print('   Table: $tableNumber');
-      print('   Date: $date');
-      print('   Time: $time');
-      print('   Party Size: $partySize');
-
       final response = await http.post(
         Uri.parse('$baseUrl/api/reservations/simple'),
         headers: {
@@ -1469,15 +1291,11 @@ class ApiService {
 
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
-        print('✅ Simple reservation created successfully');
         return data;
       } else {
-        print(
-            '❌ Simple reservation creation failed: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to create reservation: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error creating simple reservation: $e');
       throw Exception('Error creating simple reservation: $e');
     }
   }
@@ -1488,9 +1306,6 @@ class ApiService {
     required String authToken,
   }) async {
     try {
-      print('🔍 Completing reservation...');
-      print('   Reservation ID: $reservationId');
-
       final response = await http.post(
         Uri.parse('$baseUrl/api/reservations/$reservationId/complete'),
         headers: {
@@ -1501,15 +1316,11 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Reservation completed successfully');
         return data;
       } else {
-        print(
-            '❌ Reservation completion failed: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to complete reservation: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error completing reservation: $e');
       throw Exception('Error completing reservation: $e');
     }
   }

@@ -32,10 +32,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    print('🏠 HomePage initState');
+
     // Check if service already has orders (for hot restart)
     if (_orderTrackingService.hasActiveOrders) {
-      print('🔍 Service already has orders, initializing immediately');
+
       setState(() {
         _isTrackingInitialized = true;
       });
@@ -46,8 +46,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onServiceChanged() {
-    print(
-        '🔄 Service changed: hasOrders=${_orderTrackingService.hasActiveOrders}');
+
     if (_orderTrackingService.hasActiveOrders && !_isTrackingInitialized) {
       setState(() {
         _isTrackingInitialized = true;
@@ -63,22 +62,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _initializeOrderTracking() async {
-    print('🚀 Initializing order tracking...');
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authProvider = context.read<AuthProvider>();
-      print(
-          '🔍 Auth state: isLoggedIn=${authProvider.isLoggedIn}, user=${authProvider.user?.id}');
+
       if (authProvider.isLoggedIn && authProvider.user != null) {
-        print('🔍 Starting tracking for user: ${authProvider.user!.id}');
+
         await _orderTrackingService.startTracking(authProvider.user!.id);
-        print('🔍 Tracking initialized, setting state...');
+
         setState(() {
           _isTrackingInitialized = true;
         });
-        print(
-            '🔍 State updated: _isTrackingInitialized=$_isTrackingInitialized');
+
       } else {
-        print('❌ User not logged in, skipping tracking initialization');
+
       }
     });
   }
@@ -111,15 +108,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showOrderTrackingModal() {
-    print('🛵 Order tracking button clicked!');
-    print(
-        '🔍 Service state: hasActiveOrders=${_orderTrackingService.hasActiveOrders}, count=${_orderTrackingService.activeOrderCount}');
+
     final activeOrders = _orderTrackingService.activeOrders;
-    print('📋 Active orders count: ${activeOrders.length}');
-    print('📋 Active orders details: $activeOrders');
 
     if (activeOrders.isEmpty) {
-      print('❌ No active orders found');
+
       // Show a test dialog anyway
       showDialog(
         context: context,
@@ -139,7 +132,6 @@ class _HomePageState extends State<HomePage> {
 
     // Show the first active order (you can modify this to show a list)
     final order = activeOrders.first;
-    print('📦 Showing order: ${order.id}, Status: ${order.status}');
 
     // Show enhanced order status modal
     showDialog(
@@ -464,8 +456,7 @@ class _HomePageState extends State<HomePage> {
               value: _orderTrackingService,
               child: Consumer<OrderTrackingService>(
                 builder: (context, orderService, child) {
-                  print(
-                      '🔄 Consumer rebuild: count=${orderService.activeOrderCount}, hasOrders=${orderService.hasActiveOrders}');
+
                   return OrderTrackingButton(
                     onTap: _showOrderTrackingModal,
                     orderCount: orderService.activeOrderCount,

@@ -45,7 +45,7 @@ class _AddressSelectionWidgetState extends State<AddressSelectionWidget> {
       // Notify parent of selected address
       widget.onAddressSelected(_selectedAddress);
     } catch (e) {
-      print('Error loading saved addresses: $e');
+
       setState(() {
         _isLoading = false;
       });

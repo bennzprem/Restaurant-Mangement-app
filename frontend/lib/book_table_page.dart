@@ -670,8 +670,7 @@ class _BookTablePageState extends State<BookTablePage>
         return DateFormat('h:mm a').parse(timeString);
       } catch (e2) {
         // If both fail, return current time as fallback
-        print(
-            'Error parsing time: $timeString, using current time as fallback');
+
         return DateTime.now();
       }
     }

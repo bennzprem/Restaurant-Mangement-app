@@ -84,7 +84,7 @@ class _UserDashboardPageState extends State<UserDashboardPage>
           authProvider.user!.id,
           authProvider.accessToken!,
         );
-        print('Loaded subscription: $_currentSubscription');
+
         if (mounted) {
           setState(() {});
         }
@@ -96,7 +96,7 @@ class _UserDashboardPageState extends State<UserDashboardPage>
       }
     } catch (e) {
       // No active subscription found or error
-      print('Error loading subscription data: $e');
+
       _currentSubscription = null;
       if (mounted) {
         setState(() {});
@@ -611,7 +611,7 @@ class _UserDashboardPageState extends State<UserDashboardPage>
           'reservation_time': reservationDateTime,
         });
       } catch (e) {
-        print('Error parsing simple reservation: $e');
+
       }
     }
 

@@ -85,7 +85,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
       );
       _updateMapLocation(latlng.LatLng(position.latitude, position.longitude));
     } catch (e) {
-      print("Error getting current position: $e");
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error getting location: $e'),
@@ -115,7 +115,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         }
       }
     } catch (e) {
-      print("Error searching: $e");
+
     }
   }
 
@@ -146,17 +146,6 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         String state = place.administrativeArea ?? place.country ?? '';
         String pincode = place.postalCode ?? '';
 
-        print("Initial geocoding data:");
-        print("  thoroughfare: ${place.thoroughfare}");
-        print("  subLocality: ${place.subLocality}");
-        print("  locality: ${place.locality}");
-        print("  subAdministrativeArea: ${place.subAdministrativeArea}");
-        print("  administrativeArea: ${place.administrativeArea}");
-        print("  postalCode: ${place.postalCode}");
-        print("  name: ${place.name}");
-        print("  subThoroughfare: ${place.subThoroughfare}");
-        print("  Initial area: $area");
-
         // Always try Nominatim for better area name resolution
         try {
           final response = await http.get(
@@ -168,17 +157,6 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
           if (response.statusCode == 200) {
             final data = json.decode(response.body);
             final address = data['address'] ?? {};
-
-            print("Nominatim response data:");
-            print("  Full address: $address");
-            print("  Road: ${address['road']}");
-            print("  Suburb: ${address['suburb']}");
-            print("  Neighbourhood: ${address['neighbourhood']}");
-            print("  Quarter: ${address['quarter']}");
-            print("  Hamlet: ${address['hamlet']}");
-            print("  Village: ${address['village']}");
-            print("  City: ${address['city']}");
-            print("  Town: ${address['town']}");
 
             // Try multiple approaches to get a good area name
             List<String> areaCandidates = [
@@ -197,8 +175,6 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
                 .cast<String>()
                 .toList();
 
-            print("Area candidates: $areaCandidates");
-
             // Find the best area name (prefer shorter, more specific names)
             String? bestArea;
             for (String candidate in areaCandidates) {
@@ -210,9 +186,9 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
 
             if (bestArea != null) {
               area = bestArea;
-              print("Using best area: $bestArea");
+
             } else {
-              print("No suitable area found in Nominatim data");
+
             }
 
             // Also get better city and state data
@@ -230,10 +206,9 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
               pincode = address['postcode'] ?? pincode;
             }
 
-            print("Nominatim data: area=$area, city=$city, state=$state");
           }
         } catch (e) {
-          print("Nominatim geocoding error: $e");
+
         }
 
         // Ensure we have a meaningful area name
@@ -248,7 +223,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
             area =
                 'Location (${position.latitude.toStringAsFixed(2)}, ${position.longitude.toStringAsFixed(2)})';
           }
-          print("Using fallback area: $area");
+
         }
 
         _addressDetails = AddressDetails(
@@ -285,7 +260,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         });
       }
     } catch (e) {
-      print("Geocoding error: $e");
+
       // Fallback for geocoding errors
       _addressDetails = AddressDetails(
         houseNo: '',
