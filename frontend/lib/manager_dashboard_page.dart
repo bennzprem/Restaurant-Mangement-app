@@ -248,7 +248,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
       setState(() {
         _isLoading = false;
       });
-      print('Error loading dashboard data: $e');
+
     }
   }
 
@@ -395,7 +395,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                     (route) => false,
                   );
                 } catch (e) {
-                  print('Error during logout: $e');
+
                   // Force navigation even if logout fails
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     '/',
@@ -628,7 +628,7 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                   (route) => false,
                 );
               } catch (e) {
-                print('Error during logout: $e');
+
                 // Force navigation even if logout fails
                 Navigator.of(context).pushNamedAndRemoveUntil(
                   '/',

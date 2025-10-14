@@ -132,7 +132,7 @@ class _DeliveryInformationPageState extends State<DeliveryInformationPage> {
             area = administrativeArea;
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = '';
         }
 
@@ -195,7 +195,7 @@ class _DeliveryInformationPageState extends State<DeliveryInformationPage> {
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }
@@ -238,7 +238,7 @@ class _DeliveryInformationPageState extends State<DeliveryInformationPage> {
         ),
       );
     } catch (e) {
-      print('Error saving address: $e');
+
       // Don't show error to user as this is optional
     }
   }

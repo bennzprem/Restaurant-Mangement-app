@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'auth_provider.dart';
 
 class PhoneLoginPage extends StatefulWidget {
   const PhoneLoginPage({super.key});
@@ -36,8 +39,56 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
 
       if (mounted) {
         if (response.statusCode == 200) {
-          // Return success result to the calling page
-          Navigator.pop(context, true);
+          final data = jsonDecode(response.body);
+
+          // Check if we got a proper Supabase session
+          if (data['refresh_token'] != 'manual_phone_login') {
+            await Supabase.instance.client.auth
+                .setSession(data['refresh_token']);
+
+            // Manually refresh the AuthProvider to update the UI
+            final authProvider =
+                Provider.of<AuthProvider>(context, listen: false);
+            await authProvider.refreshAuthState();
+
+            // After login, route user to their role dashboard
+            final client = Supabase.instance.client;
+            final uid = client.auth.currentUser!.id;
+            try {
+              final profile = await client
+                  .from('users')
+                  .select('role')
+                  .eq('id', uid)
+                  .single();
+              final role = profile['role'] ?? 'user';
+              String route = '/';
+              switch (role) {
+                case 'admin':
+                  route = '/admin_dashboard';
+                  break;
+                case 'manager':
+                  route = '/manager_dashboard';
+                  break;
+                case 'kitchen':
+                  route = '/kitchen_dashboard';
+                  break;
+                case 'delivery':
+                  route = '/delivery_dashboard';
+                  break;
+                case 'employee':
+                  route = '/employee_dashboard';
+                  break;
+                default:
+                  route = '/';
+              }
+              Navigator.pushReplacementNamed(context, route);
+            } catch (_) {
+              Navigator.pushReplacementNamed(context, '/');
+            }
+          } else {
+            // Manual phone login - navigate to home page
+            Navigator.pushReplacementNamed(context, '/');
+          }
         } else {
           final data = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(

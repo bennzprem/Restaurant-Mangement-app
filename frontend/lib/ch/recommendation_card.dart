@@ -82,7 +82,7 @@ class _RecommendationCardState extends State<RecommendationCard> {
 
       return null;
     } catch (e) {
-      print("Error fetching recommendation: $e");
+
       return null; // Return null on error
     }
   }

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:html' as html;
 import 'package:provider/provider.dart';
 
+import 'auth_provider.dart';
 import 'phone-login_page.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
@@ -216,8 +217,47 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           await Supabase.instance.client.auth.setSession(data['refresh_token']);
+
+          // Manually refresh the AuthProvider to update the UI
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
+          await authProvider.refreshAuthState();
+
           if (mounted) {
-            Navigator.pop(context, true); // Return true to indicate successful login
+            // After login, route user to their role dashboard
+            final client = Supabase.instance.client;
+            final uid = client.auth.currentUser!.id;
+            try {
+              final profile = await client
+                  .from('users')
+                  .select('role')
+                  .eq('id', uid)
+                  .single();
+              final role = profile['role'] ?? 'user';
+              String route = '/';
+              switch (role) {
+                case 'admin':
+                  route = '/admin_dashboard';
+                  break;
+                case 'manager':
+                  route = '/manager_dashboard';
+                  break;
+                case 'kitchen':
+                  route = '/kitchen_dashboard';
+                  break;
+                case 'delivery':
+                  route = '/delivery_dashboard';
+                  break;
+                case 'employee':
+                  route = '/employee_dashboard';
+                  break;
+                default:
+                  route = '/';
+              }
+              Navigator.pushReplacementNamed(context, route);
+            } catch (_) {
+              Navigator.pushReplacementNamed(context, '/');
+            }
           }
         } else {
           final errorData = json.decode(response.body);

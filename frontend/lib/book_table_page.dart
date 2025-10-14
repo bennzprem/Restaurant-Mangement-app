@@ -428,7 +428,7 @@ class _BookTablePageState extends State<BookTablePage>
                           null; // Reset time slot when period changes
                     });
                   } catch (e) {
-                    print('Error setting meal period: $e');
+
                   }
                 },
                 child: Container(
@@ -468,7 +468,7 @@ class _BookTablePageState extends State<BookTablePage>
                   try {
                     setState(() => _selectedTimeSlot = time);
                   } catch (e) {
-                    print('Error setting time slot: $e');
+
                   }
                 },
                 child: Container(
@@ -707,8 +707,7 @@ class _BookTablePageState extends State<BookTablePage>
         return DateFormat('h:mm a').parse(timeString);
       } catch (e2) {
         // If both fail, return current time as fallback
-        print(
-            'Error parsing time: $timeString, using current time as fallback');
+
         return DateTime.now();
       }
     }

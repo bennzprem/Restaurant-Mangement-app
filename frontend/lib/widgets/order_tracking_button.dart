@@ -82,8 +82,7 @@ class _OrderTrackingButtonState extends State<OrderTrackingButton>
 
   @override
   Widget build(BuildContext context) {
-    print(
-        '🛵 Button build: isVisible=${widget.isVisible}, orderCount=${widget.orderCount}');
+
     if (!widget.isVisible) return const SizedBox.shrink();
 
     return Positioned(
@@ -96,7 +95,7 @@ class _OrderTrackingButtonState extends State<OrderTrackingButton>
             scale: _bounceAnimation.value,
             child: GestureDetector(
               onTap: () {
-                print('🛵 Button tapped!');
+
                 widget.onTap();
               },
               child: Container(

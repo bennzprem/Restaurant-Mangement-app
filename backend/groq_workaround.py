@@ -58,14 +58,14 @@ def test_groq_with_workaround():
         )
         
         if response.status_code == 200:
-            print("SUCCESS! Groq API working with workaround")
+
             return True
         else:
-            print(f"API Error: {response.status_code} - {response.text}")
+
             return False
             
     except Exception as e:
-        print(f"Workaround failed: {e}")
+
         return False
 
 if __name__ == "__main__":

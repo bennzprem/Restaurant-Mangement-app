@@ -40,7 +40,7 @@ class _SimpleReservationConfirmationState
       final apiService = ApiService();
 
       if (authProvider.accessToken == null) {
-        print('No access token available');
+
         return;
       }
 
@@ -53,9 +53,8 @@ class _SimpleReservationConfirmationState
         authToken: authProvider.accessToken!,
       );
 
-      print('Reservation saved to database successfully');
     } catch (e) {
-      print('Error saving reservation to database: $e');
+
       // Show error to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -38,7 +38,7 @@ class _OrderLocationPickerState extends State<OrderLocationPicker> {
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }
@@ -57,7 +57,7 @@ class _OrderLocationPickerState extends State<OrderLocationPicker> {
       Position position = await Geolocator.getCurrentPosition();
       _updateMapLocation(latlng.LatLng(position.latitude, position.longitude));
     } catch (e) {
-      print("Error getting current position: $e");
+
     }
   }
 
@@ -81,7 +81,7 @@ class _OrderLocationPickerState extends State<OrderLocationPicker> {
         }
       }
     } catch (e) {
-      print("Error searching: $e");
+
     }
   }
 
@@ -119,7 +119,7 @@ class _OrderLocationPickerState extends State<OrderLocationPicker> {
             area = 'Current Location';
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = 'Current Location';
         }
 
@@ -156,7 +156,7 @@ class _OrderLocationPickerState extends State<OrderLocationPicker> {
         });
       }
     } catch (e) {
-      print("Geocoding error: $e");
+
       _addressDetails = AddressDetails(
         houseNo: '',
         area: 'Current Location',

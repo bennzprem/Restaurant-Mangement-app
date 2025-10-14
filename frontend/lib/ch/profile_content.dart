@@ -71,7 +71,7 @@ class _ProfileContentState extends State<ProfileContent> {
         _selectedTimeZone = null;
       });
     } catch (e) {
-      print('Error loading saved profile data: $e');
+
     }
   }
 
@@ -112,10 +112,10 @@ class _ProfileContentState extends State<ProfileContent> {
       // Only make API call if there's data to save
       if (profileData.isNotEmpty) {
         await ApiService().updateUserProfileInfo(userId, profileData);
-        print('✅ Profile info saved to database successfully');
+
       }
     } catch (e) {
-      print('❌ Error saving additional profile info: $e');
+
       rethrow; // Re-throw to show error to user
     }
   }

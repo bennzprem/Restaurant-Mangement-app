@@ -83,7 +83,7 @@ class _CartScreenState extends State<CartScreen> {
     if (pendingData != null) {
       final orderData = pendingData['orderData'] as Map<String, dynamic>;
       final orderType = pendingData['orderType'] as String;
-      
+
       // Show dialog to continue with the order
       if (mounted) {
         _showContinueOrderDialog(orderData, orderType);
@@ -92,12 +92,14 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Show dialog to continue with pending order
-  void _showContinueOrderDialog(Map<String, dynamic> orderData, String orderType) {
+  void _showContinueOrderDialog(
+      Map<String, dynamic> orderData, String orderType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Continue Order'),
-        content: const Text('We found your previous order details. Would you like to continue with your order?'),
+        content: const Text(
+            'We found your previous order details. Would you like to continue with your order?'),
         actions: [
           TextButton(
             onPressed: () {
@@ -123,12 +125,12 @@ class _CartScreenState extends State<CartScreen> {
     // Restore cart items
     final cart = Provider.of<CartProvider>(context, listen: false);
     cart.clearCart();
-    
+
     // Note: This is a simplified restoration. In a real app, you'd need to
     // fetch the full menu item details and restore them properly
     // For now, we'll just clear the pending data and let the user start fresh
     TempDataService.clearPendingOrder();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Please add items to your cart again.'),
@@ -154,7 +156,6 @@ class _CartScreenState extends State<CartScreen> {
           });
         }
       } catch (e) {
-        print('Error loading saved address: $e');
         // Fallback to SharedPreferences for backward compatibility
         final prefs = await SharedPreferences.getInstance();
         final addressJson = prefs.getString('address_${auth.user!.id}');
@@ -215,17 +216,21 @@ class _CartScreenState extends State<CartScreen> {
       // Save current cart data before login
       final cart = Provider.of<CartProvider>(context, listen: false);
       final orderData = {
-        'cartItems': cart.items.values.map((item) => {
-          'menuItemId': item.menuItem.id,
-          'quantity': item.quantity,
-          'specialInstructions': '', // CartItem doesn't have special instructions
-        }).toList(),
+        'cartItems': cart.items.values
+            .map((item) => {
+                  'menuItemId': item.menuItem.id,
+                  'quantity': item.quantity,
+                  'specialInstructions':
+                      '', // CartItem doesn't have special instructions
+                })
+            .toList(),
         'mode': widget.mode.toString(),
         'savedAddress': _savedAddress,
         'pickupName': _pickupNameController.text,
         'pickupPhone': _pickupPhoneController.text,
       };
-      showLoginPrompt(context, 
+      showLoginPrompt(
+        context,
         orderType: widget.mode.toString().split('.').last,
         orderData: orderData,
       );
@@ -315,17 +320,21 @@ class _CartScreenState extends State<CartScreen> {
       // Save current cart data before login
       final cart = Provider.of<CartProvider>(context, listen: false);
       final orderData = {
-        'cartItems': cart.items.values.map((item) => {
-          'menuItemId': item.menuItem.id,
-          'quantity': item.quantity,
-          'specialInstructions': '', // CartItem doesn't have special instructions
-        }).toList(),
+        'cartItems': cart.items.values
+            .map((item) => {
+                  'menuItemId': item.menuItem.id,
+                  'quantity': item.quantity,
+                  'specialInstructions':
+                      '', // CartItem doesn't have special instructions
+                })
+            .toList(),
         'mode': widget.mode.toString(),
         'savedAddress': _savedAddress,
         'pickupName': _pickupNameController.text,
         'pickupPhone': _pickupPhoneController.text,
       };
-      showLoginPrompt(context, 
+      showLoginPrompt(
+        context,
         orderType: widget.mode.toString().split('.').last,
         orderData: orderData,
       );
@@ -413,7 +422,6 @@ class _CartScreenState extends State<CartScreen> {
         }
       }
     } catch (e) {
-      print('Error loading saved addresses: $e');
     }
 
     // If no saved addresses, navigate to order location picker
@@ -1237,12 +1245,14 @@ class _CartScreenState extends State<CartScreen> {
   }
 }
 
-void showLoginPrompt(BuildContext context, {String? orderType, Map<String, dynamic>? orderData}) {
+void showLoginPrompt(BuildContext context,
+    {String? orderType, Map<String, dynamic>? orderData}) {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('Login Required'),
-      content: const Text('You need to be logged in to perform this action. Your order details will be saved.'),
+      content: const Text(
+          'You need to be logged in to perform this action. Your order details will be saved.'),
       actions: <Widget>[
         TextButton(
           child: const Text('Cancel'),

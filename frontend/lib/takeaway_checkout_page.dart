@@ -50,7 +50,6 @@ class _TakeawayCheckoutPageState extends State<TakeawayCheckoutPage> {
 
       // Generate unique pickup code
       final pickupCode = PickupCodeGenerator.generatePickupCode();
-      print('Generated pickup code: $pickupCode');
 
       final addressString =
           'TAKEAWAY | Name: ${_pickupNameController.text} | Phone: ${_pickupPhoneController.text} | Time: ${_pickupTime == null ? 'ASAP' : DateFormat('MMM d, hh:mm a').format(_pickupTime!)} | Code: $pickupCode';
@@ -159,12 +158,6 @@ class _TakeawayCheckoutPageState extends State<TakeawayCheckoutPage> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final totalAmount = cart.totalAmount.toInt();
 
-      print('Starting takeaway payment process...');
-      print('Amount: $totalAmount');
-      print('Customer: ${_pickupNameController.text}');
-      print('Phone: ${_pickupPhoneController.text}');
-      print('Email: ${auth.user?.email ?? 'No email'}');
-
       final success = await PaymentService.processPayment(
         context: context,
         amount: totalAmount,
@@ -175,17 +168,15 @@ class _TakeawayCheckoutPageState extends State<TakeawayCheckoutPage> {
         onSuccess: _processOrderAfterPayment,
       );
 
-      print('Payment result: $success');
-
       if (success) {
         // Payment was successful, order processing will be handled by onSuccess callback
-        print('Payment successful, processing order...');
+
       } else {
         // Payment failed or was cancelled
-        print('Payment failed or cancelled');
+
       }
     } catch (e) {
-      print('Payment error: $e');
+
       _showErrorDialog('Payment error: $e');
     } finally {
       if (mounted) {

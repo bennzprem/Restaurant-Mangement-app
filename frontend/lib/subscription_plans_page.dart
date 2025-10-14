@@ -254,9 +254,8 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
             'temp_order_id', // This will be updated by the payment service
       );
 
-      print('Subscription created successfully: ${subscription.id}');
     } catch (e) {
-      print('Error creating subscription: $e');
+
       throw e;
     }
   }

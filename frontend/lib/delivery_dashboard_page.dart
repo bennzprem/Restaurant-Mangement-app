@@ -31,7 +31,6 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final userId = auth.user?.id;
-      print('Current user ID: $userId');
 
       // Load ready orders (for accepting)
       final readyResp = await _fetchJson('${_api.baseUrl}/api/delivery/orders');
@@ -44,17 +43,15 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
           acceptedResp = await _fetchJson(
               '${_api.baseUrl}/api/delivery/accepted-orders?delivery_user_id=$userId');
         } catch (e) {
-          print('Error fetching accepted orders: $e');
+
           acceptedResp = [];
         }
       } else {
-        print('User not logged in, skipping accepted orders fetch');
+
       }
 
       if (!mounted) return;
-      print('Ready orders: ${readyResp.length}');
-      print('Accepted orders: ${acceptedResp.length}');
-      print('Accepted orders data: $acceptedResp');
+
       setState(() {
         _orders = (readyResp as List).cast<Map<String, dynamic>>();
         _acceptedOrder = acceptedResp.isNotEmpty
@@ -62,10 +59,9 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
             : null;
         _loading = false;
       });
-      print(
-          'Final state - orders: ${_orders.length}, accepted: ${_acceptedOrder != null}');
+
       if (_acceptedOrder != null) {
-        print('Accepted order details: $_acceptedOrder');
+
       }
     } catch (e) {
       if (!mounted) return;
@@ -91,11 +87,9 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please log in to accept orders')),
       );
-      print('ERROR: User not logged in, cannot accept order');
+
       return;
     }
-
-    print('User is logged in with ID: $userId, accepting order $orderId');
 
     try {
       final resp = await http.post(
@@ -107,11 +101,11 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Order accepted successfully!')));
-          print('Order accepted, refreshing dashboard...');
+
           _load();
         }
       } else {
-        print('Order acceptance failed: ${resp.statusCode} - ${resp.body}');
+
         throw 'Server responded ${resp.statusCode}: ${resp.body}';
       }
     } catch (e) {
@@ -175,12 +169,11 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
               backgroundColor: Colors.green,
             ),
           );
-          print('Order marked as delivered, refreshing dashboard...');
+
           _load();
         }
       } else {
-        print(
-            'Order delivery marking failed: ${resp.statusCode} - ${resp.body}');
+
         throw 'Server responded ${resp.statusCode}: ${resp.body}';
       }
     } catch (e) {
@@ -243,7 +236,7 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
         );
       } catch (e) {
         Navigator.of(context).pop(); // Close loading dialog
-        print('Error getting current location: $e');
+
         _showLocationError(
             'Unable to get your current location. Please check your location settings.');
         return;
@@ -274,7 +267,7 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
       }
     } catch (e) {
       Navigator.of(context).pop(); // Close loading dialog if still open
-      print('Error opening Google Maps: $e');
+
       _showAddressDialog(deliveryAddress);
     }
   }

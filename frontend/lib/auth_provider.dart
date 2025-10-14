@@ -54,7 +54,7 @@ class AuthProvider with ChangeNotifier {
         avatarUrl: response['avatar_Url'], // Fixed: use avatar_Url (capital U)
       );
     } catch (e) {
-      print('Error fetching user profile: $e');
+
       _user = null;
     }
     notifyListeners();
@@ -67,7 +67,7 @@ class AuthProvider with ChangeNotifier {
       _user = null;
       notifyListeners();
     } catch (e) {
-      print('Error during signOut: $e');
+
       // Force clear user state even if signOut fails
       _user = null;
       notifyListeners();

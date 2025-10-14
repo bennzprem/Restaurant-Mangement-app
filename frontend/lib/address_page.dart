@@ -111,7 +111,7 @@ class _AddressPageState extends State<AddressPage> {
             area = administrativeArea;
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = '';
         }
 
@@ -166,7 +166,7 @@ class _AddressPageState extends State<AddressPage> {
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }
@@ -235,7 +235,7 @@ class _AddressPageState extends State<AddressPage> {
         ),
       );
     } catch (e) {
-      print('Error saving address: $e');
+
       // Don't show error to user as this is optional
     }
   }

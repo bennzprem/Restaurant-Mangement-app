@@ -34,7 +34,7 @@ class _AddressManagementWidgetState extends State<AddressManagementWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading saved addresses: $e');
+
       setState(() {
         _isLoading = false;
       });

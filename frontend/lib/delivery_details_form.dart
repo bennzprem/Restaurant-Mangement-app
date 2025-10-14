@@ -131,7 +131,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
             area = administrativeArea;
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = '';
         }
 
@@ -227,7 +227,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
         ),
       );
     } catch (e) {
-      print('Error saving address: $e');
+
       // Don't show error to user as this is optional
     }
   }
@@ -278,7 +278,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }

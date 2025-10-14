@@ -25,11 +25,11 @@ class PaymentService {
   static VoidCallback? _onSuccessCallback;
 
   static void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    print('Payment Success: ${response.paymentId}');
+
     try {
       _onSuccessCallback?.call();
     } catch (e) {
-      print('onSuccess callback threw: $e');
+
     }
     _paymentCompleter?.complete(true);
     _paymentCompleter = null;
@@ -37,14 +37,14 @@ class PaymentService {
   }
 
   static void _handlePaymentError(PaymentFailureResponse response) {
-    print('Payment Error: ${response.code} - ${response.message}');
+
     _paymentCompleter?.complete(false);
     _paymentCompleter = null;
     _onSuccessCallback = null;
   }
 
   static void _handleExternalWallet(ExternalWalletResponse response) {
-    print('External Wallet: ${response.walletName}');
+
     _paymentCompleter?.complete(true);
     _paymentCompleter = null;
     _onSuccessCallback = null;
@@ -60,13 +60,13 @@ class PaymentService {
     VoidCallback? onSuccess,
   }) async {
     try {
-      print('Starting payment process for order $orderId, amount: $amount');
+
       _paymentCompleter = Completer<bool>();
       _onSuccessCallback = onSuccess;
 
       // Ensure Razorpay is initialized for mobile
       if (!kIsWeb && _razorpay == null) {
-        print('Initializing Razorpay for mobile');
+
         _razorpay = Razorpay();
         _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
         _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
@@ -93,11 +93,11 @@ class PaymentService {
 
       if (kIsWeb) {
         // Web implementation (similar to your cart_screen.dart)
-        print('Opening Razorpay for web');
+
         _openRazorpayWeb(options);
       } else {
         // Mobile implementation
-        print('Opening Razorpay for mobile with options: $options');
+
         _razorpay!.open(options);
       }
 
@@ -115,7 +115,7 @@ class PaymentService {
 
       return result;
     } catch (e) {
-      print('Payment error: $e');
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -130,12 +130,11 @@ class PaymentService {
 
   static void _openRazorpayWeb(Map<String, dynamic> options) {
     try {
-      print('Opening Razorpay web with options: $options');
 
       // Add handler for payment success
       final webOptions = Map<String, dynamic>.from(options);
       webOptions['handler'] = js.allowInterop((response) {
-        print('Payment success response: $response');
+
         _handlePaymentSuccess(PaymentSuccessResponse(
           response['razorpay_payment_id'] ?? '',
           response['razorpay_order_id'] ?? '',
@@ -147,7 +146,7 @@ class PaymentService {
       // Add modal dismiss handler
       webOptions['modal'] = {
         'ondismiss': js.allowInterop(() {
-          print('Payment modal dismissed');
+
           _paymentCompleter?.complete(false);
           _paymentCompleter = null;
         })
@@ -156,7 +155,7 @@ class PaymentService {
       // Create Razorpay instance and open
       final ctor = js.context['Razorpay'];
       if (ctor == null) {
-        print('Razorpay constructor not found');
+
         _paymentCompleter?.complete(false);
         _paymentCompleter = null;
         return;
@@ -165,7 +164,7 @@ class PaymentService {
       final instance = js.JsObject(ctor, [js.JsObject.jsify(webOptions)]);
       instance.callMethod('open');
     } catch (e) {
-      print('Error opening Razorpay web: $e');
+
       _paymentCompleter?.complete(false);
       _paymentCompleter = null;
     }

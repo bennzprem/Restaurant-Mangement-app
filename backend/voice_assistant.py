@@ -15,10 +15,10 @@ class VoiceAssistant:
             api_key = os.environ.get("GROQ_API_KEY")
             if not api_key: raise ValueError("GROQ_API_KEY environment variable not set.")
             client = Groq(api_key=api_key)
-            print("VoiceAssistant: Groq AI Model configured successfully.")
+
             return client
         except Exception as e:
-            print(f"ERROR: VoiceAssistant Groq AI Model configuration failed: {e}")
+
             return None
 
     def extract_number_from_text(self, text: str):
@@ -51,7 +51,7 @@ class VoiceAssistant:
         like item names, ingredients, categories, or prices.
         """
         if not self.model: 
-            print("ERROR: VoiceAssistant model not configured")
+
             return {"intent": "unknown", "entity_name": None}
 
         menu_for_prompt = ", ".join([f"'{item['name']}'" for item in menu_list])
@@ -424,7 +424,6 @@ class VoiceAssistant:
             if price_match and ("under" in user_text or "less than" in user_text or "for" in user_text):
                  return {"intent": "list_by_price_under", "price_limit": int(price_match.group(1))}
 
-            print(f"DEBUG: Calling Groq API for intent analysis...")
             chat_completion = self.model.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
@@ -433,18 +432,17 @@ class VoiceAssistant:
             )
             
             response_content = chat_completion.choices[0].message.content
-            print(f"DEBUG: Groq API response: {response_content}")
-            
+
             if not response_content:
-                print("ERROR: Empty response from Groq API")
+
                 return {"intent": "unknown", "entity_name": None}
                 
             return json.loads(response_content)
         except json.JSONDecodeError as e:
-            print(f"ERROR: Failed to parse JSON response from Groq API: {e}")
+
             return {"intent": "unknown", "entity_name": None}
         except Exception as e:
-            print(f"ERROR: AI intent analysis failed: {e}")
+
             return {"intent": "unknown", "entity_name": None}
 
     def formulate_response(self, user_text: str, intent: str, context_data: dict):
@@ -949,7 +947,7 @@ class VoiceAssistant:
             - Example: "Good evening! How can I help you today?"
         """
         try:
-            print(f"DEBUG: Calling Groq API for response formulation...")
+
             chat_completion = self.model.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
@@ -959,16 +957,15 @@ class VoiceAssistant:
             )
             
             response_content = chat_completion.choices[0].message.content
-            print(f"DEBUG: Groq API response: {response_content}")
-            
+
             if not response_content:
-                print("ERROR: Empty response from Groq API")
+
                 return {"confirmation_message": "I'm sorry, I had a little trouble with that request. Please try again.", "new_context": {}}
                 
             return json.loads(response_content)
         except json.JSONDecodeError as e:
-            print(f"ERROR: Failed to parse JSON response from Groq API: {e}")
+
             return {"confirmation_message": "I'm sorry, I had a little trouble with that request. Please try again.", "new_context": {}}
         except Exception as e:
-            print(f"ERROR: AI response formulation failed: {e}")
+
             return {"confirmation_message": "I'm sorry, I had a little trouble with that request. Please try again.", "new_context": {}}

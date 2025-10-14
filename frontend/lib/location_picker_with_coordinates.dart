@@ -39,7 +39,7 @@ class _LocationPickerWithCoordinatesState
     try {
       return value?.isNotEmpty == true ? value : null;
     } catch (e) {
-      print("Error extracting string value: $e");
+
       return null;
     }
   }
@@ -58,7 +58,7 @@ class _LocationPickerWithCoordinatesState
       Position position = await Geolocator.getCurrentPosition();
       _updateMapLocation(latlng.LatLng(position.latitude, position.longitude));
     } catch (e) {
-      print("Error getting current position: $e");
+
     }
   }
 
@@ -82,7 +82,7 @@ class _LocationPickerWithCoordinatesState
         }
       }
     } catch (e) {
-      print("Error searching: $e");
+
     }
   }
 
@@ -120,7 +120,7 @@ class _LocationPickerWithCoordinatesState
             area = 'Current Location';
           }
         } catch (e) {
-          print("Error extracting area: $e");
+
           area = 'Current Location';
         }
 
@@ -157,7 +157,7 @@ class _LocationPickerWithCoordinatesState
         });
       }
     } catch (e) {
-      print("Geocoding error: $e");
+
       _addressDetails = AddressDetails(
         houseNo: '',
         area: 'Current Location',

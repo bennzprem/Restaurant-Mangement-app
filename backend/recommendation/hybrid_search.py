@@ -85,7 +85,7 @@ def find_craving(user_query):
         return matches
         
     except Exception as e:
-        print(f"AI search failed: {e}")
+
         # Fallback to simple keyword search
         return _simple_keyword_search(user_query)
 
@@ -271,7 +271,7 @@ def _simple_keyword_search(user_query):
         return matches[:3]
         
     except Exception as e:
-        print(f"Simple search failed: {e}")
+
         return []
 
 def _db_search_with_hints(user_query, parsed):
@@ -387,13 +387,12 @@ def _db_search_with_hints(user_query, parsed):
         results.sort(key=lambda x: x['final_score'], reverse=True)
         return results[:3]
     except Exception as e:
-        print(f"DB search with hints failed: {e}")
+
         return _simple_keyword_search(user_query)
 
 def search_craving(user_query):
     """Main search function - wrapper for find_craving"""
     return find_craving(user_query)
-
 
 def _vector_search_and_rerank(user_query: str, parsed: dict):
     """Perform Pinecone vector search, then re-rank using attributes and hydrate from Supabase.
@@ -438,7 +437,7 @@ def _vector_search_and_rerank(user_query: str, parsed: dict):
         )
         matches = res.get("matches", [])
     except Exception as e:
-        print(f"Pinecone query failed: {e}")
+
         return _db_search_with_hints(user_query, parsed)
 
     if not matches:
@@ -549,7 +548,6 @@ def _vector_search_and_rerank(user_query: str, parsed: dict):
     hydrated = _hydrate_from_supabase(top)
     return hydrated or top
 
-
 def _hydrate_from_supabase(matches: list):
     """Fetch fresh details from Supabase for the given match IDs and merge fields.
 
@@ -610,5 +608,5 @@ def _hydrate_from_supabase(matches: list):
             })
         return merged
     except Exception as e:
-        print(f"Hydration from Supabase failed: {e}")
+
         return matches

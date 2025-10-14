@@ -18,28 +18,23 @@ class OrderTrackingService extends ChangeNotifier {
   Timer? _pollingTimer;
 
   List<ActiveOrder> get activeOrders {
-    print('🔍 Getting activeOrders: ${_activeOrders.length} orders');
     return List.unmodifiable(_activeOrders);
   }
 
   int get activeOrderCount {
-    print('🔍 Getting activeOrderCount: ${_activeOrders.length}');
     return _activeOrders.length;
   }
 
   bool get hasActiveOrders {
-    print('🔍 Getting hasActiveOrders: ${_activeOrders.isNotEmpty}');
     return _activeOrders.isNotEmpty;
   }
 
   /// Start tracking orders for a user
   Future<void> startTracking(String userId) async {
-    print('🚀 Starting tracking for user: $userId');
-    print('🔍 Current orders before load: ${_activeOrders.length}');
     await _loadActiveOrders(); // Load from storage first
-    print('🔍 Orders after load: ${_activeOrders.length}');
+
     await _fetchActiveOrders(userId); // Then fetch from server
-    print('🔍 Orders after fetch: ${_activeOrders.length}');
+
     _startRealtimeSubscription(userId);
     _startPollingFallback(userId);
   }
@@ -54,14 +49,13 @@ class OrderTrackingService extends ChangeNotifier {
 
   /// Add a new order to tracking
   void addOrder(ActiveOrder order) {
-    print('📦 Adding order to tracking: ${order.id}');
     final existingIndex = _activeOrders.indexWhere((o) => o.id == order.id);
     if (existingIndex >= 0) {
       _activeOrders[existingIndex] = order;
     } else {
       _activeOrders.add(order);
     }
-    print('📋 Total active orders: ${_activeOrders.length}');
+
     _saveActiveOrders();
     notifyListeners();
   }
@@ -86,7 +80,6 @@ class OrderTrackingService extends ChangeNotifier {
 
   Future<void> _fetchActiveOrders(String userId) async {
     try {
-      print('🔍 Fetching active orders for user: $userId');
       final response = await Supabase.instance.client
           .from('orders')
           .select(
@@ -95,17 +88,14 @@ class OrderTrackingService extends ChangeNotifier {
           .or('status.eq.Preparing,status.eq.Ready for pickup,status.eq.Out for delivery')
           .order('created_at', ascending: false);
 
-      print('📊 Raw response: $response');
       _activeOrders.clear();
       for (final orderData in response) {
         _activeOrders.add(ActiveOrder.fromJson(orderData));
       }
-      print('📋 Found ${_activeOrders.length} active orders');
+
       await _saveActiveOrders(); // Save to storage
       notifyListeners();
-    } catch (e) {
-      print('❌ Error fetching active orders: $e');
-    }
+    } catch (e) {}
   }
 
   void _startRealtimeSubscription(String userId) {
@@ -140,9 +130,7 @@ class OrderTrackingService extends ChangeNotifier {
             },
           )
           .subscribe();
-    } catch (e) {
-      print('Error subscribing to orders realtime: $e');
-    }
+    } catch (e) {}
   }
 
   void _startPollingFallback(String userId) {
@@ -157,10 +145,7 @@ class OrderTrackingService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final ordersJson = _activeOrders.map((order) => order.toJson()).toList();
       await prefs.setString('active_orders', jsonEncode(ordersJson));
-      print('💾 Saved ${_activeOrders.length} active orders to storage');
-    } catch (e) {
-      print('❌ Error saving active orders: $e');
-    }
+    } catch (e) {}
   }
 
   /// Load active orders from SharedPreferences (synchronous version)
@@ -169,26 +154,18 @@ class OrderTrackingService extends ChangeNotifier {
       // Use a synchronous approach for immediate loading
       SharedPreferences.getInstance().then((prefs) {
         final ordersString = prefs.getString('active_orders');
-        print(
-            '🔍 Storage check (sync): ordersString = ${ordersString != null ? "exists" : "null"}');
         if (ordersString != null) {
-          print('🔍 Raw storage data (sync): $ordersString');
           final ordersList = jsonDecode(ordersString) as List;
-          print('🔍 Parsed orders list (sync): ${ordersList.length} items');
           _activeOrders.clear();
           _activeOrders.addAll(
               ordersList.map((json) => ActiveOrder.fromJson(json)).toList());
-          print(
-              '📂 Loaded ${_activeOrders.length} active orders from storage (sync)');
           notifyListeners();
-        } else {
-          print('📂 No stored orders found (sync)');
         }
       }).catchError((e) {
-        print('❌ Error loading active orders (sync): $e');
+        // Error handling
       });
     } catch (e) {
-      print('❌ Error in sync load: $e');
+      // Error handling
     }
   }
 
@@ -197,23 +174,17 @@ class OrderTrackingService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final ordersString = prefs.getString('active_orders');
-      print(
-          '🔍 Storage check: ordersString = ${ordersString != null ? "exists" : "null"}');
+
       if (ordersString != null) {
-        print('🔍 Raw storage data: $ordersString');
         final ordersList = jsonDecode(ordersString) as List;
-        print('🔍 Parsed orders list: ${ordersList.length} items');
+
         _activeOrders.clear();
         _activeOrders.addAll(
             ordersList.map((json) => ActiveOrder.fromJson(json)).toList());
-        print('📂 Loaded ${_activeOrders.length} active orders from storage');
+
         notifyListeners();
-      } else {
-        print('📂 No stored orders found');
-      }
-    } catch (e) {
-      print('❌ Error loading active orders: $e');
-    }
+      } else {}
+    } catch (e) {}
   }
 
   /// Clear all stored orders
@@ -223,10 +194,7 @@ class OrderTrackingService extends ChangeNotifier {
       await prefs.remove('active_orders');
       _activeOrders.clear();
       notifyListeners();
-      print('🗑️ Cleared all stored orders');
-    } catch (e) {
-      print('❌ Error clearing stored orders: $e');
-    }
+    } catch (e) {}
   }
 }
 

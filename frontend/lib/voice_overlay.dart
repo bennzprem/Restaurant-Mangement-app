@@ -90,19 +90,18 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
   void _initSpeech() async {
     bool available = await _speechToText.initialize();
-    print('Speech recognition available: $available');
-    
+
     _speechToText.statusListener = (status) {
-      print('Speech recognition status: $status');
+
       if (status == 'done' && _currentState == VoiceState.listening) {
-        print('Speech recognition done, stopping listening');
+
         _stopListening();
       }
       // Auto-stop listening after 30 seconds to give user enough time
       if (status == 'listening' && _currentState == VoiceState.listening) {
         Future.delayed(const Duration(seconds: 30), () {
           if (_currentState == VoiceState.listening) {
-            print('Auto-stopping listening after 30 seconds');
+
             _stopListening();
           }
         });
@@ -115,7 +114,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
   // Wake word detection methods removed - only respond to mic tap
 
   void _startListening() async {
-    print('_startListening() called - starting listening with animation'); // Debug log
     
     // Stop any existing speech recognition first
     try {
@@ -131,11 +129,11 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     try {
       final available = await _speechToText.initialize();
       if (!available) {
-        print('Speech recognition not available');
+
         return;
       }
     } catch (e) {
-      print('Error initializing speech recognition: $e');
+
       return;
     }
     
@@ -149,21 +147,16 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
       _aiResponse = ""; // Clear previous AI response
       _currentSpeechText = ""; // Clear previous speech text
     });
-    
-    print('State set to listening, animation flag set to true'); // Debug log
-    
+
     // Start animation immediately
     _listeningController.reset();
     _listeningController.repeat(reverse: true);
-    
-    print('Animation started, beginning speech recognition for 30 seconds'); // Debug log
-    
+
     // Start active listening
     _startActiveListening();
   }
 
   void _startActiveListening() async {
-    print('_startActiveListening() called'); // Debug log
     
     try {
       // Start speech recognition with longer listening time for complete sentences
@@ -175,9 +168,9 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         localeId: 'en_US',
         cancelOnError: false, // Don't cancel on minor errors
       );
-      print('Speech recognition started successfully');
+
     } catch (e) {
-      print('Error starting speech recognition: $e');
+
       // If speech recognition fails, reset to idle state
       setState(() {
         _currentState = VoiceState.idle;
@@ -190,7 +183,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     try {
       await _speechToText.stop();
     } catch (e) {
-      print('Error stopping speech recognition: $e');
+
     }
     
     // Stop the listening animation
@@ -215,13 +208,11 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     
     // Add buffer time for natural speech pauses
     int totalWaitTime = estimatedDurationMs + 1000; // Add 1 second buffer
-    
-    print('Waiting for speech to complete: ${totalWaitTime}ms for ${wordCount} words');
+
     await Future.delayed(Duration(milliseconds: totalWaitTime));
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    print('Speech result: "${result.recognizedWords}" (final: ${result.finalResult})'); // Debug log
     setState(() {
       _lastWords = result.recognizedWords;
       _currentSpeechText = result.recognizedWords; // Show current speech
@@ -229,7 +220,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
     
     // If we have a final result with words, stop listening after a short delay
     if (result.finalResult && result.recognizedWords.isNotEmpty) {
-      print('Final result received, stopping listening in 1 second');
+
       Future.delayed(const Duration(seconds: 1), () {
         if (_currentState == VoiceState.listening) {
           _stopListening();
@@ -240,7 +231,7 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
 
   Future<void> _sendCommandToBackend() async {
     try {
-      print('Sending command to backend: "$_lastWords"');
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.accessToken;
 
@@ -250,7 +241,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
       };
 
       final url = Uri.parse('http://127.0.0.1:5000/voice-command');
-      print('Backend URL: $url');
 
       final response = await http.post(
         url,
@@ -260,8 +250,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
           'context': _conversationContext, // Send the memory to the backend
         }),
       ).timeout(const Duration(seconds: 15)); // Add 15 second timeout for better response
-      
-      print('Backend response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -269,9 +257,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         final action = responseData['action'];
         final newContext = responseData['new_context'];
         final cartData = responseData['updated_cart'];
-
-        print('Backend response message: "$message"');
-        print('Backend response action: "$action"');
 
         setState(() {
           _aiResponse = message ?? "";
@@ -285,7 +270,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
         // Stop listening animation when responding
         _listeningController.stop();
 
-        print('Speaking response: "$_aiResponse"');
         if (_aiResponse.isNotEmpty) {
           // Set faster speech rate for quicker response
           await _flutterTts.setSpeechRate(1.2); // Faster speech rate
@@ -340,11 +324,11 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
               .updateCartFromVoice(cartData);
         }
       } else {
-        print('Backend error: ${response.statusCode} - ${response.body}');
+
         throw Exception('Failed to get response from server: ${response.statusCode}');
       }
     } catch (e) {
-      print('Backend communication error: $e');
+
       setState(() {
         _aiResponse = "Sorry, I'm having trouble connecting. Please try again.";
         _currentState = VoiceState.responding;
@@ -471,7 +455,6 @@ class _VoiceInteractionOverlayState extends State<VoiceInteractionOverlay>
       ),
     );
   }
-
 
   Widget _buildMicButton() {
     return Column(

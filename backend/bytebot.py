@@ -26,14 +26,14 @@ class ByteBot:
             # CHANGE: Look for GROQ_API_KEY now
             api_key = os.environ.get("GROQ_API_KEY")
             if not api_key:
-                print("ERROR: GROQ_API_KEY environment variable not set.")
+
                 return None
             # CHANGE: Initialize the Groq client
             client = Groq(api_key=api_key)
-            print("ByteBot: Groq AI Model configured successfully.")
+
             return client
         except Exception as e:
-            print(f"ERROR: ByteBot Groq AI Model configuration failed: {e}")
+
             return None
 
     def get_recommendation(self):
@@ -136,5 +136,5 @@ class ByteBot:
             }, 200
 
         except Exception as e:
-            print(f"An error occurred in ByteBot's get_recommendation: {e}")
+
             return {"error": str(e)}, 500

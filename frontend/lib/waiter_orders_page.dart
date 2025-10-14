@@ -87,7 +87,7 @@ class _WaiterOrdersPageState extends State<WaiterOrdersPage> {
           )
           .subscribe();
     } catch (e) {
-      print('Error subscribing to order changes: $e');
+
       // Fallback to periodic refresh if realtime fails
       Timer.periodic(const Duration(seconds: 10), (_) => _load());
     }

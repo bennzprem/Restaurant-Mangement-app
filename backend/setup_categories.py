@@ -34,11 +34,10 @@ def setup_categories():
         
         if response.status_code == 200:
             existing_categories = response.json()
-            print(f"Found {len(existing_categories)} existing categories")
             
             if len(existing_categories) == 0:
                 # Insert all categories
-                print("Inserting categories...")
+
                 for category in categories:
                     response = requests.post(
                         f"{SUPABASE_URL}/rest/v1/categories",
@@ -46,16 +45,14 @@ def setup_categories():
                         json=category
                     )
                     if response.status_code == 201:
-                        print(f"✓ Inserted category: {category['name']}")
+
                     else:
-                        print(f"✗ Failed to insert category {category['name']}: {response.status_code}")
+
             else:
-                print("Categories already exist, skipping insertion")
+
         else:
-            print(f"Error checking categories table: {response.status_code}")
-            
+
     except Exception as e:
-        print(f"Error setting up categories: {e}")
 
 if __name__ == "__main__":
     setup_categories()

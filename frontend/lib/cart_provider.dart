@@ -78,7 +78,7 @@ void updateCartFromVoice(List<dynamic> voiceCartData) {
     }
 
     // This is the most important step: it tells the app to redraw the cart UI.
-    print("✅ Cart updated from voice. New item count: ${_items.length}");
+
     notifyListeners();
   }
   }

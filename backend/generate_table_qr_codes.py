@@ -18,8 +18,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from app import supabase, SUPABASE_URL, SUPABASE_KEY
 except ImportError:
-    print("Error: Could not import Supabase configuration from app.py")
-    print("Make sure app.py is in the same directory and has the correct Supabase setup")
+
     sys.exit(1)
 
 def generate_qr_code(table_number, output_dir="qr_codes"):
@@ -98,7 +97,6 @@ def generate_qr_code(table_number, output_dir="qr_codes"):
     filepath = os.path.join(output_dir, filename)
     canvas.save(filepath)
     
-    print(f"✅ Generated QR code for Table {table_number} ({table_code}) -> {filepath}")
     return filepath
 
 def fetch_tables_from_database():
@@ -109,22 +107,20 @@ def fetch_tables_from_database():
         list: List of table numbers
     """
     try:
-        print("🔍 Fetching tables from database...")
-        
+
         # Fetch all tables from the database
         response = supabase.table('tables').select('table_number').order('table_number').execute()
         
         if not response.data:
-            print("❌ No tables found in database")
+
             return []
         
         table_numbers = [table['table_number'] for table in response.data]
-        print(f"📊 Found {len(table_numbers)} tables in database: {table_numbers}")
         
         return table_numbers
         
     except Exception as e:
-        print(f"❌ Error fetching tables from database: {e}")
+
         return []
 
 def create_table_codes_summary(table_numbers, output_dir="qr_codes"):
@@ -156,21 +152,17 @@ def create_table_codes_summary(table_numbers, output_dir="qr_codes"):
         f.write("2. Place QR codes on corresponding tables\n")
         f.write("3. Customers can scan to order directly from table\n")
         f.write("4. QR codes contain table codes in format TBL000\n")
-    
-    print(f"📄 Created summary file: {summary_file}")
 
 def main():
     """
     Main function to generate QR codes for all tables.
     """
-    print("🚀 ByteEat QR Code Generator")
-    print("=" * 40)
-    
+
     # Fetch tables from database
     table_numbers = fetch_tables_from_database()
     
     if not table_numbers:
-        print("❌ No tables found. Please check your database connection and table data.")
+
         return
     
     # Generate QR codes for each table
@@ -180,19 +172,9 @@ def main():
             filepath = generate_qr_code(table_num)
             generated_files.append(filepath)
         except Exception as e:
-            print(f"❌ Error generating QR code for Table {table_num}: {e}")
-    
+
     # Create summary file
     create_table_codes_summary(table_numbers)
-    
-    print("\n" + "=" * 40)
-    print(f"🎉 Successfully generated {len(generated_files)} QR codes!")
-    print(f"📁 Files saved in: qr_codes/")
-    print(f"📄 Summary file: qr_codes/table_codes_summary.txt")
-    print("\nNext steps:")
-    print("1. Print the QR code images")
-    print("2. Place them on the corresponding tables")
-    print("3. Test the 'Order from Table' feature")
 
 if __name__ == "__main__":
     main()

@@ -69,11 +69,11 @@ Examples:
             else:
                 return {}
         else:
-            print(f"Groq API error: {response.status_code}")
+
             return {}
             
     except Exception as e:
-        print(f"Error parsing query with Groq: {e}")
+
         return {}
 
 # Example usage and test
@@ -81,5 +81,3 @@ if __name__ == "__main__":
     # Test with example query
     test_query = "🥶 need something hot n spicy"
     result = parse_craving_with_groq(test_query)
-    print("Test query:", test_query)
-    print("Parsed result:", json.dumps(result, indent=2))
