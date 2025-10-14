@@ -485,19 +485,6 @@ class _RoleQuickAccess extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
-    // Debug information
-    print('=== ROLE DEBUG INFO ===');
-    print('User: ${auth.user?.name}');
-    print('Email: ${auth.user?.email}');
-    print('Role: ${auth.user?.role}');
-    print('isAdmin: ${auth.isAdmin}');
-    print('isManager: ${auth.isManager}');
-    print('isEmployee: ${auth.isEmployee}');
-    print('isDelivery: ${auth.isDelivery}');
-    print('isKitchen: ${auth.isKitchen}');
-    print('isWaiter: ${auth.isWaiter}');
-    print('======================');
-
     String? route;
     String? buttonText;
 
@@ -520,53 +507,8 @@ class _RoleQuickAccess extends StatelessWidget {
     }
 
     if (route == null) {
-      // Show debug info for users without specific roles
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            border: Border.all(color: Colors.orange),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Debug Info:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text('User: ${auth.user?.name ?? "Not logged in"}'),
-              Text('Role: ${auth.user?.role ?? "No role"}'),
-              Text('isManager: ${auth.isManager}'),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => auth.refreshUserProfile(),
-                      child: const Text('Refresh User Profile'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/debug_user_role'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Debug Role'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
+      // Return empty container for users without specific roles
+      return const SizedBox.shrink();
     }
 
     return Padding(

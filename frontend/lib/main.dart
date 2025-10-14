@@ -21,7 +21,6 @@ import 'change_password_page.dart';
 import 'takeaway_page.dart';
 import 'dine_in_page.dart';
 import 'booking_history_page.dart';
-import 'menu_screen.dart';
 import 'menu_screen_with_location.dart';
 import 'about_page.dart';
 import 'contact_page.dart';
@@ -32,7 +31,8 @@ import 'delivery_dashboard_page.dart';
 import 'kitchen_dashboard_page.dart';
 import 'waiter_dashboard_page.dart';
 import 'ch/user_dashboard_page.dart';
-import 'debug_user_role.dart';
+import 'subscription_plans_page.dart';
+import 'subscription_dashboard_page.dart';
 import 'cart_screen.dart';
 import 'favorites_screen.dart';
 import 'services/payment_service.dart';
@@ -93,7 +93,8 @@ class MyApp extends StatelessWidget {
                 '/login': (context) => const LoginPage(),
                 '/signup': (context) => const SignUpPage(),
                 '/profile': (context) => const UserDashboardPage(),
-                '/forget_password_page': (context) => const ForgotPasswordPage(),
+                '/forget_password_page': (context) =>
+                    const ForgotPasswordPage(),
                 '/phone_login': (context) => const PhoneLoginPage(),
                 '/phone_signup': (context) => const PhoneSignUpPage(),
                 '/edit_profile': (context) => const EditProfilePage(),
@@ -113,13 +114,18 @@ class MyApp extends StatelessWidget {
                 '/explore-menu': (context) => const ExploreMenuPage(),
                 '/admin_dashboard': (context) => const AdminDashboardPage(),
                 '/manager_dashboard': (context) => const ManagerDashboardPage(),
-                '/employee_dashboard': (context) => const EmployeeDashboardPage(),
+                '/employee_dashboard': (context) =>
+                    const EmployeeDashboardPage(),
                 '/waiter_dashboard': (context) => const WaiterDashboardPage(),
-                '/debug_user_role': (context) => const DebugUserRole(),
-                '/delivery_dashboard': (context) => const DeliveryDashboardPage(),
+                '/delivery_dashboard': (context) =>
+                    const DeliveryDashboardPage(),
                 '/kitchen_dashboard': (context) => const KitchenDashboardPage(),
                 '/cart': (context) => const CartScreen(),
                 '/favorites': (context) => const FavoritesScreen(),
+                '/subscription-plans': (context) =>
+                    const SubscriptionPlansPage(),
+                '/subscription-dashboard': (context) =>
+                    const SubscriptionDashboardPage(),
                 // Explore section detail pages
                 '/explore/special-diet': (context) => const AllDayPicksPage(),
                 '/explore/fitness': (context) => const FitnessCategoriesPage(),
