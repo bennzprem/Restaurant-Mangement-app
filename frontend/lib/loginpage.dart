@@ -217,7 +217,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           final data = jsonDecode(response.body);
           await Supabase.instance.client.auth.setSession(data['refresh_token']);
           if (mounted) {
-            Navigator.pushReplacementNamed(context, '/');
+            Navigator.pop(context, true); // Return true to indicate successful login
           }
         } else {
           final errorData = json.decode(response.body);

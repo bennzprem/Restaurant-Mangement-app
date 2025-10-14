@@ -2883,9 +2883,13 @@ void showLoginPrompt(BuildContext context) {
             'Login',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(ctx).pop();
-            Navigator.pushNamed(context, '/login');
+            final result = await Navigator.pushNamed(context, '/login');
+            // If login was successful, the user can now add to favorites
+            if (result == true) {
+              // The user is now logged in, they can retry their action
+            }
           },
         ),
       ],

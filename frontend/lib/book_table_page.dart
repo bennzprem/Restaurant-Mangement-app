@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_service.dart';
 import 'auth_provider.dart';
 import 'confirmation_page.dart';
+import 'services/temp_data_service.dart';
 import 'theme.dart';
 import 'widgets/header_widget.dart';
 
@@ -58,17 +59,11 @@ class _BookTablePageState extends State<BookTablePage>
     ],
     'Dinner': [
       '07:00 PM',
-      '07:15 PM',
       '07:30 PM',
-      '07:45 PM',
       '08:00 PM',
-      '08:15 PM',
       '08:30 PM',
-      '08:45 PM',
       '09:00 PM',
-      '09:15 PM',
       '09:30 PM',
-      '09:45 PM',
       '10:00 PM'
     ],
   };
@@ -105,17 +100,25 @@ class _BookTablePageState extends State<BookTablePage>
     super.dispose();
   }
 
+
   // --- UPDATED API Method with proper authentication ---
   void _checkAvailabilityAndProceed() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     // Check if user is logged in
     if (!authProvider.isLoggedIn) {
+      // Save reservation data before redirecting to login
+      await TempDataService.savePendingReservation(
+        partySize: _partySize,
+        selectedDate: _selectedDate,
+        selectedTimeSlot: _selectedTimeSlot ?? '',
+        specialOccasion: _specialOccasion,
+      );
       _showLoginDialog();
       return;
     }
 
-    if (_selectedTimeSlot == null) {
+    if (_selectedTimeSlot == null || _selectedTimeSlot?.isEmpty == true) {
       _showErrorSnackBar('Please select a time slot.');
       return;
     }
@@ -132,7 +135,7 @@ class _BookTablePageState extends State<BookTablePage>
 
       final tables = await _apiService.fetchAvailableTables(
         date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-        time: _selectedTimeSlot!,
+        time: _selectedTimeSlot ?? '',
         partySize: _partySize,
       );
 
@@ -142,13 +145,15 @@ class _BookTablePageState extends State<BookTablePage>
       } else {
         // If tables ARE available, pick the best one and navigate to confirmation
         final bestTable = tables.first;
+        // Clear any pending reservation data since we're proceeding
+        await TempDataService.clearPendingReservation();
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ConfirmationPage(
               partySize: _partySize,
               selectedDate: _selectedDate,
-              selectedTimeSlot: _selectedTimeSlot!,
+              selectedTimeSlot: _selectedTimeSlot ?? '',
               selectedTable: bestTable,
             ),
           ),
@@ -167,16 +172,23 @@ class _BookTablePageState extends State<BookTablePage>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Login Required'),
-        content: const Text('Please log in to book a table.'),
+        content: const Text('Please log in to book a table. Your reservation details will be saved.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              TempDataService.clearPendingReservation();
+            },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/login');
+              final result = await Navigator.pushNamed(context, '/login');
+              // If login was successful, the user can retry their action
+              if (result == true) {
+                // User is now logged in, they can proceed with reservation
+              }
             },
             child: const Text('Login'),
           ),
@@ -388,12 +400,14 @@ class _BookTablePageState extends State<BookTablePage>
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: List.generate(10, (index) {
+            children: List.generate(8, (index) {
               final guestCount = index + 1;
               final isSelected = _partySize == guestCount;
-              return GestureDetector(
-                onTap: () => setState(() => _partySize = guestCount),
-                child: AnimatedContainer(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _partySize = guestCount),
+                  child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -407,7 +421,7 @@ class _BookTablePageState extends State<BookTablePage>
                     border: Border.all(
                       color: isSelected
                           ? Theme.of(context).primaryColor
-                          : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                          : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
                       width: 2,
                     ),
                   ),
@@ -435,6 +449,7 @@ class _BookTablePageState extends State<BookTablePage>
                       ),
                     ],
                   ),
+                ),
                 ),
               );
             }),
@@ -493,7 +508,7 @@ class _BookTablePageState extends State<BookTablePage>
             height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: 14,
+              itemCount: 6,
               itemBuilder: (context, index) {
                 final date = DateTime.now().add(Duration(days: index));
                 final isSelected = _selectedDate.day == date.day &&
@@ -501,9 +516,11 @@ class _BookTablePageState extends State<BookTablePage>
                     _selectedDate.year == date.year;
                 final isToday = index == 0;
 
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedDate = date),
-                  child: Container(
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedDate = date),
+                    child: Container(
                     width: 70,
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(12),
@@ -517,7 +534,7 @@ class _BookTablePageState extends State<BookTablePage>
                       border: Border.all(
                         color: isSelected
                             ? Theme.of(context).primaryColor
-                            : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                            : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
                         width: 2,
                       ),
                     ),
@@ -564,6 +581,7 @@ class _BookTablePageState extends State<BookTablePage>
                         ),
                       ],
                     ),
+                  ),
                   ),
                 );
               },
@@ -625,14 +643,16 @@ class _BookTablePageState extends State<BookTablePage>
             children: _timeSlots.keys.map((period) {
               final isSelected = _selectedMealPeriod == period;
               return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedMealPeriod = period;
-                      _selectedTimeSlot = null; // Reset time selection
-                    });
-                  },
-                  child: Container(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedMealPeriod = period;
+                        _selectedTimeSlot = null; // Reset time selection
+                      });
+                    },
+                    child: Container(
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
@@ -645,7 +665,7 @@ class _BookTablePageState extends State<BookTablePage>
                       border: Border.all(
                         color: isSelected
                             ? Theme.of(context).primaryColor
-                            : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                            : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
                         width: 2,
                       ),
                     ),
@@ -661,6 +681,7 @@ class _BookTablePageState extends State<BookTablePage>
                       ),
                     ),
                   ),
+                  ),
                 ),
               );
             }).toList(),
@@ -672,7 +693,7 @@ class _BookTablePageState extends State<BookTablePage>
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _timeSlots[_selectedMealPeriod]!.map((time) {
+            children: (_timeSlots[_selectedMealPeriod] ?? _timeSlots['Dinner'] ?? []).map((time) {
               final now = DateTime.now();
               final isToday = _selectedDate.year == now.year &&
                   _selectedDate.month == now.month &&
@@ -680,7 +701,7 @@ class _BookTablePageState extends State<BookTablePage>
 
               bool isPast = false;
               if (isToday) {
-                final timeFormat = DateFormat("h:mm a");
+                final timeFormat = DateFormat("hh:mm a");
                 final slotTime = timeFormat.parse(time);
                 final slotDateTime = DateTime(
                   now.year,
@@ -692,17 +713,19 @@ class _BookTablePageState extends State<BookTablePage>
                 isPast = slotDateTime.isBefore(now);
               }
 
-              final isSelected = _selectedTimeSlot == time;
+              final isSelected = _selectedTimeSlot != null && _selectedTimeSlot == time;
 
-              return GestureDetector(
-                onTap: isPast
-                    ? null
-                    : () {
-                        setState(() {
-                          _selectedTimeSlot = isSelected ? null : time;
-                        });
-                      },
-                child: AnimatedContainer(
+              return MouseRegion(
+                cursor: isPast ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: isPast
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedTimeSlot = isSelected ? null : time;
+                          });
+                        },
+                  child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -717,12 +740,12 @@ class _BookTablePageState extends State<BookTablePage>
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isPast
-                          ? (isDark ? Colors.grey[800]! : Colors.grey[300]!)
+                          ? (isDark ? Colors.grey[800] ?? Colors.grey : Colors.grey[300] ?? Colors.grey)
                           : (isSelected
                               ? Theme.of(context).primaryColor
                               : (isDark
-                                  ? Colors.grey[700]!
-                                  : Colors.grey[300]!)),
+                                  ? Colors.grey[700] ?? Colors.grey
+                                  : Colors.grey[300] ?? Colors.grey)),
                       width: 2,
                     ),
                   ),
@@ -741,6 +764,7 @@ class _BookTablePageState extends State<BookTablePage>
                       decoration: isPast ? TextDecoration.lineThrough : null,
                     ),
                   ),
+                ),
                 ),
               );
             }).toList(),
@@ -808,9 +832,11 @@ class _BookTablePageState extends State<BookTablePage>
             runSpacing: 12,
             children: occasions.map((occasion) {
               final isSelected = _specialOccasion == occasion;
-              return GestureDetector(
-                onTap: () => setState(() => _specialOccasion = occasion),
-                child: AnimatedContainer(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _specialOccasion = occasion),
+                  child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -824,7 +850,7 @@ class _BookTablePageState extends State<BookTablePage>
                     border: Border.all(
                       color: isSelected
                           ? Theme.of(context).primaryColor
-                          : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                          : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
                       width: 2,
                     ),
                   ),
@@ -838,6 +864,7 @@ class _BookTablePageState extends State<BookTablePage>
                           : (isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                     ),
                   ),
+                ),
                 ),
               );
             }).toList(),
