@@ -181,56 +181,6 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
               const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: () async {
-                  await _apiService.debugDatabase();
-                },
-                icon: const Icon(Icons.bug_report),
-                label: const Text('Debug DB'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    await _apiService.fixUsersWithoutRoles();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fixed users without roles!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                    _loadUsers(); // Refresh the list
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error fixing users: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.build),
-                label: const Text('Fix Roles'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () async {
                   try {
                     // Create some test users to demonstrate the system
                     await _apiService.createTestUser(
