@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:html' as html;
 import 'package:provider/provider.dart';
+import 'auth_provider.dart';
 
 import 'phone-login_page.dart';
 import 'theme.dart';
@@ -216,6 +217,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           await Supabase.instance.client.auth.setSession(data['refresh_token']);
+          
+          // Manually refresh the AuthProvider to update the UI
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          await authProvider.refreshAuthState();
+          
           if (mounted) {
             Navigator.pop(context, true); // Return true to indicate successful login
           }

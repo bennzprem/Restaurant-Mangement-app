@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
 import 'available_tables_page.dart';
+import 'widgets/header_widget.dart';
 
 class BookTablePage extends StatefulWidget {
   const BookTablePage({super.key});
@@ -100,103 +101,51 @@ class _BookTablePageState extends State<BookTablePage>
     return Scaffold(
       backgroundColor:
           isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('Reserve a Table'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 32),
-                _buildPartySizeSelector(),
-                const SizedBox(height: 32),
-                _buildDateSelector(),
-                const SizedBox(height: 32),
-                _buildTimeSlotSelector(),
-                const SizedBox(height: 32),
-                _buildSpecialOccasionSelector(),
-                const SizedBox(height: 40),
-                _buildReserveButton(),
-              ],
+      body: Stack(
+        children: [
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 80, left: 24, right: 24, bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPartySizeSelector(),
+                    const SizedBox(height: 32),
+                    _buildDateSelector(),
+                    const SizedBox(height: 32),
+                    _buildTimeSlotSelector(),
+                    const SizedBox(height: 32),
+                    _buildSpecialOccasionSelector(),
+                    const SizedBox(height: 40),
+                    _buildReserveButton(),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: HeaderWidget(
+              showBack: true,
+              onBack: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.restaurant,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reserve Your Table',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Book a table for your perfect dining experience',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildPartySizeSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -335,29 +284,32 @@ class _BookTablePageState extends State<BookTablePage>
             ],
           ),
           const SizedBox(height: 20),
-          GestureDetector(
-            onTap: _selectDate,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_month,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isDark ? Colors.white : Colors.black,
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _selectDate,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      color: Theme.of(context).primaryColor,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Text(
+                      DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -419,19 +371,21 @@ class _BookTablePageState extends State<BookTablePage>
             spacing: 8,
             children: _timeSlots.keys.map((period) {
               final isSelected = _selectedMealPeriod == period;
-              return GestureDetector(
-                onTap: () {
-                  try {
-                    setState(() {
-                      _selectedMealPeriod = period;
-                      _selectedTimeSlot =
-                          null; // Reset time slot when period changes
-                    });
-                  } catch (e) {
-                    print('Error setting meal period: $e');
-                  }
-                },
-                child: Container(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    try {
+                      setState(() {
+                        _selectedMealPeriod = period;
+                        _selectedTimeSlot =
+                            null; // Reset time slot when period changes
+                      });
+                    } catch (e) {
+                      print('Error setting meal period: $e');
+                    }
+                  },
+                  child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
@@ -453,6 +407,7 @@ class _BookTablePageState extends State<BookTablePage>
                     ),
                   ),
                 ),
+              ),
               );
             }).toList(),
           ),
@@ -463,15 +418,17 @@ class _BookTablePageState extends State<BookTablePage>
             runSpacing: 8,
             children: (_timeSlots[_selectedMealPeriod] ?? []).map((time) {
               final isSelected = _selectedTimeSlot == time;
-              return GestureDetector(
-                onTap: () {
-                  try {
-                    setState(() => _selectedTimeSlot = time);
-                  } catch (e) {
-                    print('Error setting time slot: $e');
-                  }
-                },
-                child: Container(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    try {
+                      setState(() => _selectedTimeSlot = time);
+                    } catch (e) {
+                      print('Error setting time slot: $e');
+                    }
+                  },
+                  child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
@@ -485,11 +442,12 @@ class _BookTablePageState extends State<BookTablePage>
                           : Colors.grey.withOpacity(0.3),
                     ),
                   ),
-                  child: Text(
-                    time,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[600],
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      time,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -562,9 +520,11 @@ class _BookTablePageState extends State<BookTablePage>
             runSpacing: 12,
             children: occasions.map((occasion) {
               final isSelected = _specialOccasion == occasion;
-              return GestureDetector(
-                onTap: () => setState(() => _specialOccasion = occasion),
-                child: Container(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _specialOccasion = occasion),
+                  child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
@@ -578,11 +538,12 @@ class _BookTablePageState extends State<BookTablePage>
                           : Colors.grey.withOpacity(0.3),
                     ),
                   ),
-                  child: Text(
-                    occasion,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[600],
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      occasion,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -659,7 +620,9 @@ class _BookTablePageState extends State<BookTablePage>
       final token = authProvider.accessToken;
 
       if (token == null) {
-        throw Exception('Please log in to make a reservation');
+        // Navigate to login page instead of showing error
+        Navigator.pushNamed(context, '/login');
+        return;
       }
 
       // Parse the selected time once

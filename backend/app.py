@@ -75,7 +75,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize AI Services
 byte_bot_service = ByteBot(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
-voice_assistant_service = VoiceAssistant(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS)
+voice_assistant_service = VoiceAssistant(supabase_url=SUPABASE_URL, supabase_headers=SUPABASE_HEADERS, supabase_client=supabase)
 # Initialize all AI Services
 
 
