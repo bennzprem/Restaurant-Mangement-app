@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'widgets/header_widget.dart';
-import 'widgets/footer_widget.dart';
 
-class AboutPage extends StatefulWidget {
-  const AboutPage({super.key});
+class AboutScreen extends StatefulWidget {
+  const AboutScreen({super.key});
 
   @override
-  State<AboutPage> createState() => _AboutPageState();
+  State<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutPageState extends State<AboutPage> {
+class _AboutScreenState extends State<AboutScreen> {
   int _currentSlide = 0;
   final PageController _pageController = PageController();
 
@@ -40,35 +38,13 @@ class _AboutPageState extends State<AboutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeroSection(),
-                _buildServicesSection(),
-                const FooterWidget(),
-              ],
-            ),
-          ),
-          // Fixed header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: HeaderWidget(
-              active: HeaderActive.about,
-              showBack: true,
-              onBack: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  Navigator.of(context).pushReplacementNamed('/');
-                }
-              },
-            ),
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeroSection(),
+            _buildServicesSection(),
+          ],
+        ),
       ),
     );
   }
@@ -76,7 +52,6 @@ class _AboutPageState extends State<AboutPage> {
   Widget _buildHeroSection() {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      margin: const EdgeInsets.only(top: 80), // Account for fixed header
       decoration: BoxDecoration(
         image: DecorationImage(
           image: NetworkImage(
@@ -96,11 +71,11 @@ class _AboutPageState extends State<AboutPage> {
             ],
           ),
         ),
-        child: Column(
-          children: [
-            // Navigation arrows
-            Expanded(
-              child: Row(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Navigation arrows
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavArrow(Icons.chevron_left, () {
@@ -121,32 +96,31 @@ class _AboutPageState extends State<AboutPage> {
                   }),
                 ],
               ),
-            ),
 
-            // Main content
-            Expanded(
-              flex: 3,
-              child: Center(
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentSlide = index;
-                    });
-                  },
-                  itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    final slide = _slides[index];
-                    return _buildSlideContent(slide);
-                  },
+              // Main content
+              Expanded(
+                child: Center(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentSlide = index;
+                      });
+                    },
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      return _buildSlideContent(slide);
+                    },
+                  ),
                 ),
               ),
-            ),
 
-            // Pagination dots
-            _buildPaginationDots(),
-            const SizedBox(height: 40),
-          ],
+              // Pagination dots
+              _buildPaginationDots(),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -264,7 +238,7 @@ class _AboutPageState extends State<AboutPage> {
               border: Border.all(color: const Color(0xFFFFD700), width: 2),
             ),
             child: const Text(
-              '[WHAT WE OFFER]',
+              '[SERVICES]',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -280,7 +254,7 @@ class _AboutPageState extends State<AboutPage> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'At ByteEat Restaurant, we pride ourselves on delivering exceptional culinary experiences through our comprehensive range of services. From farm-fresh ingredients to innovative cooking techniques, we ensure every dish tells a story of passion and excellence. Our commitment to quality extends beyond the kitchen, offering a complete dining ecosystem that caters to every need and preference.',
+              'At ByteEat Restaurant, we pride ourselves on delivering exceptional culinary experiences through our comprehensive range of services. From farm-fresh ingredients to innovative cooking techniques, we ensure every dish tells a story of passion and excellence.',
               textAlign: TextAlign.justify,
               style: TextStyle(
                 fontSize: 18,
@@ -291,31 +265,14 @@ class _AboutPageState extends State<AboutPage> {
             ),
           ),
 
-          const SizedBox(height: 20),
-
-          // Additional content
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Whether you\'re looking for a romantic dinner, a quick takeaway, or a special celebration, we have the perfect solution for you. Our team of expert chefs, friendly staff, and cutting-edge technology work together to create memorable experiences that keep you coming back for more.',
-              textAlign: TextAlign.justify,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black45,
-                height: 1.5,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ),
-
           const SizedBox(height: 60),
 
           // Services grid
           LayoutBuilder(
             builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth > 1400
+              final crossAxisCount = constraints.maxWidth > 1200
                   ? 3
-                  : constraints.maxWidth > 900
+                  : constraints.maxWidth > 800
                       ? 2
                       : 1;
 
@@ -324,9 +281,9 @@ class _AboutPageState extends State<AboutPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
-                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 32,
+                  mainAxisSpacing: 32,
+                  childAspectRatio: 0.8,
                 ),
                 itemCount: _services.length,
                 itemBuilder: (context, index) {
@@ -423,24 +380,6 @@ class _AboutPageState extends State<AboutPage> {
       'title': 'TABLE RESERVATION',
       'description':
           'Book your perfect dining experience with our easy table reservation system, ensuring you have the best seat in the house.',
-    },
-    {
-      'icon': Icons.smart_toy,
-      'title': 'AI ASSISTANT',
-      'description':
-          'Meet ByteBot, our friendly AI dining assistant that helps you discover new flavors and provides personalized recommendations.',
-    },
-    {
-      'icon': Icons.celebration,
-      'title': 'EVENT CATERING',
-      'description':
-          'Make your special occasions memorable with our professional catering services for weddings, corporate events, and celebrations.',
-    },
-    {
-      'icon': Icons.subscriptions,
-      'title': 'MEAL SUBSCRIPTIONS',
-      'description':
-          'Subscribe to our meal plans for regular, healthy, and delicious meals delivered to your doorstep with flexible options.',
     },
   ];
 }

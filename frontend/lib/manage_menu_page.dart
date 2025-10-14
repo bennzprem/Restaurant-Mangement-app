@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'models.dart';
 import 'add_edit_menu_item_page.dart';
+import 'add_edit_menu_item_page_simple.dart';
 
 class ManageMenuPage extends StatefulWidget {
   final VoidCallback? onMenuUpdated;
@@ -175,7 +176,7 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
   void _addNewItem() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => AddEditMenuItemPage(
+        builder: (context) => AddEditMenuItemPageSimple(
           onItemSaved: () {
             _loadMenuCategories();
             widget.onMenuUpdated?.call();
@@ -1445,7 +1446,8 @@ class _ManageMenuPageState extends State<ManageMenuPage> {
   void _showAddMenuItemDialog(MenuCategory category) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => AddEditMenuItemPage(
+        builder: (context) => AddEditMenuItemPageSimple(
+          preSelectedCategoryId: category.id,
           onItemSaved: () {
             _loadMenuCategories();
             widget.onMenuUpdated?.call();

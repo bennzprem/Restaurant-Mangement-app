@@ -45,7 +45,7 @@ EMAIL_USER = os.environ.get('EMAIL_USER', "benzprem165@gmail.com")
 EMAIL_PASS = os.environ.get('EMAIL_PASS', "fisd ztcu jkkz gucz")
 
 # Where your Flutter web is served (used in email links)
-FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:60611')
+FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:5000')
 
 # ----------------------------------------------------
 
@@ -259,6 +259,16 @@ def forgot_password():
     except Exception as e:
         # Still respond generically to avoid leaking details to the client
         return jsonify({'message': 'If an account with that email exists, a reset link has been sent.'}), 200
+
+@app.route('/reset-password.html')
+def reset_password_page():
+    """Serve the password reset HTML page"""
+    try:
+        with open('../frontend/web/reset-password.html', 'r') as f:
+            from flask import Response
+            return Response(f.read(), mimetype='text/html')
+    except FileNotFoundError:
+        return "Password reset page not found", 404
 
 @app.route('/reset-password', methods=['POST'])
 def reset_password():
@@ -1687,7 +1697,7 @@ def create_menu_item():
         if not category_response.json():
             return jsonify({"error": "Invalid category_id"}), 400
         
-        # Create the menu item
+        # Create the menu item - using correct column names from database
         menu_item_data = {
             'name': data['name'],
             'description': data['description'],
@@ -1695,9 +1705,10 @@ def create_menu_item():
             'image_url': data['image_url'],
             'category_id': category_id,
             'is_available': data.get('is_available', True),
-            'is_vegan': data.get('is_vegan', False),
-            'is_gluten_free': data.get('is_gluten_free', False),
-            'contains_nuts': data.get('contains_nuts', False),
+            'is_veg': data.get('is_veg', True),
+            'is_bestseller': data.get('is_bestseller', False),
+            'is_chef_spl': data.get('is_chef_spl', False),
+            'is_seasonal': data.get('is_seasonal', False),
         }
         
         api_url = f"{SUPABASE_URL}/rest/v1/menu_items"
@@ -1740,7 +1751,7 @@ def update_menu_item(item_id):
         if not category_response.json():
             return jsonify({"error": "Invalid category_id"}), 400
         
-        # Update the menu item
+        # Update the menu item - using correct column names from database
         menu_item_data = {
             'name': data['name'],
             'description': data['description'],
@@ -1748,9 +1759,10 @@ def update_menu_item(item_id):
             'image_url': data['image_url'],
             'category_id': category_id,
             'is_available': data.get('is_available', True),
-            'is_vegan': data.get('is_vegan', False),
-            'is_gluten_free': data.get('is_gluten_free', False),
-            'contains_nuts': data.get('contains_nuts', False),
+            'is_veg': data.get('is_veg', True),
+            'is_bestseller': data.get('is_bestseller', False),
+            'is_chef_spl': data.get('is_chef_spl', False),
+            'is_seasonal': data.get('is_seasonal', False),
         }
         
         api_url = f"{SUPABASE_URL}/rest/v1/menu_items?id=eq.{item_id}"

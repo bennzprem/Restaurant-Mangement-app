@@ -994,6 +994,9 @@ class ApiService {
     required bool isGlutenFree,
     required bool containsNuts,
     required int categoryId,
+    bool isBestseller = false,
+    bool isChefSpecial = false,
+    bool isSeasonal = false,
   }) async {
     try {
       final response = await http.post(
@@ -1005,9 +1008,10 @@ class ApiService {
           'price': price,
           'image_url': imageUrl,
           'is_available': isAvailable,
-          'is_vegan': isVegan,
-          'is_gluten_free': isGlutenFree,
-          'contains_nuts': containsNuts,
+          'is_veg': isVegan, // Map isVegan to is_veg
+          'is_bestseller': isBestseller,
+          'is_chef_spl': isChefSpecial,
+          'is_seasonal': isSeasonal,
           'category_id': categoryId,
         }),
       );
@@ -1032,6 +1036,9 @@ class ApiService {
     required bool isGlutenFree,
     required bool containsNuts,
     required int categoryId,
+    bool isBestseller = false,
+    bool isChefSpecial = false,
+    bool isSeasonal = false,
   }) async {
     try {
       final response = await http.put(
@@ -1043,9 +1050,10 @@ class ApiService {
           'price': price,
           'image_url': imageUrl,
           'is_available': isAvailable,
-          'is_vegan': isVegan,
-          'is_gluten_free': isGlutenFree,
-          'contains_nuts': containsNuts,
+          'is_veg': isVegan, // Map isVegan to is_veg
+          'is_bestseller': isBestseller,
+          'is_chef_spl': isChefSpecial,
+          'is_seasonal': isSeasonal,
           'category_id': categoryId,
         }),
       );
@@ -1106,12 +1114,13 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final categories = data.cast<Map<String, dynamic>>();
+        return categories;
       } else {
         throw 'Failed to load categories: ${response.statusCode}';
       }
     } catch (e) {
-      throw 'Failed to load categories.';
+      throw 'Failed to load categories: $e';
     }
   }
 
