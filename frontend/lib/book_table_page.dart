@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'api_service.dart';
 import 'auth_provider.dart';
-import 'confirmation_page.dart';
-import 'services/temp_data_service.dart';
-import 'theme.dart';
-import 'widgets/header_widget.dart';
+import 'available_tables_page.dart';
 
 class BookTablePage extends StatefulWidget {
   const BookTablePage({super.key});
@@ -23,10 +18,8 @@ class _BookTablePageState extends State<BookTablePage>
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
   String _specialOccasion = 'None';
-  final bool _isExpanded = true;
 
   // --- API State ---
-  final ApiService _apiService = ApiService();
   bool _isLoading = false;
 
   // Animation Controllers
@@ -100,271 +93,124 @@ class _BookTablePageState extends State<BookTablePage>
     super.dispose();
   }
 
-
-  // --- UPDATED API Method with proper authentication ---
-  void _checkAvailabilityAndProceed() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    // Check if user is logged in
-    if (!authProvider.isLoggedIn) {
-      // Save reservation data before redirecting to login
-      await TempDataService.savePendingReservation(
-        partySize: _partySize,
-        selectedDate: _selectedDate,
-        selectedTimeSlot: _selectedTimeSlot ?? '',
-        specialOccasion: _specialOccasion,
-      );
-      _showLoginDialog();
-      return;
-    }
-
-    if (_selectedTimeSlot == null || _selectedTimeSlot?.isEmpty == true) {
-      _showErrorSnackBar('Please select a time slot.');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Get the current user's auth token
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) {
-        _showLoginDialog();
-        return;
-      }
-
-      final tables = await _apiService.fetchAvailableTables(
-        date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-        time: _selectedTimeSlot ?? '',
-        partySize: _partySize,
-      );
-
-      if (tables.isEmpty) {
-        _showErrorSnackBar(
-            'Sorry, no tables available for the selected criteria.');
-      } else {
-        // If tables ARE available, pick the best one and navigate to confirmation
-        final bestTable = tables.first;
-        // Clear any pending reservation data since we're proceeding
-        await TempDataService.clearPendingReservation();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ConfirmationPage(
-              partySize: _partySize,
-              selectedDate: _selectedDate,
-              selectedTimeSlot: _selectedTimeSlot ?? '',
-              selectedTable: bestTable,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print('Booking error: $e');
-      _showErrorSnackBar('Error: ${e.toString()}');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showLoginDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Login Required'),
-        content: const Text('Please log in to book a table. Your reservation details will be saved.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              TempDataService.clearPendingReservation();
-            },
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final result = await Navigator.pushNamed(context, '/login');
-              // If login was successful, the user can retry their action
-              if (result == true) {
-                // User is now logged in, they can proceed with reservation
-              }
-            },
-            child: const Text('Login'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor:
-          isDark ? const Color(0xFF0F0F10) : const Color(0xFFF8F9FA),
-      appBar: null,
-      body: Column(
-        children: [
-          // Header with back button
-          HeaderWidget(
-            showBack: true,
-            onBack: () => Navigator.pop(context),
-          ),
-          // Main content
-          Expanded(
-            child: Stack(
+          isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text('Reserve a Table'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Background gradient
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: isDark
-                          ? [const Color(0xFF0F0F10), const Color(0xFF1A1A1A)]
-                          : [const Color(0xFFF8F9FA), const Color(0xFFE9ECEF)],
-                    ),
+                _buildHeader(),
+                const SizedBox(height: 32),
+                _buildPartySizeSelector(),
+                const SizedBox(height: 32),
+                _buildDateSelector(),
+                const SizedBox(height: 32),
+                _buildTimeSlotSelector(),
+                const SizedBox(height: 32),
+                _buildSpecialOccasionSelector(),
+                const SizedBox(height: 40),
+                _buildReserveButton(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.restaurant,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reserve Your Table',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                // Main content
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          _buildModernGuestSelector(),
-                          const SizedBox(height: 24),
-                          _buildModernDateSelector(),
-                          const SizedBox(height: 24),
-                          _buildModernTimeSelector(),
-                          const SizedBox(height: 24),
-                          _buildSpecialOccasionSelector(),
-                          const SizedBox(
-                              height: 100), // Space for the floating button
-                        ],
-                      ),
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  'Book a table for your perfect dining experience',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
                   ),
                 ),
-                // Loading overlay
-                if (_isLoading)
-                  Container(
-                    color: Colors.black.withOpacity(0.5),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Theme.of(context).primaryColor),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Checking availability...',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: (_selectedTimeSlot != null && !_isLoading)
-                  ? _checkAvailabilityAndProceed
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-                shadowColor: Theme.of(context).primaryColor.withOpacity(0.3),
-              ),
-              child: Text(
-                'Check Availability & Proceed',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
-  // --- Modern UI Builder Widgets ---
-  Widget _buildModernGuestSelector() {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildPartySizeSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
           ),
         ],
       ),
@@ -387,91 +233,73 @@ class _BookTablePageState extends State<BookTablePage>
               ),
               const SizedBox(width: 16),
               Text(
-                'Number of Guests',
+                'Party Size',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+                  color: isDark
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: List.generate(8, (index) {
-              final guestCount = index + 1;
-              final isSelected = _partySize == guestCount;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => setState(() => _partySize = guestCount),
-                  child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Theme.of(context).primaryColor
-                        : (isDark
-                            ? const Color(0xFF2A2A2A)
-                            : const Color(0xFFF8F9FA)),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? Theme.of(context).primaryColor
-                          : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
-                      width: 2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isSelected)
-                        Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      if (isSelected) const SizedBox(width: 8),
-                      Text(
-                        '$guestCount',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white
-                                  : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
-                        ),
-                      ),
-                    ],
+          Row(
+            children: [
+              IconButton(
+                onPressed:
+                    _partySize > 1 ? () => setState(() => _partySize--) : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                color: _partySize > 1
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey,
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$_partySize ${_partySize == 1 ? 'Guest' : 'Guests'}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
-                ),
-              );
-            }),
+              ),
+              IconButton(
+                onPressed:
+                    _partySize < 10 ? () => setState(() => _partySize++) : null,
+                icon: const Icon(Icons.add_circle_outline),
+                color: _partySize < 10
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildModernDateSelector() {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildDateSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
           ),
         ],
       ),
@@ -487,7 +315,7 @@ class _BookTablePageState extends State<BookTablePage>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.calendar_today_outlined,
+                  Icons.calendar_today,
                   color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
@@ -498,93 +326,39 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+                  color: isDark
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 6,
-              itemBuilder: (context, index) {
-                final date = DateTime.now().add(Duration(days: index));
-                final isSelected = _selectedDate.day == date.day &&
-                    _selectedDate.month == date.month &&
-                    _selectedDate.year == date.year;
-                final isToday = index == 0;
-
-                return MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedDate = date),
-                    child: Container(
-                    width: 70,
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Theme.of(context).primaryColor
-                          : (isDark
-                              ? const Color(0xFF2A2A2A)
-                              : const Color(0xFFF8F9FA)),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isToday ? 'Today' : DateFormat('EEE').format(date),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                    ? Colors.grey[400]
-                                    : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('dd').format(date),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                    ? Colors.white
-                                    : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          DateFormat('MMM').format(date),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                    ? Colors.grey[400]
-                                    : Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey),
-                          ),
-                        ),
-                      ],
+          GestureDetector(
+            onTap: _selectDate,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_month,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
-                  ),
-                );
-              },
+                ],
+              ),
             ),
           ),
         ],
@@ -592,19 +366,19 @@ class _BookTablePageState extends State<BookTablePage>
     );
   }
 
-  Widget _buildModernTimeSelector() {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildTimeSlotSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
           ),
         ],
       ),
@@ -620,7 +394,7 @@ class _BookTablePageState extends State<BookTablePage>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.access_time_outlined,
+                  Icons.access_time,
                   color: Theme.of(context).primaryColor,
                   size: 24,
                 ),
@@ -631,140 +405,93 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+                  color: isDark
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-
           // Meal period selector
-          Row(
+          Wrap(
+            spacing: 8,
             children: _timeSlots.keys.map((period) {
               final isSelected = _selectedMealPeriod == period;
-              return Expanded(
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedMealPeriod = period;
-                        _selectedTimeSlot = null; // Reset time selection
-                      });
-                    },
-                    child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
+              return GestureDetector(
+                onTap: () {
+                  try {
+                    setState(() {
+                      _selectedMealPeriod = period;
+                      _selectedTimeSlot =
+                          null; // Reset time slot when period changes
+                    });
+                  } catch (e) {
+                    print('Error setting meal period: $e');
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
                       color: isSelected
                           ? Theme.of(context).primaryColor
-                          : (isDark
-                              ? const Color(0xFF2A2A2A)
-                              : const Color(0xFFF8F9FA)),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
-                        width: 2,
-                      ),
-                    ),
-                    child: Text(
-                      period,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
-                      ),
+                          : Colors.grey.withOpacity(0.3),
                     ),
                   ),
+                  child: Text(
+                    period,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               );
             }).toList(),
           ),
-
-          const SizedBox(height: 20),
-
+          const SizedBox(height: 16),
           // Time slots
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: (_timeSlots[_selectedMealPeriod] ?? _timeSlots['Dinner'] ?? []).map((time) {
-              final now = DateTime.now();
-              final isToday = _selectedDate.year == now.year &&
-                  _selectedDate.month == now.month &&
-                  _selectedDate.day == now.day;
-
-              bool isPast = false;
-              if (isToday) {
-                final timeFormat = DateFormat("hh:mm a");
-                final slotTime = timeFormat.parse(time);
-                final slotDateTime = DateTime(
-                  now.year,
-                  now.month,
-                  now.day,
-                  slotTime.hour,
-                  slotTime.minute,
-                );
-                isPast = slotDateTime.isBefore(now);
-              }
-
-              final isSelected = _selectedTimeSlot != null && _selectedTimeSlot == time;
-
-              return MouseRegion(
-                cursor: isPast ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: isPast
-                      ? null
-                      : () {
-                          setState(() {
-                            _selectedTimeSlot = isSelected ? null : time;
-                          });
-                        },
-                  child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+            spacing: 8,
+            runSpacing: 8,
+            children: (_timeSlots[_selectedMealPeriod] ?? []).map((time) {
+              final isSelected = _selectedTimeSlot == time;
+              return GestureDetector(
+                onTap: () {
+                  try {
+                    setState(() => _selectedTimeSlot = time);
+                  } catch (e) {
+                    print('Error setting time slot: $e');
+                  }
+                },
+                child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isPast
-                        ? (isDark ? const Color(0xFF1A1A1A) : Colors.grey[100])
-                        : (isSelected
-                            ? Theme.of(context).primaryColor
-                            : (isDark
-                                ? const Color(0xFF2A2A2A)
-                                : const Color(0xFFF8F9FA))),
+                    color: isSelected
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isPast
-                          ? (isDark ? Colors.grey[800] ?? Colors.grey : Colors.grey[300] ?? Colors.grey)
-                          : (isSelected
-                              ? Theme.of(context).primaryColor
-                              : (isDark
-                                  ? Colors.grey[700] ?? Colors.grey
-                                  : Colors.grey[300] ?? Colors.grey)),
-                      width: 2,
+                      color: isSelected
+                          ? Theme.of(context).primaryColor
+                          : Colors.grey.withOpacity(0.3),
                     ),
                   ),
                   child: Text(
                     time,
                     style: TextStyle(
-                      fontSize: 14,
+                      color: isSelected ? Colors.white : Colors.grey[600],
                       fontWeight: FontWeight.w600,
-                      color: isPast
-                          ? (isDark ? Colors.grey[600] : Colors.grey[400])
-                          : (isSelected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white
-                                  : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black)),
-                      decoration: isPast ? TextDecoration.lineThrough : null,
                     ),
                   ),
-                ),
                 ),
               );
             }).toList(),
@@ -775,26 +502,26 @@ class _BookTablePageState extends State<BookTablePage>
   }
 
   Widget _buildSpecialOccasionSelector() {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final List<String> occasions = [
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final occasions = [
       'None',
       'Birthday',
       'Anniversary',
-      'Business Meeting',
       'Date Night',
-      'Family Gathering'
+      'Business Meeting',
+      'Celebration'
     ];
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
           ),
         ],
       ),
@@ -821,7 +548,10 @@ class _BookTablePageState extends State<BookTablePage>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+                  color: isDark
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black,
                 ),
               ),
             ],
@@ -832,39 +562,29 @@ class _BookTablePageState extends State<BookTablePage>
             runSpacing: 12,
             children: occasions.map((occasion) {
               final isSelected = _specialOccasion == occasion;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => setState(() => _specialOccasion = occasion),
-                  child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+              return GestureDetector(
+                onTap: () => setState(() => _specialOccasion = occasion),
+                child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? Theme.of(context).primaryColor
-                        : (isDark
-                            ? const Color(0xFF2A2A2A)
-                            : const Color(0xFFF8F9FA)),
+                        : Colors.grey.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
                           ? Theme.of(context).primaryColor
-                          : (isDark ? Colors.grey[700] ?? Colors.grey : Colors.grey[300] ?? Colors.grey),
-                      width: 2,
+                          : Colors.grey.withOpacity(0.3),
                     ),
                   ),
                   child: Text(
                     occasion,
                     style: TextStyle(
-                      fontSize: 14,
+                      color: isSelected ? Colors.white : Colors.grey[600],
                       fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
                     ),
                   ),
-                ),
                 ),
               );
             }).toList(),
@@ -872,5 +592,125 @@ class _BookTablePageState extends State<BookTablePage>
         ],
       ),
     );
+  }
+
+  Widget _buildReserveButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _selectedTimeSlot != null ? _handleReservation : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 3,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Check Availability',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _handleReservation() async {
+    if (_selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a time slot')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.accessToken;
+
+      if (token == null) {
+        throw Exception('Please log in to make a reservation');
+      }
+
+      // Parse the selected time once
+      final parsedTime = _parseTime(_selectedTimeSlot!);
+
+      // Navigate to available tables page
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AvailableTablesPage(
+              date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+              time: DateFormat('HH:mm').format(parsedTime),
+              partySize: _partySize,
+              specialOccasion: _specialOccasion,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  DateTime _parseTime(String timeString) {
+    try {
+      // Try parsing with leading zero format first (07:00 PM)
+      return DateFormat('HH:mm a').parse(timeString);
+    } catch (e) {
+      try {
+        // Fallback to format without leading zero (7:00 PM)
+        return DateFormat('h:mm a').parse(timeString);
+      } catch (e2) {
+        // If both fail, return current time as fallback
+        print(
+            'Error parsing time: $timeString, using current time as fallback');
+        return DateTime.now();
+      }
+    }
   }
 }

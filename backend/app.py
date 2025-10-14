@@ -1487,6 +1487,24 @@ def create_reservation():
         # --- NEW FIELD ---
         add_ons_requested = data.get('add_ons_requested', False) # Default to false
 
+        # If no table_id provided or it's not a valid UUID, create/use a default table
+        if not table_id or table_id in ['1', 'default']:
+            # Try to find an existing table with table_number = 1
+            existing_table = supabase.table('tables').select('id').eq('table_number', 1).execute()
+            if existing_table.data:
+                table_id = existing_table.data[0]['id']
+            else:
+                # Create a default table
+                default_table = supabase.table('tables').insert({
+                    'table_number': 1,
+                    'capacity': 4,
+                    'location_preference': 'Main Dining'
+                }).execute()
+                if default_table.data:
+                    table_id = default_table.data[0]['id']
+                else:
+                    return jsonify({"error": "Failed to create default table"}), 500
+
         if not all([table_id, reservation_time, party_size]):
             return jsonify({"error": "Missing required fields"}), 400
             
@@ -1500,13 +1518,203 @@ def create_reservation():
             "status": "confirmed"
         }
         
+        print(f"Creating reservation with data: {new_reservation}")  # Debug log
+        
         insert_response = supabase.table('reservations').insert(new_reservation).execute()
-
+        
+        if not insert_response.data:
+            print(f"Failed to create reservation: {insert_response}")  # Debug log
+            return jsonify({"error": "Failed to create reservation"}), 500
+        
+        print(f"Reservation created successfully: {insert_response.data[0]}")  # Debug log
         return jsonify(insert_response.data[0]), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/api/reservations/simple', methods=['POST'])
+def create_simple_reservation():
+    """
+    Creates a simple reservation for the logged-in user.
+    This is used by the simplified reservation flow.
+    """
+    try:
+        # Get user authentication
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Authorization header is required"}), 401
+        token = auth_header.split(" ")[1]
+        user_response = supabase.auth.get_user(token)
+        user_id = user_response.user.id
+
+        data = request.get_json()
+        table_number = data.get('table_number')
+        date = data.get('date')  # YYYY-MM-DD format
+        time = data.get('time')  # HH:MM format
+        party_size = data.get('party_size')
+        special_occasion = data.get('special_occasion', 'None')
+        
+        print(f"Creating simple reservation: table={table_number}, date={date}, time={time}, party_size={party_size}")
+        
+        if not all([table_number, date, time, party_size]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Find or create table with the specified table number
+        existing_table = supabase.table('tables').select('id').eq('table_number', int(table_number)).execute()
+        if existing_table.data:
+            table_id = existing_table.data[0]['id']
+        else:
+            # Create a new table with the specified number
+            new_table = supabase.table('tables').insert({
+                'table_number': int(table_number),
+                'capacity': max(party_size, 4),  # At least 4 capacity
+                'location_preference': 'Main Dining'
+            }).execute()
+            if new_table.data:
+                table_id = new_table.data[0]['id']
+            else:
+                return jsonify({"error": "Failed to create table"}), 500
+
+        # Parse the reservation datetime
+        reservation_datetime = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+        
+        new_reservation = {
+            "user_id": user_id,
+            "table_id": table_id,
+            "reservation_time": reservation_datetime.isoformat(),
+            "party_size": party_size,
+            "special_occasion": special_occasion,
+            "status": "confirmed"
+        }
+        
+        print(f"Creating reservation with data: {new_reservation}")
+        
+        insert_response = supabase.table('reservations').insert(new_reservation).execute()
+        
+        if not insert_response.data:
+            print(f"Failed to create reservation: {insert_response}")
+            return jsonify({"error": "Failed to create reservation"}), 500
+        
+        print(f"Simple reservation created successfully: {insert_response.data[0]}")
+        return jsonify({
+            "success": True,
+            "reservation": insert_response.data[0],
+            "message": "Reservation created successfully"
+        }), 201
+
+    except Exception as e:
+        print(f"Error creating simple reservation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reservations/<reservation_id>/complete', methods=['POST'])
+def complete_reservation(reservation_id):
+    """
+    Marks a reservation as completed when the customer finishes dining.
+    """
+    try:
+        # Get user authentication
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Authorization header is required"}), 401
+        token = auth_header.split(" ")[1]
+        user_response = supabase.auth.get_user(token)
+        user_id = user_response.user.id
+
+        print(f"Completing reservation {reservation_id} for user {user_id}")
+
+        # Verify the reservation belongs to the authenticated user
+        reservation_response = supabase.table('reservations').select('*').eq('id', reservation_id).eq('user_id', user_id).execute()
+        
+        if not reservation_response.data:
+            return jsonify({"error": "Reservation not found or not authorized"}), 404
+
+        reservation = reservation_response.data[0]
+        
+        # Check if reservation is already completed
+        if reservation.get('status') == 'completed':
+            return jsonify({"error": "Reservation is already completed"}), 400
+
+        # Update reservation status to completed
+        update_response = supabase.table('reservations').update({
+            'status': 'completed',
+            'completed_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', reservation_id).execute()
+
+        if not update_response.data:
+            return jsonify({"error": "Failed to update reservation"}), 500
+
+        print(f"Reservation {reservation_id} completed successfully")
+        return jsonify({
+            "success": True,
+            "message": "Reservation completed successfully",
+            "reservation": update_response.data[0]
+        }), 200
+
+    except Exception as e:
+        print(f"Error completing reservation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tables/availability', methods=['POST'])
+def check_table_availability():
+    """
+    Check table availability for a specific date and time.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+            
+        reservation_date = data.get('date')  # YYYY-MM-DD format
+        reservation_time = data.get('time')  # HH:MM format
+        party_size = data.get('party_size', 2)
+        
+        print(f"Checking availability for: {reservation_date} at {reservation_time}, party size: {party_size}")
+        
+        if not all([reservation_date, reservation_time]):
+            return jsonify({"error": "Date and time are required"}), 400
+        
+        # Parse the reservation datetime
+        reservation_datetime = datetime.strptime(f"{reservation_date} {reservation_time}", "%Y-%m-%d %H:%M")
+        
+        # Define time window (2 hours before and after)
+        window_start = reservation_datetime - timedelta(hours=1, minutes=59)
+        window_end = reservation_datetime + timedelta(hours=1, minutes=59)
+        
+        # Get all tables
+        tables_response = supabase.table('tables').select('*').order('table_number').execute()
+        all_tables = tables_response.data or []
+        
+        # Get booked tables in the time window
+        booked_tables_response = supabase.table('reservations').select('table_id').eq('status', 'confirmed').gte('reservation_time', window_start.isoformat()).lte('reservation_time', window_end.isoformat()).execute()
+        booked_table_ids = [res['table_id'] for res in booked_tables_response.data or []]
+        
+        # Filter available tables
+        available_tables = []
+        for table in all_tables:
+            if table['id'] not in booked_table_ids and table['capacity'] >= party_size:
+                available_tables.append({
+                    'id': table['id'],
+                    'table_number': table['table_number'],
+                    'capacity': table['capacity'],
+                    'location_preference': table['location_preference'],
+                    'code': table.get('code', f"TBL{table['table_number']:03d}")
+                })
+        
+        print(f"Found {len(available_tables)} available tables")
+        
+        return jsonify({
+            'available_tables': available_tables,
+            'total_available': len(available_tables),
+            'requested_party_size': party_size,
+            'reservation_datetime': reservation_datetime.isoformat()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error checking table availability: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/reservations', methods=['GET'])
 def get_user_reservations():

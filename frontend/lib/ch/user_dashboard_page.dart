@@ -349,8 +349,16 @@ class _UserDashboardPageState extends State<UserDashboardPage>
             (snapshot.data!['reservations'] as List).cast<Reservation>();
 
         final upcomingReservations = reservations
-            .where((r) => r.reservationTime.isAfter(DateTime.now()))
+            .where((r) =>
+                r.reservationTime.isAfter(DateTime.now()) &&
+                r.status != 'completed')
             .toList();
+
+        final completedReservations = reservations
+            .where((r) => r.status == 'completed')
+            .toList()
+          ..sort((a, b) => b.reservationTime
+              .compareTo(a.reservationTime)); // Most recent first
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,6 +371,10 @@ class _UserDashboardPageState extends State<UserDashboardPage>
             ],
             _buildRecentReservationsCard(upcomingReservations),
             const SizedBox(height: 30),
+            if (completedReservations.isNotEmpty) ...[
+              _buildCompletedReservationsCard(completedReservations),
+              const SizedBox(height: 30),
+            ],
             const RecommendationCard(),
           ],
         );
@@ -407,7 +419,7 @@ class _UserDashboardPageState extends State<UserDashboardPage>
                   ),
                 )
               : Column(
-                  children: reservations.take(2).map((reservation) {
+                  children: reservations.take(3).map((reservation) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
@@ -451,6 +463,43 @@ class _UserDashboardPageState extends State<UserDashboardPage>
                                     fontSize: 12,
                                   ),
                                 ),
+                                if (reservation.specialOccasion != 'None' &&
+                                    reservation.specialOccasion.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    reservation.specialOccasion,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.grey[600],
+                                      fontSize: 11,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                // Complete Reservation Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () =>
+                                        _completeReservation(reservation.id),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Complete Reservation',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -462,6 +511,446 @@ class _UserDashboardPageState extends State<UserDashboardPage>
         ],
       ),
     );
+  }
+
+  Widget _buildCombinedReservationsCard(
+      List<Reservation> databaseReservations) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: Future.value(
+          []), // SimpleReservationService.getUpcomingReservations(),
+      builder: (context, simpleSnapshot) {
+        final simpleReservations = simpleSnapshot.data ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 10,
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Recent Reservations',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF33691E),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (simpleReservations.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${simpleReservations.length} New',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildReservationsList(databaseReservations, simpleReservations),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReservationsList(List<Reservation> databaseReservations,
+      List<Map<String, dynamic>> simpleReservations) {
+    // Combine and sort all reservations by date
+    final allReservations = <Map<String, dynamic>>[];
+
+    // Add database reservations
+    for (final reservation in databaseReservations) {
+      allReservations.add({
+        'type': 'database',
+        'id': reservation.id,
+        'table_number': reservation.table.tableNumber.toString(),
+        'date': DateFormat('yyyy-MM-dd').format(reservation.reservationTime),
+        'time': DateFormat('HH:mm').format(reservation.reservationTime),
+        'party_size': reservation.partySize,
+        'special_occasion': reservation.specialOccasion,
+        'reservation_time': reservation.reservationTime,
+      });
+    }
+
+    // Add simple reservations
+    for (final reservation in simpleReservations) {
+      try {
+        final reservationDateTime =
+            DateTime.parse('${reservation['date']} ${reservation['time']}');
+        allReservations.add({
+          'type': 'simple',
+          'id': reservation['id'],
+          'table_number': reservation['table_number'],
+          'date': reservation['date'],
+          'time': reservation['time'],
+          'party_size': reservation['party_size'],
+          'special_occasion': reservation['special_occasion'],
+          'reservation_time': reservationDateTime,
+        });
+      } catch (e) {
+        print('Error parsing simple reservation: $e');
+      }
+    }
+
+    // Sort by reservation time
+    allReservations
+        .sort((a, b) => a['reservation_time'].compareTo(b['reservation_time']));
+
+    if (allReservations.isEmpty) {
+      return Center(
+        child: Text(
+          'No upcoming reservations.',
+          style: GoogleFonts.inter(
+            color: Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: allReservations.take(3).map((reservation) {
+        final isSimple = reservation['type'] == 'simple';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSimple ? const Color(0xFFE8F5E8) : const Color(0xFFF1F8E9),
+            borderRadius: BorderRadius.circular(12),
+            border: isSimple
+                ? Border.all(color: Colors.green.withOpacity(0.3), width: 1)
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSimple
+                      ? Colors.green.withOpacity(0.2)
+                      : const Color(0xFFDCEDC8),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isSimple ? Icons.check_circle : Icons.calendar_month,
+                  color: isSimple ? Colors.green : const Color(0xFF8BC34A),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Table ${reservation['table_number']} for ${reservation['party_size']}',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF33691E),
+                          ),
+                        ),
+                        if (isSimple) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'NEW',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('MMM d, yyyy')
+                          .add_jm()
+                          .format(reservation['reservation_time']),
+                      style: GoogleFonts.inter(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (reservation['special_occasion'] != 'None' &&
+                        reservation['special_occasion'] != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${reservation['special_occasion']}',
+                        style: GoogleFonts.inter(
+                          color: Colors.grey[600],
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCompletedReservationsCard(List<Reservation> reservations) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history, color: Colors.grey[600], size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Completed Reservations',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF33691E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          reservations.isEmpty
+              ? Center(
+                  child: Text(
+                    'No completed reservations.',
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: reservations.take(3).map((reservation) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_circle,
+                              color: Colors.grey[600],
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Table ${reservation.table.tableNumber} for ${reservation.partySize}',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat.yMMMd()
+                                      .add_jm()
+                                      .format(reservation.reservationTime),
+                                  style: GoogleFonts.inter(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                if (reservation.specialOccasion != 'None' &&
+                                    reservation.specialOccasion.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    reservation.specialOccasion,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.grey[500],
+                                      fontSize: 11,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Completed',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _completeReservation(String reservationId) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final apiService = ApiService();
+
+      if (authProvider.accessToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to complete reservation'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 28),
+              const SizedBox(width: 12),
+              const Text('Complete Reservation'),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to mark this reservation as completed? This will release the table for other customers.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Complete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Complete the reservation
+      await apiService.completeReservation(
+        reservationId: reservationId,
+        authToken: authProvider.accessToken!,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reservation completed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Refresh dashboard data
+      _loadDashboardData();
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to complete reservation: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildQuickActionsCard() {

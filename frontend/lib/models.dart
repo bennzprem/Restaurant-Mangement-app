@@ -286,7 +286,8 @@ class Table {
   factory Table.fromJson(Map<String, dynamic> json) {
     return Table(
       id: json['id'],
-      tableNumber: json['table_number'],
+      tableNumber:
+          json['table_number'] ?? json['table_num'], // Prioritize table_number
       capacity: json['capacity'],
       locationPreference: json['location_preference'],
     );
@@ -314,15 +315,21 @@ class Reservation {
 
   factory Reservation.fromJson(Map<String, dynamic> json) {
     return Reservation(
-      id: json['id'],
-      reservationTime: DateTime.parse(json['reservation_time']),
-      partySize: json['party_size'],
-      status: json['status'],
+      id: json['id'] ?? '',
+      reservationTime: DateTime.parse(
+          json['reservation_time'] ?? DateTime.now().toIso8601String()),
+      partySize: json['party_size'] ?? 2,
+      status: json['status'] ?? 'pending',
       specialOccasion: json['special_occasion'] ?? 'None',
       addOnsRequested: json['add_ons_requested'] ?? false,
-      table: Table.fromJson(
-        json['tables'],
-      ), // Supabase uses the table name as the key
+      table: json['tables'] != null
+          ? Table.fromJson(json['tables'])
+          : Table(
+              id: json['table_id'] ?? '',
+              tableNumber: json['table_number'] ?? 1,
+              capacity: json['table_capacity'] ?? 4,
+              locationPreference: json['location_preference'],
+            ),
     );
   }
 }

@@ -526,9 +526,73 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => Reservation.fromJson(json)).toList();
+      return data.map((json) {
+        try {
+          return Reservation.fromJson(json);
+        } catch (e) {
+          print('Error parsing reservation: $e');
+          print('Reservation data: $json');
+          // Return a default reservation to prevent the entire list from failing
+          return Reservation(
+            id: json['id'] ?? 'unknown',
+            reservationTime: DateTime.now(),
+            partySize: json['party_size'] ?? 2,
+            status: json['status'] ?? 'pending',
+            specialOccasion: json['special_occasion'] ?? 'None',
+            addOnsRequested: json['add_ons_requested'] ?? false,
+            table: Table(
+              id: json['table_id'] ?? 'unknown',
+              tableNumber: json['table_number'] ?? 1,
+              capacity: json['table_capacity'] ?? 4,
+              locationPreference: json['location_preference'],
+            ),
+          );
+        }
+      }).toList();
     } else {
       throw Exception('Failed to load reservations');
+    }
+  }
+
+  // Method to check table availability
+  Future<Map<String, dynamic>> checkTableAvailability({
+    required String date,
+    required String time,
+    required int partySize,
+    required String authToken,
+  }) async {
+    try {
+      print('🔍 Checking table availability...');
+      print('   Date: $date');
+      print('   Time: $time');
+      print('   Party Size: $partySize');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/tables/availability'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: json.encode({
+          'date': date,
+          'time': time,
+          'party_size': partySize,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print(
+            '✅ Table availability check successful: ${data['total_available']} tables available');
+        return data;
+      } else {
+        print(
+            '❌ Table availability check failed: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to check table availability: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error checking table availability: $e');
+      throw Exception('Error checking table availability: $e');
     }
   }
 
@@ -547,14 +611,20 @@ class ApiService {
 
       // Check if any reservation matches the same date and time
       final hasConflict = reservations.any((reservation) {
-        final reservationDate =
-            DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
-        final reservationTime =
-            DateFormat('HH:mm').format(reservation.reservationTime);
+        try {
+          final reservationDate =
+              DateFormat('yyyy-MM-dd').format(reservation.reservationTime);
+          final reservationTime =
+              DateFormat('HH:mm').format(reservation.reservationTime);
 
-        print('   Checking reservation: $reservationDate at $reservationTime');
+          print(
+              '   Checking reservation: $reservationDate at $reservationTime');
 
-        return reservationDate == date && reservationTime == time;
+          return reservationDate == date && reservationTime == time;
+        } catch (e) {
+          print('   Error processing reservation: $e');
+          return false; // Skip this reservation if there's an error
+        }
       });
 
       print('✅ Existing booking check result: $hasConflict');
@@ -1363,6 +1433,84 @@ class ApiService {
     } catch (e) {
       print('Error fetching default address: $e');
       return null; // Return null on error to allow fallback
+    }
+  }
+
+  // Create a simple reservation in the database
+  Future<Map<String, dynamic>> createSimpleReservation({
+    required String tableNumber,
+    required String date,
+    required String time,
+    required int partySize,
+    required String specialOccasion,
+    required String authToken,
+  }) async {
+    try {
+      print('🔍 Creating simple reservation...');
+      print('   Table: $tableNumber');
+      print('   Date: $date');
+      print('   Time: $time');
+      print('   Party Size: $partySize');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/reservations/simple'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: json.encode({
+          'table_number': tableNumber,
+          'date': date,
+          'time': time,
+          'party_size': partySize,
+          'special_occasion': specialOccasion,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        print('✅ Simple reservation created successfully');
+        return data;
+      } else {
+        print(
+            '❌ Simple reservation creation failed: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to create reservation: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error creating simple reservation: $e');
+      throw Exception('Error creating simple reservation: $e');
+    }
+  }
+
+  // Complete a reservation when customer finishes dining
+  Future<Map<String, dynamic>> completeReservation({
+    required String reservationId,
+    required String authToken,
+  }) async {
+    try {
+      print('🔍 Completing reservation...');
+      print('   Reservation ID: $reservationId');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/reservations/$reservationId/complete'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Reservation completed successfully');
+        return data;
+      } else {
+        print(
+            '❌ Reservation completion failed: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to complete reservation: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error completing reservation: $e');
+      throw Exception('Error completing reservation: $e');
     }
   }
 }
