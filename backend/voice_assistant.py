@@ -5,9 +5,10 @@ from groq import Groq
 import re
 
 class VoiceAssistant:
-    def __init__(self, supabase_url: str, supabase_headers: dict):
+    def __init__(self, supabase_url: str, supabase_headers: dict, supabase_client=None):
         self.supabase_url = supabase_url
         self.supabase_headers = supabase_headers
+        self.supabase = supabase_client
         self.model = self._configure_model()
 
     def _configure_model(self):
@@ -44,6 +45,107 @@ class VoiceAssistant:
                 return num
                 
         return None
+
+    def get_available_time_slots(self, meal_period: str, date: str, party_size: int):
+        """
+        Get available time slots for a specific meal period, date, and party size.
+        Returns a list of available time slots.
+        """
+        from datetime import datetime, timedelta
+        
+        # Define time slots for each meal period (matching frontend)
+        time_slots = {
+            'Breakfast': [
+                '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM',
+                '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM'
+            ],
+            'Lunch': [
+                '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+                '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM'
+            ],
+            'Dinner': [
+                '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
+                '09:00 PM', '09:30 PM', '10:00 PM'
+            ]
+        }
+        
+        # Get the time slots for the meal period
+        period_slots = time_slots.get(meal_period, [])
+        if not period_slots:
+            return []
+        
+        # If supabase client is not available, return all slots as available
+        if not self.supabase:
+            print("Warning: Supabase client not available, returning all slots as available")
+            return period_slots
+        
+        # Convert date string to proper format
+        if date.lower() == 'today':
+            target_date = datetime.now().strftime('%Y-%m-%d')
+        elif date.lower() == 'tomorrow':
+            target_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+        else:
+            # Assume it's already in the correct format or try to parse it
+            target_date = date
+        
+        available_slots = []
+        
+        # Check availability for each time slot
+        for time_slot in period_slots:
+            try:
+                # Convert time slot to 24-hour format for API call
+                time_24h = self.convert_to_24h_format(time_slot)
+                
+                # Check availability using Supabase client directly
+                # Parse the reservation datetime
+                reservation_datetime = datetime.strptime(f"{target_date} {time_24h}", "%Y-%m-%d %H:%M")
+                
+                # Define time window (2 hours before and after)
+                window_start = reservation_datetime - timedelta(hours=1, minutes=59)
+                window_end = reservation_datetime + timedelta(hours=1, minutes=59)
+                
+                # Get booked tables in the time window
+                booked_tables_response = self.supabase.table('reservations').select('table_id').eq('status', 'confirmed').gte('reservation_time', window_start.isoformat()).lte('reservation_time', window_end.isoformat()).execute()
+                booked_table_ids = [res['table_id'] for res in booked_tables_response.data or []]
+                
+                # Get all tables that can accommodate the party size
+                all_tables_response = self.supabase.table('tables').select('*').gte('capacity', party_size).execute()
+                all_tables = all_tables_response.data or []
+                
+                # Check if there are available tables
+                available_tables = [table for table in all_tables if table['id'] not in booked_table_ids]
+                
+                if available_tables:  # If there are available tables
+                    available_slots.append(time_slot)
+                        
+            except Exception as e:
+                print(f"Error checking availability for {time_slot}: {e}")
+                # If there's an error checking availability, assume the slot is available
+                available_slots.append(time_slot)
+                continue
+        
+        # If no slots were found due to errors, return all slots as available
+        if not available_slots:
+            print("Warning: No available slots found, returning all slots as available")
+            return period_slots
+        
+        return available_slots
+
+    def convert_to_24h_format(self, time_12h: str):
+        """
+        Convert 12-hour format time to 24-hour format.
+        Example: '07:00 PM' -> '19:00'
+        """
+        from datetime import datetime
+        
+        try:
+            # Parse the 12-hour format
+            time_obj = datetime.strptime(time_12h, '%I:%M %p')
+            # Return in 24-hour format
+            return time_obj.strftime('%H:%M')
+        except ValueError:
+            # If parsing fails, return the original string
+            return time_12h
 
     def get_intent_and_entities(self, user_text: str, menu_list: list, category_list: list, conversation_context: dict = None):
         """
@@ -451,6 +553,65 @@ class VoiceAssistant:
         natural, human-friendly sentence.
         """
         if not self.model: 
+            # Even if AI model is not available, handle basic booking flow
+            user_text_lower = user_text.lower().strip()
+            
+            # Handle basic booking flow without AI
+            if any(phrase in user_text_lower for phrase in ['reserve a table', 'book a table', 'table reservation', 'reserve table', 'i want a table', 'book table']):
+                if context_data and context_data.get("is_logged_in"):
+                    return {"confirmation_message": "Perfect! Let's start booking your table. How many guests will be joining you?", "new_context": {"booking_flow_step": "ask_guests"}}
+                else:
+                    return {"confirmation_message": "I'd love to help you book a table! Please log in first, then I'll guide you through the reservation process step by step.", "new_context": {"booking_flow_step": "login_required"}}
+            
+            # Handle number input for guest count
+            number = self.extract_number_from_text(user_text)
+            if number and 1 <= number <= 8:
+                if context_data and context_data.get('booking_flow_step') == 'ask_guests':
+                    # Check if we already have a date from previous context
+                    if context_data.get('date'):
+                        date = context_data.get('date')
+                        return {"confirmation_message": f"Perfect! {date} for {number} guests. What meal period would you prefer? You can choose from Breakfast, Lunch, or Dinner.", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": number, "date": date}}
+                    else:
+                        return {"confirmation_message": f"Great! A table for {number} guests. What date would you like to book for? You can say 'today', 'tomorrow', or a specific date.", "new_context": {"booking_flow_step": "ask_date", "guest_count": number}}
+                elif context_data and context_data.get('is_logged_in'):
+                    return {"confirmation_message": f"Great! A table for {number} guests. What date would you like to book for? You can say 'today', 'tomorrow', or a specific date.", "new_context": {"booking_flow_step": "ask_date", "guest_count": number}}
+            
+            # Handle date input
+            if any(word in user_text_lower for word in ['today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']):
+                if context_data and context_data.get('booking_flow_step') == 'ask_date':
+                    guest_count = context_data.get('guest_count', 2)
+                    date = 'tomorrow' if 'tomorrow' in user_text_lower else ('today' if 'today' in user_text_lower else user_text_lower)
+                    return {"confirmation_message": f"Perfect! {date} for {guest_count} guests. What meal period would you prefer? You can choose from Breakfast, Lunch, or Dinner.", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
+                # Handle direct date input without booking context - start booking flow
+                elif not context_data or not context_data.get('booking_flow_step'):
+                    date = 'tomorrow' if 'tomorrow' in user_text_lower else ('today' if 'today' in user_text_lower else user_text_lower)
+                    return {"confirmation_message": f"Great! You want to book for {date}. How many guests will be joining you?", "new_context": {"booking_flow_step": "ask_guests", "date": date}}
+            
+            # Handle meal period input
+            if any(word in user_text_lower for word in ['breakfast', 'lunch', 'dinner']):
+                if context_data and context_data.get('booking_flow_step') == 'ask_meal_period':
+                    guest_count = context_data.get('guest_count', 2)
+                    date = context_data.get('date', 'tomorrow')
+                    meal_period = 'Breakfast' if 'breakfast' in user_text_lower else ('Lunch' if 'lunch' in user_text_lower else 'Dinner')
+                    
+                    # Try to get available slots from database first
+                    try:
+                        available_slots = self.get_available_time_slots(meal_period, date, guest_count)
+                        if available_slots:
+                            return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
+                    except Exception as e:
+                        print(f"Error getting available slots in fallback: {e}")
+                    
+                    # Fallback to default slots if database fails
+                    default_slots = {
+                        'Breakfast': ['07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM'],
+                        'Lunch': ['11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM'],
+                        'Dinner': ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM']
+                    }
+                    fallback_slots = default_slots.get(meal_period, ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM'])
+                    return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": fallback_slots}}
+            
+            # Default fallback
             return {"confirmation_message": "I'm currently having trouble connecting to my AI brain. Please try again in a moment.", "new_context": {}}
 
         # PRIORITY: Handle booking flow inputs first to prevent conflicts
@@ -474,7 +635,25 @@ class VoiceAssistant:
             date = context_data.get('date', 'tomorrow')
             if any(word in user_text_lower for word in ['breakfast', 'lunch', 'dinner']):
                 meal_period = 'Breakfast' if 'breakfast' in user_text_lower else ('Lunch' if 'lunch' in user_text_lower else 'Dinner')
-                return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. Let me check available time slots for you. What time would you prefer? We have slots available from 7:00 PM to 10:00 PM in 30-minute intervals.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period}}
+                
+                try:
+                    # Get available time slots for the selected meal period
+                    available_slots = self.get_available_time_slots(meal_period, date, guest_count)
+                    
+                    if available_slots:
+                        return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
+                    else:
+                        return {"confirmation_message": f"I'm sorry, but we don't have any available slots for {meal_period} on {date}. Would you like to try a different meal period or date?", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
+                except Exception as e:
+                    print(f"Error getting available slots: {e}")
+                    # Fallback to showing default time slots
+                    default_slots = {
+                        'Breakfast': ['07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM'],
+                        'Lunch': ['11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM'],
+                        'Dinner': ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM']
+                    }
+                    fallback_slots = default_slots.get(meal_period, ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM'])
+                    return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": fallback_slots}}
         
         # Handle time inputs during booking flow
         if any(word in user_text_lower for word in ['pm', 'am', ':', '7', '8', '9', '10']):
@@ -482,8 +661,14 @@ class VoiceAssistant:
                 guest_count = context_data.get('guest_count', 2)
                 date = context_data.get('date', 'tomorrow')
                 meal_period = context_data.get('meal_period', 'Dinner')
+                available_slots = context_data.get('available_slots', [])
                 time = user_text_lower
-                return {"confirmation_message": f"Excellent! I have your reservation for {guest_count} guests on {date} at {time} for {meal_period}. Is there any special occasion or special requests for your reservation?", "new_context": {"booking_flow_step": "ask_special_occasion", "guest_count": guest_count, "date": date, "meal_period": meal_period, "time": time}}
+                
+                # Check if the selected time is in the available slots
+                if available_slots and any(slot.lower() in time for slot in available_slots):
+                    return {"confirmation_message": f"Perfect! I have your reservation for {guest_count} guests on {date} at {time} for {meal_period}. Your reservation is confirmed! You can now proceed with your booking.", "new_context": {"booking_flow_step": "completed", "guest_count": guest_count, "date": date, "meal_period": meal_period, "time": time}}
+                else:
+                    return {"confirmation_message": f"I'm sorry, but {time} is not available. Here are the available slots: {', '.join(available_slots)}. Please choose one of these times.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
 
         # Immediate fallback for table booking requests - works even if API fails
         if any(phrase in user_text_lower for phrase in ['reserve a table', 'book a table', 'table reservation', 'reserve table', 'i want a table', 'book table']):
@@ -509,7 +694,12 @@ class VoiceAssistant:
         if number and 1 <= number <= 8:
             # Check if we're in a booking flow or if this could be a guest count
             if context_data and context_data.get('booking_flow_step') == 'ask_guests':
-                return {"confirmation_message": f"Great! A table for {number} guests. What date would you like to book for? You can say 'today', 'tomorrow', or a specific date.", "new_context": {"booking_flow_step": "ask_date", "guest_count": number}}
+                # Check if we already have a date from previous context
+                if context_data.get('date'):
+                    date = context_data.get('date')
+                    return {"confirmation_message": f"Perfect! {date} for {number} guests. What meal period would you prefer? You can choose from Breakfast, Lunch, or Dinner.", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": number, "date": date}}
+                else:
+                    return {"confirmation_message": f"Great! A table for {number} guests. What date would you like to book for? You can say 'today', 'tomorrow', or a specific date.", "new_context": {"booking_flow_step": "ask_date", "guest_count": number}}
             # If we're asking for time, meal period, or special occasion, don't treat numbers as guest count
             elif context_data and context_data.get('booking_flow_step') in ['ask_time', 'ask_meal_period', 'ask_special_occasion']:
                 # Let the specific step logic handle this
@@ -527,6 +717,10 @@ class VoiceAssistant:
                 guest_count = context_data.get('guest_count', 2)
                 date = 'tomorrow' if 'tomorrow' in user_text_lower else ('today' if 'today' in user_text_lower else user_text_lower)
                 return {"confirmation_message": f"Perfect! {date} for {guest_count} guests. What meal period would you prefer? You can choose from Breakfast, Lunch, or Dinner.", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
+            # Handle direct date input without booking context - start booking flow
+            elif not context_data or not context_data.get('booking_flow_step'):
+                date = 'tomorrow' if 'tomorrow' in user_text_lower else ('today' if 'today' in user_text_lower else user_text_lower)
+                return {"confirmation_message": f"Great! You want to book for {date}. How many guests will be joining you?", "new_context": {"booking_flow_step": "ask_guests", "date": date}}
 
         # Universal meal period recognition fallback - catches meal period input
         if any(word in user_text_lower for word in ['breakfast', 'lunch', 'dinner']):
@@ -534,7 +728,24 @@ class VoiceAssistant:
                 guest_count = context_data.get('guest_count', 2)
                 date = context_data.get('date', 'tomorrow')
                 meal_period = 'Breakfast' if 'breakfast' in user_text_lower else ('Lunch' if 'lunch' in user_text_lower else 'Dinner')
-                return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. Let me check available time slots for you. What time would you prefer? We have slots available from 7:00 PM to 10:00 PM in 30-minute intervals.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period}}
+                
+                # Try to get available slots from database
+                try:
+                    available_slots = self.get_available_time_slots(meal_period, date, guest_count)
+                    if available_slots:
+                        return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
+                    else:
+                        return {"confirmation_message": f"I'm sorry, but we don't have any available slots for {meal_period} on {date}. Would you like to try a different meal period or date?", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
+                except Exception as e:
+                    print(f"Error getting available slots in universal fallback: {e}")
+                    # Fallback to default slots
+                    default_slots = {
+                        'Breakfast': ['07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM'],
+                        'Lunch': ['11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM'],
+                        'Dinner': ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM']
+                    }
+                    fallback_slots = default_slots.get(meal_period, ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM'])
+                    return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": fallback_slots}}
 
         # Universal special occasion recognition fallback - catches any text input for special occasion
         if context_data and context_data.get('booking_flow_step') == 'ask_special_occasion':
@@ -636,10 +847,23 @@ class VoiceAssistant:
                 date = context_data.get('date', 'tomorrow')
                 if any(word in user_text_lower for word in ['breakfast', 'lunch', 'dinner']):
                     meal_period = 'Breakfast' if 'breakfast' in user_text_lower else ('Lunch' if 'lunch' in user_text_lower else 'Dinner')
-                    return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. Let me check available time slots for you. What time would you prefer? We have slots available from 7:00 PM to 10:00 PM in 30-minute intervals.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period}}
+                    
+                    # Get available time slots for the selected meal period
+                    available_slots = self.get_available_time_slots(meal_period, date, guest_count)
+                    
+                    if available_slots:
+                        return {"confirmation_message": f"Great! {meal_period} on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
+                    else:
+                        return {"confirmation_message": f"I'm sorry, but we don't have any available slots for {meal_period} on {date}. Would you like to try a different meal period or date?", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
                 else:
                     # Default to Dinner if unclear
-                    return {"confirmation_message": f"Great! Dinner on {date} for {guest_count} guests. Let me check available time slots for you. What time would you prefer? We have slots available from 7:00 PM to 10:00 PM in 30-minute intervals.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": "Dinner"}}
+                    meal_period = 'Dinner'
+                    available_slots = self.get_available_time_slots(meal_period, date, guest_count)
+                    
+                    if available_slots:
+                        return {"confirmation_message": f"Great! Dinner on {date} for {guest_count} guests. These are the available time slots. Please pick one of them.", "new_context": {"booking_flow_step": "ask_time", "guest_count": guest_count, "date": date, "meal_period": meal_period, "available_slots": available_slots}}
+                    else:
+                        return {"confirmation_message": f"I'm sorry, but we don't have any available slots for Dinner on {date}. Would you like to try a different meal period or date?", "new_context": {"booking_flow_step": "ask_meal_period", "guest_count": guest_count, "date": date}}
             
             elif booking_step == 'ask_time':
                 guest_count = context_data.get('guest_count', 2)
