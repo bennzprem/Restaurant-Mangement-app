@@ -1,0 +1,35 @@
+ByteEat - Table QR Codes Summary
+========================================
+Generated on: 2025-10-14 07:26:02
+Total tables: 21
+
+Table Codes:
+--------------------
+Table  1: TBL001
+Table  2: TBL002
+Table  3: TBL003
+Table  4: TBL004
+Table  5: TBL005
+Table  6: TBL006
+Table  7: TBL007
+Table  8: TBL008
+Table  9: TBL009
+Table 10: TBL010
+Table 11: TBL011
+Table 12: TBL012
+Table 13: TBL013
+Table 14: TBL014
+Table 15: TBL015
+Table 16: TBL016
+Table 17: TBL017
+Table 18: TBL018
+Table 19: TBL019
+Table 20: TBL020
+Table 101: TBL101
+
+Instructions:
+--------------------
+1. Print each QR code image
+2. Place QR codes on corresponding tables
+3. Customers can scan to order directly from table
+4. QR codes contain table codes in format TBL000
