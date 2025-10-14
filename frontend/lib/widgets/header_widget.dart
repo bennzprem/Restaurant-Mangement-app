@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
-import '../auth_provider.dart';
-import '../models.dart';
-import '../ch/user_dashboard_page.dart';
-import '../cart_provider.dart';
-import '../cart_screen.dart';
-import '../location_selection_popup.dart';
+import '../providers/auth_provider.dart';
+import '../models/models.dart';
+import '../pages/user_dashboard_page.dart';
+import '../providers/cart_provider.dart';
+import '../screens/cart_screen.dart';
+import 'location_selection_popup.dart';
 import 'dart:ui';
 import 'package:video_player/video_player.dart';
-import '../theme.dart';
-import '../voice_overlay.dart';
+import '../utils/theme.dart';
+import 'voice_overlay.dart';
 
 enum HeaderActive { none, home, menu, about, contact, login, signup }
 

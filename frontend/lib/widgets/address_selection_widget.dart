@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../api_service.dart';
-import '../auth_provider.dart';
-import '../models.dart';
+import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
+import '../models/models.dart';
 
 class AddressSelectionWidget extends StatefulWidget {
   final Function(SavedAddress?) onAddressSelected;

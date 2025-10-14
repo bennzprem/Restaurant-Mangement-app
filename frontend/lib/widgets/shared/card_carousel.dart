@@ -3,8 +3,8 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../api_service.dart';
-import '../../models.dart';
+import '../../services/api_service.dart';
+import '../../models/models.dart';
 
 // Shared sizing so sections can match the card height
 const double kCarouselCardWidth = 200.0;

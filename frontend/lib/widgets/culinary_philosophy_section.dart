@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme.dart'; // Assuming your theme file is in the parent directory
+import '../utils/theme.dart'; // Assuming your theme file is in the parent directory
 
 class CulinaryPhilosophySection extends StatelessWidget {
   const CulinaryPhilosophySection({super.key});

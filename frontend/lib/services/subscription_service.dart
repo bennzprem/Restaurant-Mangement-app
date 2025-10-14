@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../subscription_models.dart';
+import '../models/subscription_models.dart';
 
 class SubscriptionService {
   static const String baseUrl = 'http://localhost:5000'; // Your backend URL

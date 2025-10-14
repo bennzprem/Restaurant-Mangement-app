@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../menu_screen.dart';
-import '../api_service.dart';
+import '../screens/menu_screen.dart';
+import '../services/api_service.dart';
 
 class AiCulinaryCuratorSection extends StatefulWidget {
   const AiCulinaryCuratorSection({super.key});

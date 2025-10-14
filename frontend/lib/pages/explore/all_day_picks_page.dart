@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../widgets/header_widget.dart';
-import '../../theme.dart';
-import '../../api_service.dart';
-import '../../models.dart';
+import '../../utils/theme.dart';
+import '../../services/api_service.dart';
+import '../../models/models.dart';
 
 class AllDayPicksPage extends StatefulWidget {
   const AllDayPicksPage({super.key});

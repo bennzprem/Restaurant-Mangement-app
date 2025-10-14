@@ -3,7 +3,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:js' as js;
-import '../theme.dart';
+import '../utils/theme.dart';
 import '../config/razorpay_config.dart';
 
 class PaymentService {

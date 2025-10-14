@@ -1,8 +1,8 @@
 // File: explore_by_category_section.dart
 
 import 'package:flutter/material.dart';
-import '../../api_service.dart';
-import '../../models.dart';
+import '../../services/api_service.dart';
+import '../../models/models.dart';
 import '../shared/card_carousel.dart';
 
 class ExploreByCategorySection extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../cart_provider.dart';
+import '../providers/cart_provider.dart';
 import 'quantity_stepper.dart';
 
 class OrderSummaryCard extends StatelessWidget {

@@ -1,9 +1,9 @@
 // lib/widgets/staff_management_section.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../theme.dart';
-import '../api_service.dart';
-import '../user_models.dart';
+import '../utils/theme.dart';
+import '../services/api_service.dart';
+import '../models/user_models.dart';
 
 class StaffManagementSection extends StatefulWidget {
   final List<AppUser> staff;

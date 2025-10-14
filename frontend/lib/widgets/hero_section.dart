@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async'; // Added for Timer
 import 'dart:ui'; // Added for ImageFilter
-import '../auth_provider.dart';
-import '../book_table_page.dart';
-import '../order_from_table_page.dart';
+import '../providers/auth_provider.dart';
+import '../pages/book_table_page.dart';
+import '../pages/order_from_table_page.dart';
 
 //updated
 class HeroSection extends StatefulWidget {

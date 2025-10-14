@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../models.dart';
+import '../models/models.dart';
 
 class DeliveryLocationProvider extends ChangeNotifier {
   AddressDetails? _selectedLocation;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/delivery_location_provider.dart';
-import '../location_picker_with_coordinates.dart';
-import '../models.dart';
-import '../theme.dart';
+import 'location_picker_with_coordinates.dart';
+import '../models/models.dart';
+import '../utils/theme.dart';
 
 class DeliveryLocationWidget extends StatelessWidget {
   const DeliveryLocationWidget({super.key});

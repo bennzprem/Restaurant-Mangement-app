@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/models.dart';
 import 'address_selection_widget.dart';
 
 class AddressSelectionDialog extends StatefulWidget {

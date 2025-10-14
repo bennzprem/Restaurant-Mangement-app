@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../cart_provider.dart';
-import '../favorites_screen.dart';
-import '../cart_screen.dart';
+import '../providers/cart_provider.dart';
+import '../screens/favorites_screen.dart';
+import '../screens/cart_screen.dart';
 
 class MenuNavbarWidget extends StatefulWidget {
   final TextEditingController? searchController;

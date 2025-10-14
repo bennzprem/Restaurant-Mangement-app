@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../theme.dart';
+import '../utils/theme.dart';
 
 class FooterWidget extends StatelessWidget {
   const FooterWidget({super.key});
