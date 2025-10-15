@@ -25,7 +25,7 @@ const _navItems = [
   {'label': 'Contact', 'route': '/contact', 'active': HeaderActive.contact},
 ];
 
-class HeaderWidget extends StatelessWidget {
+class HeaderWidget extends StatefulWidget {
   final HeaderActive active;
   final bool showBack;
   final VoidCallback? onBack;
@@ -38,6 +38,13 @@ class HeaderWidget extends StatelessWidget {
     this.onBack,
     this.orderMode = OrderMode.delivery,
   });
+
+  @override
+  State<HeaderWidget> createState() => _HeaderWidgetState();
+}
+
+class _HeaderWidgetState extends State<HeaderWidget> {
+  bool _showDialogueBox = true;
 
   void _showVoiceOverlay(BuildContext context) {
     showGeneralDialog(
@@ -89,11 +96,11 @@ class HeaderWidget extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Row(
                 children: [
-                  if (showBack)
+                  if (widget.showBack)
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: IconButton(
-                        onPressed: onBack,
+                        onPressed: widget.onBack,
                         icon: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           color: theme.iconTheme.color,
@@ -160,7 +167,7 @@ class HeaderWidget extends StatelessWidget {
 
             // Center - The new Navigation Bar implementation
             Center(
-              child: _DesktopNav(key: ValueKey(active), active: active),
+              child: _DesktopNav(key: ValueKey(widget.active), active: widget.active),
             ),
 
             // Right side - Action Buttons (ByteBot icon removed)
@@ -169,76 +176,6 @@ class HeaderWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Cart Button (hidden on Home page)
-                  if (active != HeaderActive.home)
-                    Consumer<CartProvider>(
-                      builder: (context, cart, child) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: themeProvider.isDarkMode
-                                ? Colors.grey.shade800
-                                : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Theme.of(context).primaryColor,
-                              width: 2,
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => const CartScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.shopping_cart_outlined,
-                                  color: Theme.of(context).primaryColor,
-                                  size: 20,
-                                ),
-                                tooltip: 'Cart',
-                                style: IconButton.styleFrom(
-                                  padding: const EdgeInsets.all(8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                              ),
-                              // Cart item count badge
-                              if (cart.items.isNotEmpty)
-                                Positioned(
-                                  right: 6,
-                                  top: 6,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      '${cart.items.length}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
                   // Location Button (only for logged-in users)
                   Consumer<AuthProvider>(
                     builder: (context, auth, child) {
@@ -322,7 +259,7 @@ class HeaderWidget extends StatelessWidget {
                     builder: (context, auth, child) {
                       // This logic now handles both logged-in and logged-out states
                       bool isLoggedIn = auth.isLoggedIn;
-                      bool isOnSignupPage = active == HeaderActive.signup;
+                      bool isOnSignupPage = widget.active == HeaderActive.signup;
                       IconData iconData = isLoggedIn
                           ? Icons.person_outline
                           : Icons.person_add_alt_1_rounded;
@@ -365,11 +302,18 @@ class HeaderWidget extends StatelessWidget {
               ),
             ),
             // Assistant hint bubble positioned under the logo on Home page
-            if (active == HeaderActive.home)
-              const Positioned(
+            if (widget.active == HeaderActive.home && _showDialogueBox)
+              Positioned(
                 left: 20,
                 top: 72,
-                child: _AssistantHintBubble(),
+                child: _AssistantHintBubble(
+                  onClose: () {
+                    print("onClose callback called!"); // Debug print
+                    setState(() {
+                      _showDialogueBox = false;
+                    });
+                  },
+                ),
               ),
 
             // Removed transparent overlay so the default back button works everywhere
@@ -382,7 +326,9 @@ class HeaderWidget extends StatelessWidget {
 
 // A small animated hint bubble placed under the logo on the Home page
 class _AssistantHintBubble extends StatefulWidget {
-  const _AssistantHintBubble();
+  final VoidCallback onClose;
+  
+  const _AssistantHintBubble({required this.onClose});
 
   @override
   State<_AssistantHintBubble> createState() => _AssistantHintBubbleState();
@@ -446,6 +392,7 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -468,8 +415,34 @@ class _AssistantHintBubbleState extends State<_AssistantHintBubble>
                             const SizedBox(width: 18),
                           ],
                         ),
-                        // Close icon removed as requested
                       ],
+                    ),
+                  ),
+                ),
+                // Close button positioned outside the speech bubble
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: InkWell(
+                        onTap: () {
+                          print("Close button tapped!"); // Debug print
+                          widget.onClose();
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

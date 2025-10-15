@@ -654,3 +654,26 @@ def get_bytebot_recommendation():
             "reason": "Temporary recommendation shown while AI initializes.",
             "note": f"server note: {str(e)}"
         }), 200
+
+@ai_features_bp.route('/find_craving', methods=['POST'])
+def find_craving():
+    """Endpoint to find menu items based on user craving using hybrid search."""
+    try:
+        data = request.get_json()
+        craving = data.get('craving', '').strip()
+        
+        if not craving:
+            return jsonify({"error": "No craving provided"}), 400
+        
+        # Import the hybrid search service
+        from services.hybrid_search import find_craving as search_craving
+        
+        # Perform the search
+        matches = search_craving(craving)
+        
+        return jsonify({"matches": matches}), 200
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Search failed: {str(e)}"}), 500

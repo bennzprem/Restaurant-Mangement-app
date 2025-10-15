@@ -20,15 +20,27 @@ class ApiService {
   // In class ApiService...
 
   Future<List<String>> fetchCategories() async {
-    final response = await http.get(Uri.parse('$baseUrl/categories'));
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/categories')).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - backend server may not be running');
+        },
+      );
 
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body
-          .map((dynamic item) => item['category_name'] as String)
-          .toList();
-    } else {
-      throw Exception('Failed to load categories');
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body
+            .map((dynamic item) => item['name'] as String)
+            .toList();
+      } else {
+        throw Exception('Failed to load categories: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e.toString().contains('Failed to fetch') || e.toString().contains('Connection refused')) {
+        throw Exception('Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
+      }
+      rethrow;
     }
   }
 
@@ -83,13 +95,26 @@ class ApiService {
     final uri = Uri.parse(
       '$baseUrl/menu',
     ).replace(queryParameters: queryParameters);
-    final response = await http.get(uri);
+    
+    try {
+      final response = await http.get(uri).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - backend server may not be running');
+        },
+      );
 
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((dynamic item) => MenuCategory.fromJson(item)).toList();
-    } else {
-      throw Exception('Failed to load menu');
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((dynamic item) => MenuCategory.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load menu: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e.toString().contains('Failed to fetch') || e.toString().contains('Connection refused')) {
+        throw Exception('Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
+      }
+      rethrow;
     }
   }
 
@@ -303,7 +328,7 @@ class ApiService {
   Future<List<MenuItem>> findCraving(String craving) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/find_craving'),
+        Uri.parse('$baseUrl/find_craving'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'craving': craving}),
       );

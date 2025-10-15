@@ -29,7 +29,7 @@ class FooterWidget extends StatelessWidget {
       builder: (context, theme, _) {
         final bool isDark = theme.isDarkMode;
         // Using theme-based green colors as requested
-        final Color footerColor = isDark ? const Color(0xFF1E4620) : const Color(0xFF4CAF50);
+        final Color footerColor = isDark ? const Color(0xFF9FE800) : const Color(0xFF4CAF50);
         final Color textColor = Colors.white;
         final Color textMutedColor = Colors.white.withOpacity(0.75);
 

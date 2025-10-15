@@ -918,7 +918,7 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
           },
           {
             'text': 'Explore Menu',
-            'action': widget.onExplore, // Original logic retained
+            'action': () => Navigator.pushNamed(context, '/menu'),
           },
         ]
       },
@@ -1113,7 +1113,7 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                       onExit: (_) =>
                           setState(() => _isHoveringSelectedCard = false),
                       child: GestureDetector(
-                        onTap: () => _onCardTap(index),
+                        onTap: index == _selectedIndex ? () => _onCardTap(index) : null,
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 800),
                           opacity: index == _selectedIndex ? 1.0 : 0.4,
@@ -1205,11 +1205,13 @@ class _ServiceSelectionCarouselState extends State<ServiceSelectionCarousel> {
                                               padding: const EdgeInsets.only(
                                                   top: 8.0),
                                               child: _AnimatedButton(
-                                                onPressed: buttonData['action']
-                                                    as VoidCallback,
+                                                onPressed: index == _selectedIndex 
+                                                    ? buttonData['action'] as VoidCallback
+                                                    : () {}, // Disabled action for non-active cards
                                                 text: buttonData['text'],
                                                 isDark: isDark,
                                                 theme: theme,
+                                                isEnabled: index == _selectedIndex,
                                               ),
                                             );
                                           }).toList(),
@@ -1240,12 +1242,14 @@ class _AnimatedButton extends StatefulWidget {
   final String text;
   final bool isDark;
   final ThemeData theme;
+  final bool isEnabled;
 
   const _AnimatedButton({
     required this.onPressed,
     required this.text,
     required this.isDark,
     required this.theme,
+    this.isEnabled = true,
   });
 
   @override
@@ -1292,25 +1296,27 @@ class _AnimatedButtonState extends State<_AnimatedButton>
     super.dispose();
   }
 
-  Color get _buttonColor =>
-      widget.isDark ? Colors.lightGreen : const Color(0xFF2E7D32);
-  Color get _accentColor =>
-      widget.isDark ? const Color(0xFF388E3C) : Colors.lightGreen;
+  Color get _buttonColor => widget.isEnabled
+      ? (widget.isDark ? Colors.lightGreen : const Color(0xFF2E7D32))
+      : Colors.grey;
+  Color get _accentColor => widget.isEnabled
+      ? (widget.isDark ? const Color(0xFF388E3C) : Colors.lightGreen)
+      : Colors.grey.shade400;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) {
+      cursor: widget.isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: widget.isEnabled ? (_) {
         setState(() => _isHovered = true);
         _hoverController.forward();
-      },
-      onExit: (_) {
+      } : null,
+      onExit: widget.isEnabled ? (_) {
         setState(() => _isHovered = false);
         _hoverController.reverse();
-      },
+      } : null,
       child: GestureDetector(
-        onTap: widget.onPressed,
+        onTap: widget.isEnabled ? widget.onPressed : null,
         child: AnimatedBuilder(
           animation: _hoverController,
           builder: (context, child) {
@@ -1319,15 +1325,17 @@ class _AnimatedButtonState extends State<_AnimatedButton>
               width: 200, // Reduced width as requested
               height: 48,
               decoration: BoxDecoration(
-                color: _isHovered ? _accentColor : _buttonColor,
+                color: widget.isEnabled 
+                    ? (_isHovered ? _accentColor : _buttonColor)
+                    : _buttonColor,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [
+                boxShadow: widget.isEnabled ? [
                   BoxShadow(
                     color: _accentColor.withOpacity(_isHovered ? 0.5 : 0.3),
                     blurRadius: _isHovered ? 12 : 8,
                     offset: Offset(0, _isHovered ? 6 : 4),
                   ),
-                ],
+                ] : [],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -1362,11 +1370,11 @@ class _AnimatedButtonState extends State<_AnimatedButton>
                           return AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 400),
                             style: TextStyle(
-                              color: Colors.white,
+                              color: widget.isEnabled ? Colors.white : Colors.grey.shade300,
                               fontSize: _isHovered ? 17 : 16,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'Nunito',
-                              shadows: [
+                              shadows: widget.isEnabled ? [
                                 Shadow(
                                   color: _accentColor.withOpacity(0.8),
                                   offset: Offset(
@@ -1375,7 +1383,7 @@ class _AnimatedButtonState extends State<_AnimatedButton>
                                   ),
                                   blurRadius: 2,
                                 ),
-                              ],
+                              ] : [],
                             ),
                             child: Text(widget.text),
                           );

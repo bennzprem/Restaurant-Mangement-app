@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:provider/provider.dart';
 import '../../widgets/header_widget.dart';
 import '../../utils/theme.dart';
 import '../../services/api_service.dart';
 import '../../models/models.dart';
+import '../../providers/cart_provider.dart';
+import '../../providers/favorites_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/cart_screen.dart';
 
 class FitnessCategoriesPage extends StatefulWidget {
   const FitnessCategoriesPage({super.key});
@@ -331,41 +336,96 @@ class _FitnessCategoriesPageState extends State<FitnessCategoriesPage> {
           actions: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              width: _isSearching ? 240 : 0,
+              width: _isSearching ? 320 : 0,
               child: _isSearching
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search items...',
-                          filled: true,
-                          fillColor: Theme.of(context).scaffoldBackgroundColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search items...',
+                                filled: true,
+                                fillColor: Theme.of(context).scaffoldBackgroundColor,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                         ),
-                        onChanged: (_) => setState(() {}),
-                      ),
+                        const SizedBox(width: 8),
+                         Consumer<CartProvider>(
+                           builder: (context, cart, child) {
+                             return Stack(
+                               children: [
+                                 IconButton(
+                                   tooltip: 'Cart',
+                                   onPressed: () {
+                                     Navigator.of(context).push(
+                                       MaterialPageRoute(
+                                         builder: (context) => const CartScreen(),
+                                       ),
+                                     );
+                                   },
+                                   icon: Icon(
+                                     Icons.shopping_cart_outlined,
+                                     color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                                   ),
+                                 ),
+                                 // Cart item count badge
+                                 if (cart.items.isNotEmpty)
+                                   Positioned(
+                                     right: 6,
+                                     top: 6,
+                                     child: Container(
+                                       padding: const EdgeInsets.all(2),
+                                       decoration: BoxDecoration(
+                                         color: Colors.green,
+                                         borderRadius: BorderRadius.circular(8),
+                                       ),
+                                       constraints: const BoxConstraints(
+                                         minWidth: 16,
+                                         minHeight: 16,
+                                       ),
+                                       child: Text(
+                                         '${cart.items.length}',
+                                         style: const TextStyle(
+                                           color: Colors.white,
+                                           fontSize: 10,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                         textAlign: TextAlign.center,
+                                       ),
+                                     ),
+                                   ),
+                               ],
+                             );
+                           },
+                         ),
+                         const SizedBox(width: 4),
+                         // Close button for search expansion
+                         IconButton(
+                           tooltip: 'Close search',
+                           onPressed: () {
+                             setState(() {
+                               _isSearching = false;
+                               _searchController.clear();
+                             });
+                           },
+                           icon: Icon(
+                             Icons.close,
+                             color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                           ),
+                         ),
+                      ],
                     )
                   : null,
-            ),
-            IconButton(
-              tooltip: _isSearching ? 'Close search' : 'Search',
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) _searchController.clear();
-                });
-              },
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-            ),
-            IconButton(
-              tooltip: 'Cart',
-              onPressed: () => Navigator.pushNamed(context, '/cart'),
-              icon: const Icon(Icons.shopping_cart_outlined),
             ),
             const SizedBox(width: 8),
           ],
@@ -407,9 +467,11 @@ class _FitnessCategoriesPageState extends State<FitnessCategoriesPage> {
                                 },
                                 child: AnimatedDefaultTextStyle(
                                   duration: const Duration(milliseconds: 200),
-                                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                                  style: (Theme.of(context).textTheme.displayLarge ?? const TextStyle()).copyWith(
+                                        fontSize: 22,
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).primaryColor,
+                                        fontStyle: FontStyle.italic,
                                       ),
                                   child: Container(
                                     key: _headerTitleKey,
@@ -450,6 +512,70 @@ class _FitnessCategoriesPageState extends State<FitnessCategoriesPage> {
                           ],
                         ),
                       ),
+                       // Search and Cart icons (matching Signature Soups style)
+                       const SizedBox(width: 8),
+                       IconButton(
+                         tooltip: 'Search',
+                         onPressed: () {
+                           setState(() {
+                             _isSearching = !_isSearching;
+                             if (!_isSearching) _searchController.clear();
+                           });
+                         },
+                         icon: Icon(
+                           _isSearching ? Icons.close : Icons.search,
+                           color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                         ),
+                       ),
+                       const SizedBox(width: 4),
+                       Consumer<CartProvider>(
+                         builder: (context, cart, child) {
+                           return Stack(
+                             children: [
+                               IconButton(
+                                 tooltip: 'Cart',
+                                 onPressed: () {
+                                   Navigator.of(context).push(
+                                     MaterialPageRoute(
+                                       builder: (context) => const CartScreen(),
+                                     ),
+                                   );
+                                 },
+                                 icon: Icon(
+                                   Icons.shopping_cart_outlined,
+                                   color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                                 ),
+                               ),
+                               // Cart item count badge
+                               if (cart.items.isNotEmpty)
+                                 Positioned(
+                                   right: 6,
+                                   top: 6,
+                                   child: Container(
+                                     padding: const EdgeInsets.all(2),
+                                     decoration: BoxDecoration(
+                                       color: Colors.green,
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     constraints: const BoxConstraints(
+                                       minWidth: 16,
+                                       minHeight: 16,
+                                     ),
+                                     child: Text(
+                                       '${cart.items.length}',
+                                       style: const TextStyle(
+                                         color: Colors.white,
+                                         fontSize: 10,
+                                         fontWeight: FontWeight.bold,
+                                       ),
+                                       textAlign: TextAlign.center,
+                                     ),
+                                   ),
+                                 ),
+                             ],
+                           );
+                         },
+                       ),
                     ],
                   ),
                 ),
@@ -552,11 +678,66 @@ class _FitnessCategoriesPageState extends State<FitnessCategoriesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  // Title row with favorite button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Consumer<FavoritesProvider>(
+                        builder: (context, favoritesProvider, child) {
+                          final isFavorited = favoritesProvider.isFavorite(item.id);
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: IconButton(
+                                padding: const EdgeInsets.all(8),
+                                iconSize: 18,
+                                icon: Icon(
+                                  isFavorited
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorited
+                                      ? Colors.red
+                                      : Colors.grey.shade600,
+                                ),
+                                onPressed: () {
+                                  final authProvider = Provider.of<AuthProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+                                  if (authProvider.isLoggedIn) {
+                                    Provider.of<FavoritesProvider>(
+                                      context,
+                                      listen: false,
+                                    ).toggleFavorite(item);
+                                  } else {
+                                    _showLoginPrompt(context);
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -568,18 +749,140 @@ class _FitnessCategoriesPageState extends State<FitnessCategoriesPage> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '₹${item.price.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  // Price and add to cart row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '₹${item.price.toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Consumer<CartProvider>(
+                        builder: (context, cart, child) {
+                          if (!item.isAvailable) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Unavailable',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }
+
+                          final quantity = cart.getItemQuantity(item.id);
+                          return quantity == 0
+                              ? MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      cart.addItem(item);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Theme.of(context).primaryColor,
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text(
+                                      'Add',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : _buildQuantityCounter(item, cart);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityCounter(MenuItem item, CartProvider cart) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              onPressed: () => cart.removeSingleItem(item.id),
+              icon: const Icon(Icons.remove, size: 16),
+              color: Colors.black,
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ),
+          Text(
+            '${cart.getItemQuantity(item.id)}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              fontSize: 14,
+            ),
+          ),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: IconButton(
+              onPressed: () => cart.addItem(item),
+              icon: const Icon(Icons.add, size: 16),
+              color: Colors.black,
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('Please login to add items to favorites.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text('Login'),
+          ),
+        ],
       ),
     );
   }
