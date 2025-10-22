@@ -11,9 +11,8 @@ import 'package:image_picker/image_picker.dart'; // or file_picker
 import '../models/user_models.dart';
 
 class ApiService {
-  final String baseUrl = kIsWeb
-      ? "http://localhost:5000" // for web
-      : "http://10.0.2.2:5000"; // for Android emulator
+  final String baseUrl =
+      "https://resto-byte-eat-backend.onrender.com"; // for web
   // In lib/api_service.dart
 
   // Change this method
@@ -24,21 +23,22 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl/categories')).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw Exception('Request timeout - backend server may not be running');
+          throw Exception(
+              'Request timeout - backend server may not be running');
         },
       );
 
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(response.body);
-        return body
-            .map((dynamic item) => item['name'] as String)
-            .toList();
+        return body.map((dynamic item) => item['name'] as String).toList();
       } else {
         throw Exception('Failed to load categories: ${response.statusCode}');
       }
     } catch (e) {
-      if (e.toString().contains('Failed to fetch') || e.toString().contains('Connection refused')) {
-        throw Exception('Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
+      if (e.toString().contains('Failed to fetch') ||
+          e.toString().contains('Connection refused')) {
+        throw Exception(
+            'Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
       }
       rethrow;
     }
@@ -95,12 +95,13 @@ class ApiService {
     final uri = Uri.parse(
       '$baseUrl/menu',
     ).replace(queryParameters: queryParameters);
-    
+
     try {
       final response = await http.get(uri).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw Exception('Request timeout - backend server may not be running');
+          throw Exception(
+              'Request timeout - backend server may not be running');
         },
       );
 
@@ -111,8 +112,10 @@ class ApiService {
         throw Exception('Failed to load menu: ${response.statusCode}');
       }
     } catch (e) {
-      if (e.toString().contains('Failed to fetch') || e.toString().contains('Connection refused')) {
-        throw Exception('Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
+      if (e.toString().contains('Failed to fetch') ||
+          e.toString().contains('Connection refused')) {
+        throw Exception(
+            'Cannot connect to backend server. Please ensure the backend is running on $baseUrl');
       }
       rethrow;
     }
