@@ -13,6 +13,7 @@ import 'phone-login_page.dart';
 import '../utils/theme.dart';
 import '../widgets/header_widget.dart';
 import '../backgrounds/signup-bg.dart';
+import '../services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -207,7 +208,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       setState(() => _isLoading = true);
       try {
         final response = await http.post(
-          Uri.parse('http://localhost:5000/login'),
+          Uri.parse('${ApiService().baseUrl}/login'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'email': _emailController.text.trim(),
@@ -218,11 +219,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           await Supabase.instance.client.auth.setSession(data['refresh_token']);
-          
+
           // Manually refresh the AuthProvider to update the UI
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
           await authProvider.refreshAuthState();
-          
+
           if (mounted) {
             // After login, route user to their role dashboard
             final client = Supabase.instance.client;
