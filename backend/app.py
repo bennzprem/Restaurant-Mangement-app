@@ -11,7 +11,14 @@ from config import (
 
 # --- INITIALIZATION ---
 app = Flask(__name__)
-CORS(app)
+
+# --- PRODUCTION CORS CONFIGURATION ---
+# Define the live URL of your frontend
+frontend_url = "https://restaurant-mangement-app-frontend.onrender.com"
+
+# Configure CORS to only allow requests from your specific frontend URL
+CORS(app, origins=[frontend_url], supports_credentials=True)
+# --- END OF CORS CONFIG ---
 
 # --- UTILITY IMPORTS ---
 from utils.email_utils import _is_mail_configured, _send_password_reset_email
